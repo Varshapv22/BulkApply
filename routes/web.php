@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\JobApplicationController;
+use App\Http\Controllers\JobSearchController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +39,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/templates', [EmailTemplateController::class, 'store'])->name('templates.store');
     Route::put('/templates/{template}', [EmailTemplateController::class, 'update'])->name('templates.update');
     Route::delete('/templates/{template}', [EmailTemplateController::class, 'destroy'])->name('templates.destroy');
+
+    // Job Search
+    Route::get('/search', [JobSearchController::class, 'index'])->name('search.index');
+    Route::post('/search', [JobSearchController::class, 'search'])->name('search.search');
+    Route::post('/search/apply', [JobSearchController::class, 'autoApply'])->name('search.autoApply');
 
     // Jobs
     Route::get('/jobs', [JobApplicationController::class, 'index'])->name('jobs.index');

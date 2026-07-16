@@ -110,9 +110,10 @@
             <div class="brand">Bulk<span>Apply</span></div>
             <?php if(auth()->guard()->check()): ?>
                 <a class="link <?php echo e(request()->routeIs('dashboard') ? 'active' : ''); ?>" href="<?php echo e(route('dashboard')); ?>">Dashboard</a>
-                <a class="link <?php echo e(request()->routeIs('jobs.*') ? 'active' : ''); ?>" href="<?php echo e(route('jobs.index')); ?>">Jobs</a>
+                <a class="link <?php echo e(request()->routeIs('search.*') ? 'active' : ''); ?>" href="<?php echo e(route('search.index')); ?>">Find Jobs</a>
+                <a class="link <?php echo e(request()->routeIs('jobs.*') ? 'active' : ''); ?>" href="<?php echo e(route('jobs.index')); ?>">Applications</a>
                 <a class="link <?php echo e(request()->routeIs('templates.*') ? 'active' : ''); ?>" href="<?php echo e(route('templates.index')); ?>">Templates</a>
-                <a class="link <?php echo e(request()->routeIs('profile.*') ? 'active' : ''); ?>" href="<?php echo e(route('profile.edit')); ?>">Profile &amp; Settings</a>
+                <a class="link <?php echo e(request()->routeIs('profile.*') ? 'active' : ''); ?>" href="<?php echo e(route('profile.edit')); ?>">Settings</a>
             <?php endif; ?>
             <div class="spacer"></div>
             <a class="link" href="http://localhost:8025" target="_blank" rel="noopener">Mailpit ↗</a>

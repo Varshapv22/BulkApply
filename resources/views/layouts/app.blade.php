@@ -110,9 +110,10 @@
             <div class="brand">Bulk<span>Apply</span></div>
             @auth
                 <a class="link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
-                <a class="link {{ request()->routeIs('jobs.*') ? 'active' : '' }}" href="{{ route('jobs.index') }}">Jobs</a>
+                <a class="link {{ request()->routeIs('search.*') ? 'active' : '' }}" href="{{ route('search.index') }}">Find Jobs</a>
+                <a class="link {{ request()->routeIs('jobs.*') ? 'active' : '' }}" href="{{ route('jobs.index') }}">Applications</a>
                 <a class="link {{ request()->routeIs('templates.*') ? 'active' : '' }}" href="{{ route('templates.index') }}">Templates</a>
-                <a class="link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">Profile &amp; Settings</a>
+                <a class="link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">Settings</a>
             @endauth
             <div class="spacer"></div>
             <a class="link" href="http://localhost:8025" target="_blank" rel="noopener">Mailpit ↗</a>

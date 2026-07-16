@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'jsearch' => [
+        'api_key' => env('RAPIDAPI_KEY'),
+    ],
+
 ];
