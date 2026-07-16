@@ -6,5 +6,8 @@
 </head>
 <body style="font-family: Arial, Helvetica, sans-serif; font-size: 15px; color: #1f2937; line-height: 1.6;">
     {!! nl2br(e($renderedBody)) !!}
+    @if (!empty($trackingId))
+        <img src="{{ url('/track/pixel/' . $trackingId) }}" width="1" height="1" alt="" style="display:none;">
+    @endif
 </body>
 </html>

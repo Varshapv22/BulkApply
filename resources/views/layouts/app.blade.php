@@ -39,7 +39,10 @@
         }
         * { box-sizing: border-box; }
         body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background: var(--bg); color: var(--text); }
+            background: var(--bg); color: var(--text); transition: background 0.2s, color 0.2s; }
+        select { padding: 9px 11px; border: 1px solid var(--border); border-radius: 7px; font-size: 14px;
+            font-family: inherit; background: var(--input-bg); color: var(--text); }
+        select option { background: var(--card); color: var(--text); }
         a { color: var(--primary); }
         header { background: var(--card); border-bottom: 1px solid var(--border); }
         .nav { max-width: 1000px; margin: 0 auto; padding: 0 20px; display: flex; align-items: center; gap: 24px; height: 60px; }
@@ -95,17 +98,31 @@
         .theme-toggle:hover { background: var(--hover-strong); }
         .empty { text-align: center; padding: 40px 20px; color: var(--muted); }
         .banner-warn { background: var(--amber-bg); color: var(--amber); }
+        .card, .stat, header, .alert, .badge, .btn, .theme-toggle, input, textarea, select {
+            transition: background 0.2s, border-color 0.2s, color 0.2s; }
+        input[type=file] { transition: none; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <header>
         <nav class="nav">
             <div class="brand">Bulk<span>Apply</span></div>
-            <a class="link {{ request()->routeIs('jobs.*') ? 'active' : '' }}" href="{{ route('jobs.index') }}">Jobs</a>
-            <a class="link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">Profile &amp; Template</a>
+            @auth
+                <a class="link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Dashboard</a>
+                <a class="link {{ request()->routeIs('jobs.*') ? 'active' : '' }}" href="{{ route('jobs.index') }}">Jobs</a>
+                <a class="link {{ request()->routeIs('templates.*') ? 'active' : '' }}" href="{{ route('templates.index') }}">Templates</a>
+                <a class="link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.edit') }}">Profile &amp; Settings</a>
+            @endauth
             <div class="spacer"></div>
-            <a class="link" href="http://localhost:8025" target="_blank" rel="noopener">Mailpit inbox ↗</a>
+            <a class="link" href="http://localhost:8025" target="_blank" rel="noopener">Mailpit ↗</a>
             <button type="button" class="theme-toggle" id="themeToggle" title="Toggle light / dark" aria-label="Toggle light or dark theme">🌙</button>
+            @auth
+                <form method="POST" action="{{ route('logout') }}" style="display:inline;">
+                    @csrf
+                    <button type="submit" class="btn-link" style="color:var(--muted);font-size:13px;">Logout</button>
+                </form>
+            @endauth
         </nav>
     </header>
 
