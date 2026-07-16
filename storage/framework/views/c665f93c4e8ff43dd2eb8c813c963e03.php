@@ -1,13 +1,12 @@
 <?php $__env->startSection('title', 'Jobs'); ?>
 
 <?php $__env->startSection('content'); ?>
-    <h1 style="font-size:22px;margin:0 0 4px;">Jobs to apply to</h1>
-    <p class="muted" style="margin:0 0 20px;">Import your list, then send your resume + cover letter to every recruiter in one click.</p>
+    <h1 style="font-size:22px;margin:0 0 4px;">Applications</h1>
+    <p class="muted" style="margin:0 0 20px;">Track all your job applications. <a href="<?php echo e(route('search.index')); ?>">Find Jobs</a> to auto-search and apply, or import a CSV / add manually below.</p>
 
     <?php if (! ($profile->hasDocuments())): ?>
         <div class="alert banner-warn">
-            You haven't uploaded your resume and cover letter yet.
-            <a href="<?php echo e(route('profile.edit')); ?>">Go to Profile &amp; Settings</a> to add them before sending.
+            Upload your resume and cover letter on <a href="<?php echo e(route('profile.edit')); ?>">Settings</a> before applying.
         </div>
     <?php endif; ?>
 
@@ -18,37 +17,37 @@
         <div class="stat"><div class="num"><?php echo e($counts['failed']); ?></div><div class="lbl">Failed</div></div>
     </div>
 
-    <div class="row">
-        <div class="card">
-            <h2>Import from CSV</h2>
-            <p class="hint">Columns: company, job_title, recruiter_name, recruiter_email, job_url, location, notes. Duplicates (same email + company) are skipped.</p>
-            <form method="POST" action="<?php echo e(route('jobs.import')); ?>" enctype="multipart/form-data">
-                <?php echo csrf_field(); ?>
-                <input type="file" name="csv" accept=".csv,.txt" required>
-                <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
-                    <button type="submit" class="btn btn-primary">Import</button>
-                    <a class="btn-link" href="<?php echo e(route('jobs.template')); ?>">Download template</a>
-                </div>
-            </form>
+    <details class="card" style="cursor:default;">
+        <summary style="cursor:pointer;">Import CSV or Add Manually</summary>
+        <div class="row" style="margin-top:16px;">
+            <div>
+                <h2 style="font-size:15px;">Import from CSV</h2>
+                <form method="POST" action="<?php echo e(route('jobs.import')); ?>" enctype="multipart/form-data">
+                    <?php echo csrf_field(); ?>
+                    <input type="file" name="csv" accept=".csv,.txt" required>
+                    <div style="margin-top:12px;display:flex;gap:10px;align-items:center;">
+                        <button type="submit" class="btn btn-primary btn-sm">Import</button>
+                        <a class="btn-link" href="<?php echo e(route('jobs.template')); ?>">Download template</a>
+                    </div>
+                </form>
+            </div>
+            <div>
+                <h2 style="font-size:15px;">Add one manually</h2>
+                <form method="POST" action="<?php echo e(route('jobs.store')); ?>">
+                    <?php echo csrf_field(); ?>
+                    <div class="row">
+                        <div><input type="text" name="company" placeholder="Company *" required></div>
+                        <div><input type="text" name="job_title" placeholder="Job title"></div>
+                    </div>
+                    <div class="row">
+                        <div><input type="text" name="recruiter_name" placeholder="Recruiter name"></div>
+                        <div><input type="email" name="recruiter_email" placeholder="Recruiter email *" required></div>
+                    </div>
+                    <button type="submit" class="btn btn-ghost btn-sm" style="margin-top:12px;">Add job</button>
+                </form>
+            </div>
         </div>
-
-        <div class="card">
-            <h2>Add one manually</h2>
-            <p class="hint">For a quick single entry.</p>
-            <form method="POST" action="<?php echo e(route('jobs.store')); ?>">
-                <?php echo csrf_field(); ?>
-                <div class="row">
-                    <div><input type="text" name="company" placeholder="Company *" required></div>
-                    <div><input type="text" name="job_title" placeholder="Job title"></div>
-                </div>
-                <div class="row">
-                    <div><input type="text" name="recruiter_name" placeholder="Recruiter name"></div>
-                    <div><input type="email" name="recruiter_email" placeholder="Recruiter email *" required></div>
-                </div>
-                <button type="submit" class="btn btn-ghost" style="margin-top:12px;">Add job</button>
-            </form>
-        </div>
-    </div>
+    </details>
 
     
     <div class="card" style="padding:14px 20px;">
@@ -110,14 +109,14 @@
         </div>
 
         <?php if($jobs->isEmpty()): ?>
-            <div class="empty">No jobs match your filters. Import a CSV or add one above to get started.</div>
+            <div class="empty">No applications yet. <a href="<?php echo e(route('search.index')); ?>">Find Jobs</a> to get started, or import a CSV above.</div>
         <?php else: ?>
             <div style="overflow-x:auto;">
             <table>
                 <thead>
                     <tr>
                         <th>Company / Role</th>
-                        <th>Recruiter</th>
+                        <th>Source</th>
                         <th>Status</th>
                         <th>Pipeline</th>
                         <th>Tracking</th>
@@ -134,10 +133,17 @@
                                 <?php if($job->job_url): ?>
                                     · <a href="<?php echo e($job->job_url); ?>" target="_blank" rel="noopener">link</a>
                                 <?php endif; ?>
+                                <?php if($job->apply_type === 'link' && $job->apply_url): ?>
+                                    · <a href="<?php echo e($job->apply_url); ?>" target="_blank" rel="noopener" style="color:var(--amber);">Apply on portal</a>
+                                <?php endif; ?>
                             </td>
                             <td>
-                                <?php echo e($job->recruiter_name ?: '—'); ?><br>
-                                <span class="muted"><?php echo e($job->recruiter_email); ?></span>
+                                <?php if($job->source): ?>
+                                    <span class="badge queued"><?php echo e($job->source); ?></span>
+                                <?php else: ?>
+                                    <span class="muted"><?php echo e($job->recruiter_name ?: '—'); ?></span><br>
+                                    <span class="muted" style="font-size:11px;"><?php echo e($job->recruiter_email); ?></span>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <span class="badge <?php echo e($job->status); ?>"><?php echo e($job->status); ?></span>

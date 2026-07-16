@@ -29,6 +29,22 @@
                     <label for="location">Location</label>
                     <input type="text" id="location" name="location" value="<?php echo e(old('location', $profile->location)); ?>" placeholder="e.g. New York, NY">
                 </div>
+                <div>
+                    <label for="preferred_role">Preferred Job Role</label>
+                    <input type="text" id="preferred_role" name="preferred_role" value="<?php echo e(old('preferred_role', $profile->preferred_role)); ?>" placeholder="e.g. Software Engineer">
+                </div>
+            </div>
+
+            <label style="margin-top:12px;">Preferred Job Sites</label>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;">
+                <?php $__currentLoopData = \App\Models\Profile::JOB_SITES; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $key => $name): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                    <label style="font-weight:400;display:flex;align-items:center;gap:6px;font-size:14px;">
+                        <input type="checkbox" name="preferred_sites[]" value="<?php echo e($key); ?>" style="width:auto;"
+                               <?php echo e(in_array($key, old('preferred_sites', $profile->preferred_sites ?? [])) ? 'checked' : ''); ?>>
+                        <?php echo e($name); ?>
+
+                    </label>
+                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
             </div>
         </div>
 

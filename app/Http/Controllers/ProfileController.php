@@ -45,6 +45,9 @@ TXT;
             'max_emails_per_hour'=> ['nullable', 'integer', 'min:0', 'max:1000'],
             'followup_days'      => ['nullable', 'integer', 'min:0', 'max:30'],
             'webhook_url'        => ['nullable', 'url', 'max:2048'],
+            'preferred_role'     => ['nullable', 'string', 'max:255'],
+            'preferred_sites'    => ['nullable', 'array'],
+            'preferred_sites.*'  => ['string'],
         ]);
 
         $profile = Profile::current();
@@ -62,6 +65,8 @@ TXT;
             'max_emails_per_hour'=> $data['max_emails_per_hour'] ?? 0,
             'followup_days'      => $data['followup_days'] ?? 0,
             'webhook_url'        => $data['webhook_url'] ?? null,
+            'preferred_role'     => $data['preferred_role'] ?? null,
+            'preferred_sites'    => $data['preferred_sites'] ?? [],
         ]);
 
         if ($request->hasFile('resume')) {

@@ -11,6 +11,17 @@ class Profile extends Model
 
     protected $casts = [
         'send_weekdays_only' => 'boolean',
+        'preferred_sites'    => 'array',
+    ];
+
+    public const JOB_SITES = [
+        'indeed'      => 'Indeed',
+        'linkedin'    => 'LinkedIn',
+        'glassdoor'   => 'Glassdoor',
+        'ziprecruiter'=> 'ZipRecruiter',
+        'dice'        => 'Dice',
+        'monster'     => 'Monster',
+        'careerbuilder' => 'CareerBuilder',
     ];
 
     public function user()

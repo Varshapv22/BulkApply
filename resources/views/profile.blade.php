@@ -31,6 +31,21 @@
                     <label for="location">Location</label>
                     <input type="text" id="location" name="location" value="{{ old('location', $profile->location) }}" placeholder="e.g. New York, NY">
                 </div>
+                <div>
+                    <label for="preferred_role">Preferred Job Role</label>
+                    <input type="text" id="preferred_role" name="preferred_role" value="{{ old('preferred_role', $profile->preferred_role) }}" placeholder="e.g. Software Engineer">
+                </div>
+            </div>
+
+            <label style="margin-top:12px;">Preferred Job Sites</label>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:4px;">
+                @foreach (\App\Models\Profile::JOB_SITES as $key => $name)
+                    <label style="font-weight:400;display:flex;align-items:center;gap:6px;font-size:14px;">
+                        <input type="checkbox" name="preferred_sites[]" value="{{ $key }}" style="width:auto;"
+                               {{ in_array($key, old('preferred_sites', $profile->preferred_sites ?? [])) ? 'checked' : '' }}>
+                        {{ $name }}
+                    </label>
+                @endforeach
             </div>
         </div>
 
