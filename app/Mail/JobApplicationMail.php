@@ -18,16 +18,23 @@ class JobApplicationMail extends Mailable
 
     public string $renderedSubject;
     public string $renderedBody;
+    public ?string $trackingId;
 
     public function __construct(
         public JobApplication $job,
         public Profile $profile,
+        ?string $customSubject = null,
+        ?string $customBody = null,
     ) {
         $this->renderedSubject = $job->renderTemplate(
-            $profile->email_subject ?: 'Application for {job_title} at {company}',
+            $customSubject ?: $profile->email_subject ?: 'Application for {job_title} at {company}',
             $profile
         );
-        $this->renderedBody = $job->renderTemplate($profile->email_body ?: '', $profile);
+        $this->renderedBody = $job->renderTemplate(
+            $customBody ?: $profile->email_body ?: '',
+            $profile
+        );
+        $this->trackingId = $job->tracking_id;
     }
 
     public function envelope(): Envelope

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SendJobApplication;
+use App\Models\EmailTemplate;
 use App\Models\JobApplication;
 use App\Models\Profile;
 use Illuminate\Http\Request;
@@ -11,16 +12,39 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class JobApplicationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        $query = JobApplication::query()
+            ->search($request->input('search'))
+            ->filterStatus($request->input('status'))
+            ->filterPipeline($request->input('pipeline'));
+
+        $sortField = $request->input('sort', 'created_at');
+        $sortDir   = $request->input('dir', 'desc');
+        $allowed   = ['company', 'job_title', 'status', 'pipeline_status', 'created_at', 'sent_at'];
+        if (!in_array($sortField, $allowed)) $sortField = 'created_at';
+        if (!in_array($sortDir, ['asc', 'desc'])) $sortDir = 'desc';
+
+        // Always show active jobs (pending/queued/failed) first, then sent
+        $query->orderByRaw("CASE WHEN status IN ('pending','queued','failed') THEN 0 ELSE 1 END ASC")
+              ->orderBy($sortField, $sortDir);
+
         return view('jobs', [
-            'jobs'    => JobApplication::latest()->get(),
-            'profile' => Profile::current(),
-            'counts'  => [
+            'jobs'      => $query->get(),
+            'profile'   => Profile::current(),
+            'templates' => EmailTemplate::all(),
+            'counts'    => [
                 'total'   => JobApplication::count(),
                 'pending' => JobApplication::whereIn('status', [JobApplication::STATUS_PENDING, JobApplication::STATUS_FAILED])->count(),
                 'sent'    => JobApplication::where('status', JobApplication::STATUS_SENT)->count(),
                 'failed'  => JobApplication::where('status', JobApplication::STATUS_FAILED)->count(),
+            ],
+            'filters' => [
+                'search'   => $request->input('search'),
+                'status'   => $request->input('status'),
+                'pipeline' => $request->input('pipeline'),
+                'sort'     => $sortField,
+                'dir'      => $sortDir,
             ],
         ]);
     }
@@ -43,8 +67,7 @@ class JobApplicationController extends Controller
     }
 
     /**
-     * Import jobs from a CSV. Headers are matched case-insensitively and can use
-     * spaces or underscores (e.g. "Recruiter Email" == recruiter_email).
+     * Import jobs from a CSV with duplicate detection.
      */
     public function import(Request $request)
     {
@@ -63,15 +86,15 @@ class JobApplicationController extends Controller
             return back()->with('error', 'The CSV appears to be empty.');
         }
 
-        // Normalize headers: "Recruiter Email" -> recruiter_email
         $map = [];
         foreach ($header as $i => $col) {
             $key = str_replace(' ', '_', strtolower(trim((string) $col)));
             $map[$i] = $this->aliasColumn($key);
         }
 
-        $imported = 0;
-        $skipped  = 0;
+        $imported   = 0;
+        $skipped    = 0;
+        $duplicates = 0;
 
         while (($row = fgetcsv($handle)) !== false) {
             $record = [];
@@ -81,11 +104,21 @@ class JobApplicationController extends Controller
                 }
             }
 
-            $email = $record['recruiter_email'] ?? null;
+            $email   = $record['recruiter_email'] ?? null;
             $company = $record['company'] ?? null;
 
             if (! $email || ! filter_var($email, FILTER_VALIDATE_EMAIL) || ! $company) {
                 $skipped++;
+                continue;
+            }
+
+            // Duplicate detection: same email + same company
+            $isDuplicate = JobApplication::where('recruiter_email', $email)
+                ->where('company', $company)
+                ->exists();
+
+            if ($isDuplicate) {
+                $duplicates++;
                 continue;
             }
 
@@ -104,15 +137,17 @@ class JobApplicationController extends Controller
 
         fclose($handle);
 
-        return redirect()->route('jobs.index')
-            ->with('status', "Imported {$imported} job(s)." . ($skipped ? " Skipped {$skipped} row(s) missing a company or valid recruiter email." : ''));
+        $msg = "Imported {$imported} job(s).";
+        if ($skipped) $msg .= " Skipped {$skipped} row(s) missing a company or valid recruiter email.";
+        if ($duplicates) $msg .= " Skipped {$duplicates} duplicate(s) (same email + company already exists).";
+
+        return redirect()->route('jobs.index')->with('status', $msg);
     }
 
     /**
-     * Queue a send for every pending/failed job. Guards against sending with no
-     * resume + cover letter uploaded.
+     * Queue sends, optionally using a specific email template.
      */
-    public function send()
+    public function send(Request $request)
     {
         $profile = Profile::current();
 
@@ -126,8 +161,14 @@ class JobApplicationController extends Controller
             return back()->with('error', 'No pending jobs to send.');
         }
 
+        $templateId = $request->input('email_template_id');
+
         foreach ($jobs as $job) {
-            $job->update(['status' => JobApplication::STATUS_QUEUED, 'error' => null]);
+            $updateData = ['status' => JobApplication::STATUS_QUEUED, 'error' => null];
+            if ($templateId) {
+                $updateData['email_template_id'] = $templateId;
+            }
+            $job->update($updateData);
             SendJobApplication::dispatch($job->id);
         }
 
@@ -149,6 +190,49 @@ class JobApplicationController extends Controller
         return back()->with('status', "Application to {$job->company} queued.");
     }
 
+    /**
+     * Update the pipeline status of a job application.
+     */
+    public function updatePipeline(Request $request, JobApplication $job)
+    {
+        $data = $request->validate([
+            'pipeline_status' => ['required', 'in:' . implode(',', array_keys(JobApplication::PIPELINE_STATUSES))],
+        ]);
+
+        $job->update($data);
+
+        return back()->with('status', "Status for {$job->company} updated to {$data['pipeline_status']}.");
+    }
+
+    /**
+     * Preview an email with placeholders filled in.
+     */
+    public function preview(Request $request)
+    {
+        $profile = Profile::current();
+
+        $job = JobApplication::find($request->input('job_id'));
+        if (!$job) {
+            return response()->json(['error' => 'Job not found'], 404);
+        }
+
+        $templateId = $request->input('email_template_id');
+        if ($templateId) {
+            $template = EmailTemplate::find($templateId);
+            $subject = $template ? $template->subject : $profile->email_subject;
+            $body = $template ? $template->body : $profile->email_body;
+        } else {
+            $subject = $profile->email_subject ?: 'Application for {job_title} at {company}';
+            $body = $profile->email_body ?: '';
+        }
+
+        return response()->json([
+            'subject' => $job->renderTemplate($subject, $profile),
+            'body'    => nl2br(e($job->renderTemplate($body, $profile))),
+            'to'      => $job->recruiter_email,
+        ]);
+    }
+
     public function destroy(JobApplication $job)
     {
         $job->delete();
@@ -161,6 +245,37 @@ class JobApplicationController extends Controller
         JobApplication::query()->delete();
 
         return back()->with('status', 'All jobs cleared.');
+    }
+
+    /**
+     * Export all jobs to CSV.
+     */
+    public function export(): StreamedResponse
+    {
+        $columns = [
+            'company', 'job_title', 'recruiter_name', 'recruiter_email',
+            'job_url', 'location', 'notes', 'status', 'pipeline_status',
+            'sent_at', 'opened_at', 'clicked_at', 'followup_count', 'created_at',
+        ];
+
+        return response()->streamDownload(function () use ($columns) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, $columns);
+
+            JobApplication::orderBy('created_at', 'desc')
+                ->chunk(200, function ($jobs) use ($out, $columns) {
+                    foreach ($jobs as $job) {
+                        $row = [];
+                        foreach ($columns as $col) {
+                            $val = $job->{$col};
+                            $row[] = $val instanceof \Carbon\Carbon ? $val->toDateTimeString() : $val;
+                        }
+                        fputcsv($out, $row);
+                    }
+                });
+
+            fclose($out);
+        }, 'applications-export-' . date('Y-m-d') . '.csv', ['Content-Type' => 'text/csv']);
     }
 
     /**
@@ -179,9 +294,6 @@ class JobApplicationController extends Controller
         }, 'jobs-template.csv', ['Content-Type' => 'text/csv']);
     }
 
-    /**
-     * Accept a few friendly aliases for column headers.
-     */
     private function aliasColumn(string $key): ?string
     {
         return match ($key) {
