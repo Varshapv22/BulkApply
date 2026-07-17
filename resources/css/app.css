@@ -218,6 +218,7 @@ input[type=file] { padding: 9px 12px; cursor: pointer; }
 .btn-link { background: none; border: none; color: var(--primary); cursor: pointer; font-size: 13px; padding: 0; font-weight: 600; }
 .btn-link:hover { text-decoration: underline; }
 .btn-sm { padding: 7px 12px; font-size: 12.5px; border-radius: 9px; }
+.btn-lg { padding: 13px 26px; font-size: 15px; border-radius: 12px; margin-top: 18px; }
 .btn:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
 .btn-block { width: 100%; }
 
@@ -385,6 +386,41 @@ tbody tr.selected:hover { background: var(--primary-soft); }
 .empty .empty-ico svg { width: 24px; height: 24px; }
 .empty .empty-title { font-weight: 700; color: var(--heading); font-size: 15px; margin-bottom: 4px; }
 .empty .empty-sub { font-size: 13.5px; line-height: 1.6; max-width: 420px; margin: 0 auto; }
+
+/* ---------- Search page ---------- */
+.search-card { position: relative; overflow: hidden; padding-top: 26px; }
+.search-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--primary-grad); }
+.search-card-head { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+.search-card-ico { width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0; background: var(--primary-grad);
+    color: #fff; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-primary); }
+.search-card-ico svg { width: 22px; height: 22px; }
+
+.input-icon-wrap { position: relative; }
+.input-icon-wrap .input-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px;
+    color: var(--muted); pointer-events: none; }
+.input-icon-wrap input { padding-left: 38px; }
+
+.or-divider { display: flex; align-items: center; gap: 12px; margin: 22px 0 16px; color: var(--muted); font-size: 12px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+.or-divider::before, .or-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.quick-picks { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.quick-pick { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border-strong); background: var(--card-2);
+    color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s; font-family: inherit; }
+.quick-pick:hover { border-color: var(--primary); color: var(--primary); }
+.quick-pick.active { background: var(--primary-grad); border-color: transparent; color: #fff; box-shadow: var(--shadow-primary); }
+
+.search-options-row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; margin: 22px 0 4px;
+    padding: 16px 18px; background: var(--card-2); border: 1px solid var(--border); border-radius: 13px; }
+
+.switch-row { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+.switch { width: 38px; height: 22px; border-radius: 20px; background: var(--hover-strong); position: relative;
+    flex-shrink: 0; transition: background .18s; border: 1px solid var(--border-strong); }
+.switch .knob { position: absolute; top: 1px; left: 1px; width: 18px; height: 18px; border-radius: 50%; background: #fff;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .18s; }
+.switch.on { background: var(--primary-grad); border-color: transparent; }
+.switch.on .knob { transform: translateX(16px); }
+.switch-txt { font-size: 13.5px; font-weight: 600; color: var(--text); }
 
 /* ---------- Resume ATS check ---------- */
 .ats-head { display: flex; gap: 30px; align-items: center; flex-wrap: wrap; }

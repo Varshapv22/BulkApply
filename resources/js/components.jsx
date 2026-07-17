@@ -26,6 +26,9 @@ export const Icons = {
     mail: <><rect x="2" y="4" width="20" height="16" rx="2" />{P('m22 7-10 5L2 7')}</>,
     globe: <><circle cx="12" cy="12" r="9" />{P('M3 12h18')}{P('M12 3a15 15 0 0 1 0 18')}{P('M12 3a15 15 0 0 0 0 18')}</>,
     search: <><circle cx="11" cy="11" r="7" />{P('m21 21-4.35-4.35')}</>,
+    pin: <>{P('M12 21s-7-7.33-7-12a7 7 0 0 1 14 0c0 4.67-7 12-7 12z')}<circle cx="12" cy="9" r="2.5" /></>,
+    building: <><rect x="4" y="3" width="16" height="18" rx="1" />{P('M9 21v-4h6v4')}{P('M9 7h1')}{P('M14 7h1')}{P('M9 11h1')}{P('M14 11h1')}{P('M9 15h1')}{P('M14 15h1')}</>,
+    sparkle: <>{P('M12 3v3')}{P('M12 18v3')}{P('M3 12h3')}{P('M18 12h3')}{P('m5.6 5.6 2.1 2.1')}{P('m16.3 16.3 2.1 2.1')}{P('m5.6 18.4 2.1-2.1')}{P('m16.3 7.7 2.1-2.1')}</>,
 };
 
 export function Spinner({ dark = false, size = 16 }) {
