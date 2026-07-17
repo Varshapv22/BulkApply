@@ -219,12 +219,17 @@ class SiteJobService
         }
 
         $link = $jp['url'] ?: $pageUrl;
+        // The site the candidate pasted is itself the company website.
+        $website = 'https://' . $host;
 
         return [
             'company'         => $jp['company'] ?: $host,
             'job_title'       => $jp['title'] ?: 'Unknown',
             'location'        => $jp['location'] ?: '',
             'recruiter_email' => $email,
+            'company_email'   => $email,
+            'company_website' => $website,
+            'company_phone'   => null,
             'job_url'         => $link,
             'apply_url'       => $link,
             'source'          => $host,

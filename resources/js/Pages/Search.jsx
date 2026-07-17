@@ -9,6 +9,7 @@ function SearchForm({ profile }) {
         site: '',
         sort_by: 'relevance',
         full_time: false,
+        find_contacts: true,
     });
 
     const hasSite = data.site.trim() !== '';
@@ -64,6 +65,12 @@ function SearchForm({ profile }) {
                             <label className="inline" style={{ height: 42 }}>
                                 <input type="checkbox" checked={data.full_time} onChange={(e) => setData('full_time', e.target.checked)} />
                                 Full-time only
+                            </label>
+                        </div>
+                        <div>
+                            <label className="inline" style={{ height: 42 }}>
+                                <input type="checkbox" checked={data.find_contacts} onChange={(e) => setData('find_contacts', e.target.checked)} />
+                                Find company emails <span className="muted" style={{ fontSize: 12 }}>(slower)</span>
                             </label>
                         </div>
                     </div>
@@ -140,7 +147,7 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                                                 <input type="checkbox" checked={selected.size === results.length}
                                                     onChange={toggleAll} />
                                             </th>
-                                            <th>Job</th><th>Company</th><th>Location</th><th>Source</th><th>Apply Via</th>
+                                            <th>Role</th><th>Company</th><th>Location</th><th>Company email</th><th>Website</th><th>Apply Via</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -149,7 +156,7 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                                                 <td><input type="checkbox" checked={selected.has(i)} onChange={() => toggle(i)} /></td>
                                                 <td>
                                                     <strong>{job.job_title}</strong>
-                                                    {job.description && <><br /><span className="muted" style={{ fontSize: 12 }}>{job.description}</span></>}
+                                                    <br /><span className="muted" style={{ fontSize: 11 }}>{job.source}</span>
                                                 </td>
                                                 <td>
                                                     {job.employer_logo && (
@@ -158,7 +165,16 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                                                     {job.company}
                                                 </td>
                                                 <td>{job.location || '—'}</td>
-                                                <td><Badge status="queued">{job.source}</Badge></td>
+                                                <td>
+                                                    {job.company_email
+                                                        ? <a href={`mailto:${job.company_email}`} style={{ fontSize: 12.5 }}>{job.company_email}</a>
+                                                        : <span className="muted">—</span>}
+                                                </td>
+                                                <td>
+                                                    {job.company_website
+                                                        ? <a href={job.company_website} target="_blank" rel="noopener" style={{ fontSize: 12.5 }}>{job.company_website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</a>
+                                                        : <span className="muted">—</span>}
+                                                </td>
                                                 <td>
                                                     {job.apply_type === 'email'
                                                         ? <Badge status="sent"><span title={job.recruiter_email}>Email</span></Badge>

@@ -36,8 +36,9 @@ class JobSearchController extends Controller
             'role'      => ['required_without:site', 'nullable', 'string', 'max:255'],
             'location'  => ['nullable', 'string', 'max:255'],
             'site'      => ['nullable', 'string', 'max:2048'],
-            'sort_by'   => ['nullable', 'in:relevance,date,salary'],
-            'full_time' => ['nullable', 'boolean'],
+            'sort_by'       => ['nullable', 'in:relevance,date,salary'],
+            'full_time'     => ['nullable', 'boolean'],
+            'find_contacts' => ['nullable', 'boolean'],
         ]);
 
         $role = trim($data['role'] ?? '');
@@ -55,8 +56,9 @@ class JobSearchController extends Controller
         }
 
         $adzunaOpts = [
-            'sort_by'   => $data['sort_by'] ?? 'relevance',
-            'full_time' => $request->boolean('full_time'),
+            'sort_by'       => $data['sort_by'] ?? 'relevance',
+            'full_time'     => $request->boolean('full_time'),
+            'find_contacts' => $request->boolean('find_contacts'),
         ];
 
         if ($site !== '') {

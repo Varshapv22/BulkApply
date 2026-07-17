@@ -35,6 +35,9 @@ class HandleInertiaRequests extends Middleware
                 'status' => fn () => $request->session()->get('status'),
                 'error'  => fn () => $request->session()->get('error'),
             ],
+            // The address applications are sent FROM — used to open the correct
+            // Gmail account (via ?authuser=) regardless of the browser's default.
+            'mailFrom' => config('mail.from.address'),
         ]);
     }
 }
