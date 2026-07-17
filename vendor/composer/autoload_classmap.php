@@ -33,6 +33,7 @@ return array(
     'App\\Services\\JobSearchService' => $baseDir . '/app/Services/JobSearchService.php',
     'App\\Services\\ResumeAtsAnalyzer' => $baseDir . '/app/Services/ResumeAtsAnalyzer.php',
     'App\\Services\\SiteJobService' => $baseDir . '/app/Services/SiteJobService.php',
+    'App\\Services\\SkillExtractor' => $baseDir . '/app/Services/SkillExtractor.php',
     'App\\Services\\TechnoparkJobService' => $baseDir . '/app/Services/TechnoparkJobService.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
     'Brick\\Math\\BigDecimal' => $vendorDir . '/brick/math/src/BigDecimal.php',

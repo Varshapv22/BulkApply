@@ -7,6 +7,7 @@ use App\Models\JobApplication;
 use App\Models\Profile;
 use App\Services\JobSearchService;
 use App\Services\SiteJobService;
+use App\Services\SkillExtractor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -93,14 +94,38 @@ class JobSearchController extends Controller
             $result = $service->search($role, $data['location'] ?? '', $adzunaOpts, 30);
         }
 
+        $jobs = $this->attachSkills($result['jobs'], $profile->skills ?? '');
+
         return Inertia::render('Search', [
             'profile'      => $this->profileProps($profile),
             'jobSites'     => Profile::JOB_SITES,
-            'results'      => $result['jobs'],
+            'results'      => $jobs,
             'searched'     => true,
             'searchError'  => $result['error'],
             'hasDocuments' => $profile->hasDocuments(),
         ]);
+    }
+
+    /**
+     * Detect skills mentioned in each job (from title + description) and mark
+     * which ones overlap with the candidate's own skill list, regardless of
+     * which source the job came from (Adzuna, a tech park, or a scraped site).
+     */
+    private function attachSkills(array $jobs, string $candidateSkillsRaw): array
+    {
+        $extractor = new SkillExtractor();
+        $candidateSkills = $extractor->parseCandidateSkills($candidateSkillsRaw);
+
+        foreach ($jobs as &$job) {
+            $text = ($job['job_title'] ?? '') . ' ' . ($job['description'] ?? '');
+            $jobSkills = $extractor->extract($text);
+            $match = $extractor->matchAgainst($jobSkills, $candidateSkills);
+
+            $job['skills_matched'] = $match['matched'];
+            $job['skills_other']   = $match['other'];
+        }
+
+        return $jobs;
     }
 
     /**
@@ -131,6 +156,8 @@ class JobSearchController extends Controller
             'preferred_role'  => $profile->preferred_role,
             'location'        => $profile->location,
             'preferred_sites' => $profile->preferred_sites ?? [],
+            'skills'          => $profile->skills,
+            'has_skills'      => filled($profile->skills),
         ];
     }
 

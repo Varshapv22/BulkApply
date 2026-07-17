@@ -336,14 +336,33 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
     .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); backdrop-filter: blur(2px); z-index: 45; }
 }
 
-/* ---------- Pipeline stage pills (colored select) ---------- */
-.pipe-select { width: auto; padding: 5px 30px 5px 12px; font-size: 12px; font-weight: 700; border-radius: 20px;
-    border-color: transparent; }
-.pipe-select.pipe-applied   { background-color: var(--primary-soft); color: var(--primary); }
-.pipe-select.pipe-replied   { background-color: var(--blue-bg);  color: var(--blue); }
-.pipe-select.pipe-interview { background-color: var(--amber-bg); color: var(--amber); }
-.pipe-select.pipe-rejected  { background-color: var(--red-bg);   color: var(--red); }
-.pipe-select.pipe-offer     { background-color: var(--green-bg); color: var(--green); }
+/* ---------- Pipeline stage dropdown ---------- */
+.pipe-dd { position: relative; display: inline-block; }
+.pipe-trigger { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px 6px 12px; border-radius: 20px;
+    border: 1px solid transparent; font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+    transition: filter .13s, box-shadow .13s; white-space: nowrap; }
+.pipe-trigger:hover { filter: brightness(.96); }
+.pipe-trigger svg:first-child { width: 13px; height: 13px; flex-shrink: 0; }
+.pipe-chevron { width: 11px; height: 11px; margin-left: 1px; opacity: .6; flex-shrink: 0; }
+
+.pipe-applied   { background: var(--primary-soft); color: var(--primary); }
+.pipe-replied   { background: var(--blue-bg);  color: var(--blue); }
+.pipe-interview { background: var(--amber-bg); color: var(--amber); }
+.pipe-rejected  { background: var(--red-bg);   color: var(--red); }
+.pipe-offer     { background: var(--green-bg); color: var(--green); }
+
+.pipe-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; min-width: 178px; padding: 6px;
+    background: var(--card); border: 1px solid var(--border); border-radius: 13px; box-shadow: var(--shadow-lg);
+    animation: fadeUp .14s ease both; }
+.pipe-opt { width: 100%; display: flex; align-items: center; gap: 9px; padding: 8px 9px; border-radius: 9px;
+    border: none; background: transparent; font-family: inherit; font-size: 13px; font-weight: 600; color: var(--text);
+    cursor: pointer; text-align: left; transition: background .12s; }
+.pipe-opt:hover { background: var(--hover); }
+.pipe-opt.active { color: var(--heading); }
+.pipe-opt-ico { width: 24px; height: 24px; border-radius: 7px; display: inline-flex; align-items: center;
+    justify-content: center; flex-shrink: 0; }
+.pipe-opt-ico svg { width: 12px; height: 12px; }
+.pipe-opt-check { width: 14px; height: 14px; margin-left: auto; color: var(--primary); flex-shrink: 0; }
 
 /* ---------- Table extras ---------- */
 .co-cell { display: flex; align-items: center; gap: 11px; min-width: 0; }
@@ -351,7 +370,7 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
     justify-content: center; font-size: 13px; font-weight: 800; color: var(--primary);
     background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent); }
 .cell-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; font-size: 12px;
-    font-weight: 600; background: var(--hover); color: var(--text); max-width: 200px; overflow: hidden;
+    font-weight: 600; background: var(--hover); color: var(--text); max-width: 150px; overflow: hidden;
     text-overflow: ellipsis; white-space: nowrap; text-decoration: none; border: 1px solid var(--border); transition: all .13s; }
 .cell-chip:hover { border-color: var(--primary); color: var(--primary); text-decoration: none; background: var(--primary-soft); }
 .cell-chip svg { width: 12px; height: 12px; flex-shrink: 0; opacity: .7; }
@@ -421,6 +440,21 @@ tbody tr.selected:hover { background: var(--primary-soft); }
 .switch.on { background: var(--primary-grad); border-color: transparent; }
 .switch.on .knob { transform: translateX(16px); }
 .switch-txt { font-size: 13.5px; font-weight: 600; color: var(--text); }
+
+/* ---------- Skills bar (Find Jobs page) ---------- */
+.skills-bar { display: flex; align-items: center; gap: 12px; padding: 12px 18px; margin-bottom: 22px;
+    background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent);
+    border-radius: 13px; font-size: 13px; color: var(--text); flex-wrap: wrap; }
+.skills-bar > svg { width: 17px; height: 17px; color: var(--primary); flex-shrink: 0; }
+.skills-bar-label { font-weight: 600; white-space: nowrap; }
+.skills-bar-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ---------- Skill chips (Find Jobs results) ---------- */
+.skill-chips { display: flex; flex-wrap: wrap; gap: 4px; max-width: 170px; }
+.skill-chip { display: inline-flex; align-items: center; padding: 3px 9px; border-radius: 20px; font-size: 11px;
+    font-weight: 600; background: var(--hover); color: var(--muted); border: 1px solid var(--border); white-space: nowrap; }
+.skill-chip.matched { background: var(--green-bg); color: var(--green); border-color: transparent; }
+.skill-chip.more { background: transparent; color: var(--muted); border-style: dashed; }
 
 /* ---------- Resume ATS check ---------- */
 .ats-head { display: flex; gap: 30px; align-items: center; flex-wrap: wrap; }

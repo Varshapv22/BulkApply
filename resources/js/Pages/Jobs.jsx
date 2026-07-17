@@ -1,10 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
 import { PageHead, Stat, Badge, Icons, EmptyState } from '../components';
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
     return match ? decodeURIComponent(match[2]) : '';
+}
+
+const PIPELINE_ICONS = {
+    applied: Icons.send, replied: Icons.chat, interview: Icons.calendar,
+    offer: Icons.trophy, rejected: Icons.xCircle,
+};
+
+function PipelineDropdown({ value, labels, onChange }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    const current = value || 'applied';
+
+    useEffect(() => {
+        const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', onDoc);
+        return () => document.removeEventListener('mousedown', onDoc);
+    }, []);
+
+    const pick = (key) => { onChange(key); setOpen(false); };
+
+    return (
+        <div className="pipe-dd" ref={ref}>
+            <button type="button" className={`pipe-trigger pipe-${current}`} onClick={() => setOpen((o) => !o)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    {PIPELINE_ICONS[current] || Icons.send}
+                </svg>
+                {labels[current] || current}
+                <svg className="pipe-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    {Icons.chevronDown}
+                </svg>
+            </button>
+            {open && (
+                <div className="pipe-menu">
+                    {Object.entries(labels).map(([key, label]) => (
+                        <button type="button" key={key} className={`pipe-opt${key === current ? ' active' : ''}`} onClick={() => pick(key)}>
+                            <span className={`pipe-opt-ico pipe-${key}`}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                    {PIPELINE_ICONS[key] || Icons.send}
+                                </svg>
+                            </span>
+                            {label}
+                            {key === current && (
+                                <svg className="pipe-opt-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    {Icons.check}
+                                </svg>
+                            )}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
 }
 
 function ImportAndAdd() {
@@ -235,10 +287,8 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                                                 <><br /><span className="muted" style={{ fontSize: 11 }} title={job.error}>{job.error_short}</span></>}
                                         </td>
                                         <td>
-                                            <select value={job.pipeline_status || 'applied'} onChange={(e) => updatePipeline(job.id, e.target.value)}
-                                                className={`pipe-select pipe-${job.pipeline_status || 'applied'}`}>
-                                                {Object.entries(pipelineLabels).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-                                            </select>
+                                            <PipelineDropdown value={job.pipeline_status} labels={pipelineLabels}
+                                                onChange={(v) => updatePipeline(job.id, v)} />
                                         </td>
                                         <td className="muted" style={{ fontSize: 12 }}>
                                             {job.opened_at && <span style={{ color: 'var(--green)' }} title={`Opened ${job.opened_at}`}>Opened<br /></span>}
