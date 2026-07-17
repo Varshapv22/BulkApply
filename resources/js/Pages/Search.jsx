@@ -32,6 +32,32 @@ function SearchingCard({ findContacts }) {
     );
 }
 
+const QUICK_SITES = ['Technopark', 'Infopark', 'Cyberpark', 'Indeed', 'Naukri', 'LinkedIn'];
+
+function IconField({ icon, ...props }) {
+    return (
+        <div className="input-icon-wrap">
+            <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {icon}
+            </svg>
+            <input {...props} />
+        </div>
+    );
+}
+
+function Switch({ checked, onChange, label, hint }) {
+    return (
+        <label className="switch-row">
+            <span className={`switch${checked ? ' on' : ''}`} onClick={() => onChange(!checked)}>
+                <span className="knob" />
+            </span>
+            <span className="switch-txt">
+                {label} {hint && <span className="muted" style={{ fontSize: 12, fontWeight: 400 }}>{hint}</span>}
+            </span>
+        </label>
+    );
+}
+
 function SearchForm({ profile, onSearching }) {
     const { data, setData, post, processing } = useForm({
         role: profile.preferred_role || '',
@@ -54,40 +80,58 @@ function SearchForm({ profile, onSearching }) {
     };
 
     return (
-        <div className="card">
-            <h2>Search Criteria</h2>
-            <p className="hint">
-                Search a role across the web, or paste a specific careers-site URL (or company name)
-                to pull jobs from that site.
-            </p>
+        <div className="card search-card">
+            <div className="search-card-head">
+                <span className="search-card-ico"><ChipIcon icon={Icons.sparkle} /></span>
+                <div>
+                    <h2 style={{ margin: 0 }}>Find your next role</h2>
+                    <p className="hint" style={{ margin: '3px 0 0' }}>
+                        Search a role across the web, or jump straight to a tech park / platform below.
+                    </p>
+                </div>
+            </div>
+
             <form onSubmit={submit}>
                 <div className="row">
                     <div style={{ flex: 2 }}>
                         <label>Job Role / Title {hasSite ? '' : '*'}</label>
-                        <input type="text" required={!hasSite} value={data.role} onChange={(e) => setData('role', e.target.value)}
+                        <IconField icon={Icons.briefcase} type="text" required={!hasSite} value={data.role}
+                            onChange={(e) => setData('role', e.target.value)}
                             placeholder="e.g. Software Engineer, Data Analyst, Product Manager" />
                     </div>
                     <div>
                         <label>Location</label>
-                        <input type="text" value={data.location} onChange={(e) => setData('location', e.target.value)}
+                        <IconField icon={Icons.pin} type="text" value={data.location}
+                            onChange={(e) => setData('location', e.target.value)}
                             placeholder="e.g. Kerala, New York, Remote" />
                     </div>
                 </div>
 
+                <div className="or-divider"><span>or search a specific site</span></div>
+
                 <div>
                     <label>Job site, platform or company <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                    <input type="text" value={data.site} onChange={(e) => setData('site', e.target.value)}
+                    <IconField icon={Icons.building} type="text" value={data.site}
+                        onChange={(e) => setData('site', e.target.value)}
                         placeholder="e.g. Technopark, Infopark, Cyberpark, Indeed, Naukri, or a careers-page URL" />
-                    <p className="hint" style={{ margin: '6px 0 0' }}>
-                        Type a Kerala tech park (Technopark, Infopark, Cyberpark) to pull its live listings, a platform
-                        (Indeed, Naukri, LinkedIn…) or company for aggregated results, or paste a careers-page URL.
-                        Leave blank to search across the web.
+                    <div className="quick-picks">
+                        {QUICK_SITES.map((s) => (
+                            <button type="button" key={s}
+                                className={`quick-pick${data.site === s ? ' active' : ''}`}
+                                onClick={() => setData('site', data.site === s ? '' : s)}>
+                                {s}
+                            </button>
+                        ))}
+                    </div>
+                    <p className="hint" style={{ margin: '10px 0 0' }}>
+                        Tech parks (Technopark, Infopark, Cyberpark) pull live listings directly; platforms and
+                        company names pull matching results from across the web. Leave blank to search everywhere.
                     </p>
                 </div>
 
                 {!hasSite && (
-                    <div className="row" style={{ marginTop: 8, alignItems: 'flex-end' }}>
-                        <div>
+                    <div className="search-options-row">
+                        <div style={{ minWidth: 180 }}>
                             <label>Sort by</label>
                             <select value={data.sort_by} onChange={(e) => setData('sort_by', e.target.value)}>
                                 <option value="relevance">Relevance</option>
@@ -95,24 +139,15 @@ function SearchForm({ profile, onSearching }) {
                                 <option value="salary">Highest salary</option>
                             </select>
                         </div>
-                        <div>
-                            <label className="inline" style={{ height: 42 }}>
-                                <input type="checkbox" checked={data.full_time} onChange={(e) => setData('full_time', e.target.checked)} />
-                                Full-time only
-                            </label>
-                        </div>
-                        <div>
-                            <label className="inline" style={{ height: 42 }}>
-                                <input type="checkbox" checked={data.find_contacts} onChange={(e) => setData('find_contacts', e.target.checked)} />
-                                Find company emails <span className="muted" style={{ fontSize: 12 }}>(slower)</span>
-                            </label>
-                        </div>
+                        <Switch checked={data.full_time} onChange={(v) => setData('full_time', v)} label="Full-time only" />
+                        <Switch checked={data.find_contacts} onChange={(v) => setData('find_contacts', v)}
+                            label="Find company emails" hint="(slower)" />
                     </div>
                 )}
 
-                <button type="submit" className="btn btn-primary" style={{ marginTop: 16 }} disabled={processing}>
+                <button type="submit" className="btn btn-primary btn-lg" disabled={processing}>
                     {processing ? <><Spinner /> Searching…</> : <>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                             {Icons.search}
                         </svg>
                         Search Jobs
