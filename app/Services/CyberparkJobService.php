@@ -50,11 +50,58 @@ class CyberparkJobService
                 }
             }
 
+            $this->enrichContacts($jobs);
+
             return ['jobs' => $jobs, 'error' => null];
 
         } catch (\Throwable $e) {
             Log::error('Cyberpark fetch failed', ['error' => $e->getMessage()]);
             return ['jobs' => [], 'error' => 'Could not fetch Cyberpark jobs: ' . $e->getMessage()];
+        }
+    }
+
+    /**
+     * Fetch each job page concurrently and pull the WP Job Manager application
+     * email (entity-encoded mailto) and the company website link.
+     */
+    private function enrichContacts(array &$jobs): void
+    {
+        $targets = array_keys($jobs);
+        if (empty($targets)) {
+            return;
+        }
+
+        try {
+            $responses = Http::pool(fn ($pool) => array_map(
+                fn ($i) => $pool->as((string) $i)->timeout(15)
+                    ->withHeaders(['User-Agent' => self::UA])->get($jobs[$i]['job_url']),
+                $targets
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('Cyberpark enrich failed', ['error' => $e->getMessage()]);
+            return;
+        }
+
+        foreach ($targets as $i) {
+            $resp = $responses[(string) $i] ?? null;
+            if (!$resp || $resp instanceof \Throwable || !$resp->ok()) {
+                continue;
+            }
+            $html = $resp->body();
+
+            // Application email — inside a mailto link, HTML-entity encoded.
+            if (preg_match('/href="mailto:([^"?]+)/i', $html, $m)) {
+                $email = html_entity_decode($m[1], ENT_QUOTES);
+                if (filter_var($email, FILTER_VALIDATE_EMAIL) && !str_contains(strtolower($email), 'cyberparks.in')) {
+                    $jobs[$i]['company_email']   = $email;
+                    $jobs[$i]['recruiter_email'] = $email;
+                    $jobs[$i]['apply_type']      = 'email';
+                }
+            }
+            // Company website — <a class="website" href="...">.
+            if (preg_match('/class="website"[^>]*href="(https?:\/\/[^"]+)"/i', $html, $m)) {
+                $jobs[$i]['company_website'] = $m[1];
+            }
         }
     }
 
@@ -138,6 +185,9 @@ class CyberparkJobService
             'job_title'       => $item['title'] ?: 'Unknown',
             'location'        => 'Cyberpark, Kozhikode, Kerala',
             'recruiter_email' => $email,
+            'company_email'   => $email,
+            'company_website' => null,
+            'company_phone'   => null,
             'job_url'         => $item['link'],
             'apply_url'       => $item['link'],
             'source'          => 'Cyberpark',

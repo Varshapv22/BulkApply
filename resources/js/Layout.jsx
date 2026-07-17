@@ -102,6 +102,10 @@ export default function Layout({ children }) {
     const user = props.auth?.user;
     const flash = props.flash || {};
     const errors = props.errors || {};
+    // Open the Gmail account we actually send FROM (not the browser default).
+    const gmailSentUrl = props.mailFrom
+        ? `https://mail.google.com/mail/u/?authuser=${encodeURIComponent(props.mailFrom)}#sent`
+        : 'https://mail.google.com/mail/u/0/#sent';
     const [theme, toggleTheme] = useTheme();
     const [open, setOpen] = useState(false);
 
@@ -132,8 +136,8 @@ export default function Layout({ children }) {
                         </Link>
                     ))}
                     <div className="sidebar-section">Tools</div>
-                    <a className="nav-item" href="http://localhost:8025" target="_blank" rel="noopener">
-                        <Icon name="mail" /> Mailpit ↗
+                    <a className="nav-item" href={gmailSentUrl} target="_blank" rel="noopener">
+                        <Icon name="mail" /> Gmail — Sent ↗
                     </a>
                 </nav>
                 <div className="sidebar-footer">

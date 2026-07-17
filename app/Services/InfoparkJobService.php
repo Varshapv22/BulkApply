@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Log;
 class InfoparkJobService
 {
     private const BASE = 'https://infopark.in/companies-job';
-    private const MAX_PAGES = 15; // ~300 most-recent jobs scanned
+    private const MAX_PAGES = 15;  // ~300 most-recent jobs scanned
+    private const MAX_ENRICH = 24; // detail pages fetched per search (concurrent)
     private const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
 
     /**
@@ -59,12 +60,89 @@ class InfoparkJobService
                 }
             }
 
+            $this->enrichContacts($jobs);
+
             return ['jobs' => $jobs, 'error' => null];
 
         } catch (\Throwable $e) {
             Log::error('Infopark scrape failed', ['error' => $e->getMessage()]);
             return ['jobs' => [], 'error' => 'Could not fetch Infopark jobs: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Fetch each job's detail page concurrently and extract the company's
+     * application email (mentioned in the description) and website (derived
+     * from the email domain, or an external link on the page).
+     */
+    private function enrichContacts(array &$jobs): void
+    {
+        $targets = array_slice(array_keys($jobs), 0, self::MAX_ENRICH);
+        if (empty($targets)) {
+            return;
+        }
+
+        try {
+            $responses = Http::pool(fn ($pool) => array_map(
+                fn ($i) => $pool->as((string) $i)->timeout(15)
+                    ->withHeaders(['User-Agent' => self::UA])->get($jobs[$i]['job_url']),
+                $targets
+            ));
+        } catch (\Throwable $e) {
+            Log::warning('Infopark enrich failed', ['error' => $e->getMessage()]);
+            return;
+        }
+
+        foreach ($targets as $i) {
+            $resp = $responses[(string) $i] ?? null;
+            if (!$resp || $resp instanceof \Throwable || !$resp->ok()) {
+                continue;
+            }
+            [$email, $website] = $this->extractContact($resp->body());
+            if ($email) {
+                $jobs[$i]['company_email']   = $email;
+                $jobs[$i]['recruiter_email'] = $email;
+                $jobs[$i]['apply_type']      = 'email';
+            }
+            if ($website) {
+                $jobs[$i]['company_website'] = $website;
+            }
+        }
+    }
+
+    /**
+     * @return array{0: ?string, 1: ?string} [email, website]
+     */
+    private function extractContact(string $html): array
+    {
+        $text = strip_tags($html);
+
+        $email = null;
+        if (preg_match_all('/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/', $text, $m)) {
+            foreach ($m[0] as $candidate) {
+                // Skip Infopark's own contact address — we want the company's.
+                if (!str_contains(strtolower($candidate), 'infopark.in')) {
+                    $email = $candidate;
+                    break;
+                }
+            }
+        }
+
+        // The company website is most reliably the email's domain.
+        $website = null;
+        if ($email) {
+            $domain = strtolower(substr(strrchr($email, '@'), 1));
+            $freeMail = ['gmail', 'yahoo', 'outlook', 'hotmail', 'rediff', 'live.com', 'icloud'];
+            $isFree = false;
+            foreach ($freeMail as $f) {
+                if (str_contains($domain, $f)) { $isFree = true; break; }
+            }
+            if ($domain && !$isFree && !str_contains($domain, 'infopark')) {
+                $website = 'https://' . $domain;
+            }
+        }
+
+        return [$email, $website];
     }
 
     /**
@@ -140,6 +218,9 @@ class InfoparkJobService
             'job_title'       => $row['title'] ?: 'Unknown',
             'location'        => 'Infopark, Kochi, Kerala',
             'recruiter_email' => null,
+            'company_email'   => null,
+            'company_website' => null,
+            'company_phone'   => null,
             'job_url'         => $row['url'],
             'apply_url'       => $row['url'],
             'source'          => 'Infopark',

@@ -78,6 +78,12 @@ class JobSearchService
                 $jobs[] = $this->normalizeJob($item);
             }
 
+            // Best-effort: find a real company email/website for jobs that arrived
+            // without one, by probing the company's own site.
+            if (($options['find_contacts'] ?? true) && !empty($jobs)) {
+                (new CompanyContactFinder())->enrich($jobs);
+            }
+
             return ['jobs' => $jobs, 'error' => null];
 
         } catch (\Throwable $e) {
@@ -98,6 +104,7 @@ class JobSearchService
         if (preg_match('/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/', $description, $m)) {
             $email = $m[0];
         }
+        $website = $this->websiteFromEmail($email);
 
         $applyLink = $item['redirect_url'] ?? '';
         $company   = $item['company']['display_name'] ?? 'Unknown';
@@ -108,6 +115,9 @@ class JobSearchService
             'job_title'       => trim(strip_tags($item['title'] ?? 'Unknown')),
             'location'        => $location,
             'recruiter_email' => $email,
+            'company_email'   => $email,
+            'company_website' => $website,
+            'company_phone'   => null,
             'job_url'         => $applyLink,
             'apply_url'       => $applyLink,
             'source'          => 'Adzuna',
@@ -116,5 +126,20 @@ class JobSearchService
             'posted'          => $item['created'] ?? null,
             'employer_logo'   => null,
         ];
+    }
+
+    /** Derive a company website from an email domain (skips free-mail providers). */
+    private function websiteFromEmail(?string $email): ?string
+    {
+        if (!$email || !str_contains($email, '@')) {
+            return null;
+        }
+        $domain = strtolower(substr(strrchr($email, '@'), 1));
+        foreach (['gmail', 'yahoo', 'outlook', 'hotmail', 'rediff', 'live.com', 'icloud', 'protonmail'] as $free) {
+            if (str_contains($domain, $free)) {
+                return null;
+            }
+        }
+        return $domain ? 'https://' . $domain : null;
     }
 }

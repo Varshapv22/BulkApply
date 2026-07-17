@@ -135,13 +135,13 @@ a:hover { text-decoration: underline; }
 .main { flex: 1; margin-left: 256px; display: flex; flex-direction: column; min-width: 0; }
 .topbar {
     height: 66px; background: color-mix(in srgb, var(--card) 80%, transparent); backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; padding: 0 30px;
+    border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; padding: 0 44px;
     position: sticky; top: 0; z-index: 40;
 }
 .topbar .page-title { font-size: 15px; font-weight: 700; color: var(--heading); letter-spacing: -.01em; }
 .topbar .spacer { flex: 1; }
 .hamburger { display: none; background: none; border: none; color: var(--text); font-size: 22px; cursor: pointer; }
-.content { padding: 32px; max-width: 1240px; width: 100%; margin: 0 auto; animation: fadeUp .35s ease both; }
+.content { padding: 30px 44px; max-width: 1600px; width: 100%; margin: 0 auto; animation: fadeUp .35s ease both; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 .page-head { margin-bottom: 26px; }
