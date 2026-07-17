@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useForm } from '@inertiajs/react';
-import { PageHead } from '../components';
+import { PageHead, IconField, Icons, ChipIcon } from '../components';
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -26,6 +26,10 @@ export default function Profile({ profile, jobSites, defaultBody }) {
         max_emails_per_hour: profile.max_emails_per_hour ?? 0,
         followup_days: profile.followup_days ?? 0,
         webhook_url: profile.webhook_url || '',
+        mail_username: profile.mail_username || '',
+        mail_password: '',
+        mail_from_name: profile.mail_from_name || '',
+        mail_disconnect: false,
         resume: null,
         cover_letter: null,
     });
@@ -140,6 +144,72 @@ export default function Profile({ profile, jobSites, defaultBody }) {
                     <button type="button" className="btn btn-ghost btn-sm" onClick={parseResume} disabled={parsing}>Auto-fill from resume</button>
                     <span className="muted" style={{ fontSize: 12, marginLeft: 8 }}>{parseStatus}</span>
                 </div>
+            </div>
+
+            <div className="card hero-card">
+                <div className="hero-card-head">
+                    <span className="hero-card-ico"><ChipIcon icon={Icons.mail} /></span>
+                    <div>
+                        <h2 style={{ margin: 0 }}>Email Sending</h2>
+                        <p className="hint" style={{ margin: '3px 0 0' }}>
+                            Applications send through YOUR OWN Gmail — never a shared account. Your App Password
+                            is encrypted and only ever used to send on your behalf.
+                        </p>
+                    </div>
+                </div>
+
+                {profile.mail_connected && !data.mail_disconnect ? (
+                    <div className="mail-status mail-status-connected">
+                        <ChipIcon icon={Icons.check} />
+                        Connected as <strong>{profile.mail_username}</strong>
+                        <button type="button" className="btn-link" style={{ marginLeft: 'auto', color: 'var(--red)' }}
+                            onClick={() => setData('mail_disconnect', true)}>
+                            Disconnect
+                        </button>
+                    </div>
+                ) : (
+                    <>
+                        {data.mail_disconnect ? (
+                            <div className="mail-status mail-status-pending">
+                                Will disconnect <strong>{profile.mail_username}</strong> when you save.
+                                <button type="button" className="btn-link" style={{ marginLeft: 'auto' }}
+                                    onClick={() => setData('mail_disconnect', false)}>
+                                    Cancel
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="mail-status mail-status-off">
+                                <ChipIcon icon={Icons.alert} />
+                                Not connected — applications can't be emailed until you connect an account below.
+                            </div>
+                        )}
+
+                        <div className="row" style={{ marginTop: 14 }}>
+                            <IconField icon={Icons.mail} type="email" placeholder="yourname@gmail.com"
+                                value={data.mail_username} onChange={(e) => setData('mail_username', e.target.value)} />
+                            <IconField icon={Icons.tag} type="password" autoComplete="new-password"
+                                placeholder="16-character App Password"
+                                value={data.mail_password} onChange={(e) => setData('mail_password', e.target.value)} />
+                        </div>
+                        <label>Sender name <span className="muted" style={{ fontWeight: 400 }}>(optional — shown to recruiters)</span></label>
+                        <input type="text" value={data.mail_from_name} onChange={(e) => setData('mail_from_name', e.target.value)}
+                            placeholder={data.full_name || 'e.g. Varsha PV'} />
+
+                        <details className="mail-howto">
+                            <summary>How do I get an App Password?</summary>
+                            <ol>
+                                <li>Turn on <strong>2-Step Verification</strong> at <code>myaccount.google.com/security</code>.</li>
+                                <li>Go to <code>myaccount.google.com/apppasswords</code>.</li>
+                                <li>Name it "BulkApply" and click Create.</li>
+                                <li>Copy the 16-character password (remove spaces) and paste it above.</li>
+                            </ol>
+                            <p className="hint" style={{ margin: 0 }}>
+                                This is a Google-generated password just for this app — not your real Gmail password.
+                                It's encrypted before being stored and only used to send your own applications.
+                            </p>
+                        </details>
+                    </>
+                )}
             </div>
 
             <div className="card">
