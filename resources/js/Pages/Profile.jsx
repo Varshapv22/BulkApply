@@ -17,6 +17,7 @@ export default function Profile({ profile, jobSites, defaultBody }) {
         location: profile.location || '',
         preferred_role: profile.preferred_role || '',
         preferred_sites: profile.preferred_sites || [],
+        skills: profile.skills || '',
         email_subject: profile.email_subject || 'Application for {job_title} at {company}',
         email_body: profile.email_body || defaultBody || '',
         send_start_hour: profile.send_start_hour ?? '',
@@ -61,6 +62,7 @@ export default function Profile({ profile, jobSites, defaultBody }) {
                 if (res.name && !data.full_name) { next.full_name = res.name; filled.push('name'); }
                 if (res.email && !data.email) { next.email = res.email; filled.push('email'); }
                 if (res.phone && !data.phone) { next.phone = res.phone; filled.push('phone'); }
+                if (res.skills && !data.skills) { next.skills = res.skills; filled.push('skills'); }
                 setData((d) => ({ ...d, ...next }));
                 setParseStatus(filled.length ? `Extracted: ${filled.join(', ')}` : 'Could not extract info from this file.');
                 setParsing(false);
@@ -109,6 +111,14 @@ export default function Profile({ profile, jobSites, defaultBody }) {
                         </label>
                     ))}
                 </div>
+
+                <label style={{ marginTop: 12 }}>Your Skills</label>
+                <textarea value={data.skills} onChange={(e) => setData('skills', e.target.value)}
+                    placeholder="e.g. PHP, Laravel, MySQL, REST API, Git" style={{ minHeight: 70 }} />
+                <p className="hint" style={{ margin: '6px 0 0' }}>
+                    Comma-separated. On <Link href="/search">Find Jobs</Link>, each result shows a Skills column —
+                    skills you list here are highlighted so you can spot the best-fit jobs at a glance.
+                </p>
             </div>
 
             <div className="card">

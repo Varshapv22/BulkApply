@@ -35,8 +35,14 @@ class JobSearchService
             $params = [
                 'app_id'           => $appId,
                 'app_key'          => $appKey,
-                'what'             => $what,
-                'results_per_page' => min(max($limit, 1), 50),
+                // what_and requires EVERY word to appear in the ad (title or body).
+                // Plain "what" only requires ANY word, which let unrelated roles
+                // (e.g. "Business Development") match a "Laravel Developer" search.
+                'what_and'         => $what,
+                // Always fetch the API max, then filter+slice client-side (see
+                // below) — filtering can drop a chunk of loosely-matched ads,
+                // so under-fetching would return fewer jobs than $limit.
+                'results_per_page' => 50,
                 'content-type'     => 'application/json',
             ];
             if ($location) {
@@ -73,10 +79,14 @@ class JobSearchService
 
             $results = $response->json('results') ?? [];
 
-            $jobs = [];
-            foreach (array_slice($results, 0, $limit) as $item) {
-                $jobs[] = $this->normalizeJob($item);
-            }
+            $jobs = array_map(fn ($item) => $this->normalizeJob($item), $results);
+
+            // Adzuna's what_and still matches words anywhere in the ad body, so a
+            // "Business Development" ad mentioning "Laravel" once in a stack blurb
+            // can slip through. Require at least one significant role word to
+            // actually appear in the job TITLE — the strongest relevance signal.
+            $jobs = $this->filterByTitleRelevance($jobs, $role);
+            $jobs = array_slice($jobs, 0, $limit);
 
             // Best-effort: find a real company email/website for jobs that arrived
             // without one, by probing the company's own site.
@@ -90,6 +100,35 @@ class JobSearchService
             Log::error('Job search failed', ['error' => $e->getMessage()]);
             return ['jobs' => [], 'error' => 'Failed to connect to job search API: ' . $e->getMessage()];
         }
+    }
+
+    /**
+     * Keep only jobs whose title contains at least one significant word from
+     * the searched role — the cheapest, strongest signal that the ad is
+     * actually for that role rather than just mentioning it in passing.
+     * Falls back to the unfiltered list if nothing would survive (e.g. an
+     * unusual role phrase), so a search never returns zero results because
+     * of this heuristic alone.
+     */
+    private function filterByTitleRelevance(array $jobs, string $role): array
+    {
+        $tokens = array_values(array_unique(array_filter(
+            preg_split('/[\s\/,]+/', mb_strtolower(trim($role))),
+            fn ($t) => mb_strlen($t) >= 3
+        )));
+        if (empty($tokens)) {
+            return $jobs;
+        }
+
+        $filtered = array_values(array_filter($jobs, function ($job) use ($tokens) {
+            $title = mb_strtolower($job['job_title'] ?? '');
+            foreach ($tokens as $t) {
+                if (str_contains($title, $t)) return true;
+            }
+            return false;
+        }));
+
+        return $filtered ?: $jobs;
     }
 
     /**

@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Profile;
+use App\Services\SkillExtractor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Smalot\PdfParser\Parser as PdfParser;
 use ZipArchive;
 
 class ProfileController extends Controller
@@ -33,6 +35,7 @@ TXT;
                 'location'            => $profile->location,
                 'preferred_role'      => $profile->preferred_role,
                 'preferred_sites'     => $profile->preferred_sites ?? [],
+                'skills'              => $profile->skills,
                 'email_subject'       => $profile->email_subject,
                 'email_body'          => $profile->email_body,
                 'resume_name'         => $profile->resume_name,
@@ -69,6 +72,7 @@ TXT;
             'preferred_role'     => ['nullable', 'string', 'max:255'],
             'preferred_sites'    => ['nullable', 'array'],
             'preferred_sites.*'  => ['string'],
+            'skills'             => ['nullable', 'string', 'max:2000'],
         ]);
 
         $profile = Profile::current();
@@ -88,6 +92,7 @@ TXT;
             'webhook_url'        => $data['webhook_url'] ?? null,
             'preferred_role'     => $data['preferred_role'] ?? null,
             'preferred_sites'    => $data['preferred_sites'] ?? [],
+            'skills'             => $data['skills'] ?? null,
         ]);
 
         if ($request->hasFile('resume')) {
@@ -131,10 +136,17 @@ TXT;
         }
 
         $extracted = [
-            'name'  => null,
-            'email' => null,
-            'phone' => null,
+            'name'   => null,
+            'email'  => null,
+            'phone'  => null,
+            'skills' => null,
         ];
+
+        // Detect skills mentioned in the resume so Find Jobs can highlight matches.
+        $skills = (new SkillExtractor())->extract($text);
+        if (!empty($skills)) {
+            $extracted['skills'] = implode(', ', $skills);
+        }
 
         // Extract email
         if (preg_match('/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/', $text, $m)) {
@@ -176,48 +188,19 @@ TXT;
         return strip_tags($content);
     }
 
+    /**
+     * Real PDF text extraction (handles compressed streams and font/ToUnicode
+     * character maps). A naive byte-level regex scan — the previous approach
+     * here — produces garbage for most modern PDFs (Word/Google Docs/Canva
+     * exports), so name/email/phone/skills silently failed to extract.
+     */
     private function extractTextFromPdf(string $path): string
     {
-        $content = file_get_contents($path);
-        if (!$content) return '';
-
-        $text = '';
-
-        // Try to extract text from PDF streams
-        if (preg_match_all('/stream\s*\n(.*?)\nendstream/s', $content, $matches)) {
-            foreach ($matches[1] as $stream) {
-                // Try zlib decompression
-                $decoded = @gzuncompress($stream);
-                if (!$decoded) $decoded = @gzinflate($stream);
-                if (!$decoded) $decoded = $stream;
-
-                // Extract text between parentheses (PDF text objects)
-                if (preg_match_all('/\((.*?)\)/s', $decoded, $textMatches)) {
-                    $text .= implode(' ', $textMatches[1]) . "\n";
-                }
-
-                // Extract text from Tj/TJ operators
-                if (preg_match_all('/\[(.*?)\]\s*TJ/s', $decoded, $tjMatches)) {
-                    foreach ($tjMatches[1] as $tj) {
-                        if (preg_match_all('/\((.*?)\)/', $tj, $parts)) {
-                            $text .= implode('', $parts[1]) . ' ';
-                        }
-                    }
-                    $text .= "\n";
-                }
-            }
+        try {
+            return (new PdfParser())->parseFile($path)->getText();
+        } catch (\Throwable $e) {
+            return '';
         }
-
-        // Also try plain text extraction
-        if (preg_match_all('/BT\s*(.*?)\s*ET/s', $content, $btMatches)) {
-            foreach ($btMatches[1] as $block) {
-                if (preg_match_all('/\((.*?)\)/', $block, $textParts)) {
-                    $text .= implode(' ', $textParts[1]) . "\n";
-                }
-            }
-        }
-
-        return $text;
     }
 
     private function extractTextFromDoc(string $path): string

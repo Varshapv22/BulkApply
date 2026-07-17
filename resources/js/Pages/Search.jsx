@@ -8,6 +8,33 @@ const ChipIcon = ({ icon }) => (
     </svg>
 );
 
+const MAX_SKILL_CHIPS = 4;
+
+function SkillChips({ matched = [], other = [], hasProfileSkills }) {
+    if (matched.length === 0 && other.length === 0) {
+        return <span className="muted" style={{ fontSize: 12 }}>—</span>;
+    }
+    const shown = [...matched, ...other].slice(0, MAX_SKILL_CHIPS);
+    const extra = matched.length + other.length - shown.length;
+
+    return (
+        <div className="skill-chips">
+            {shown.map((s, i) => (
+                <span key={i} className={`skill-chip${matched.includes(s) ? ' matched' : ''}`}
+                    title={matched.includes(s) ? `${s} — matches your skills` : s}>
+                    {matched.includes(s) && '✓ '}{s}
+                </span>
+            ))}
+            {extra > 0 && <span className="skill-chip more">+{extra}</span>}
+            {!hasProfileSkills && matched.length === 0 && other.length > 0 && (
+                <span className="muted" style={{ fontSize: 10.5, width: '100%' }}>
+                    Add your skills in <Link href="/profile" style={{ fontSize: 10.5 }}>Settings</Link> to see matches
+                </span>
+            )}
+        </div>
+    );
+}
+
 /* Shimmering placeholder rows shown while the search runs. */
 function SearchingCard({ findContacts }) {
     return (
@@ -55,6 +82,34 @@ function Switch({ checked, onChange, label, hint }) {
                 {label} {hint && <span className="muted" style={{ fontSize: 12, fontWeight: 400 }}>{hint}</span>}
             </span>
         </label>
+    );
+}
+
+function SkillsBar({ profile }) {
+    const skills = (profile.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
+
+    if (skills.length === 0) {
+        return (
+            <div className="skills-bar">
+                <ChipIcon icon={Icons.sparkle} />
+                <span>
+                    Add your skills (or auto-fill them from your resume) to see which jobs match you best.
+                </span>
+                <Link href="/profile" className="btn btn-ghost btn-sm" style={{ marginLeft: 'auto' }}>Add skills</Link>
+            </div>
+        );
+    }
+
+    return (
+        <div className="skills-bar">
+            <ChipIcon icon={Icons.sparkle} />
+            <span className="skills-bar-label">Matching against your skills:</span>
+            <div className="skills-bar-chips">
+                {skills.slice(0, 8).map((s) => <span key={s} className="skill-chip matched">{s}</span>)}
+                {skills.length > 8 && <span className="skill-chip more">+{skills.length - 8}</span>}
+            </div>
+            <Link href="/profile" className="btn-link" style={{ marginLeft: 'auto', flexShrink: 0 }}>Edit</Link>
+        </div>
     );
 }
 
@@ -199,6 +254,8 @@ export default function Search({ profile, jobSites, results, searched, searchErr
 
             <SearchForm profile={profile} onSearching={setSearching} />
 
+            <SkillsBar profile={profile} />
+
             {searching.active && <SearchingCard findContacts={searching.findContacts} />}
 
             {!searching.active && searchError && <div className="alert alert-error"><div className="alert-body">{searchError}</div></div>}
@@ -230,7 +287,7 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                                                 <input type="checkbox" checked={selected.size === results.length}
                                                     onChange={toggleAll} />
                                             </th>
-                                            <th>Role</th><th>Company</th><th>Location</th><th>Company email</th><th>Website</th><th>Apply Via</th>
+                                            <th>Role</th><th>Company</th><th>Location</th><th>Skills</th><th>Company email</th><th>Website</th><th>Apply Via</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -250,6 +307,10 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                                                     </div>
                                                 </td>
                                                 <td>{job.location || '—'}</td>
+                                                <td>
+                                                    <SkillChips matched={job.skills_matched} other={job.skills_other}
+                                                        hasProfileSkills={profile.has_skills} />
+                                                </td>
                                                 <td>
                                                     {job.company_email
                                                         ? <a className="cell-chip" href={`mailto:${job.company_email}`} title={job.company_email}>
