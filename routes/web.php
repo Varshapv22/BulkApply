@@ -6,6 +6,7 @@ use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\JobSearchController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ResumeCheckController;
 use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/parse-resume', [ProfileController::class, 'parseResume'])->name('profile.parseResume');
+
+    // Resume ATS check
+    Route::get('/resume-check', [ResumeCheckController::class, 'index'])->name('resume.check');
 
     // Email templates
     Route::get('/templates', [EmailTemplateController::class, 'index'])->name('templates.index');

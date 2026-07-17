@@ -1,8 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
-import { PageHead, Badge } from '../components';
+import { PageHead, Badge, Icons, Spinner, EmptyState } from '../components';
 
-function SearchForm({ profile }) {
+const ChipIcon = ({ icon }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        {icon}
+    </svg>
+);
+
+/* Shimmering placeholder rows shown while the search runs. */
+function SearchingCard({ findContacts }) {
+    return (
+        <div className="card">
+            <div className="searching-box">
+                <Spinner dark size={22} />
+                <div className="txt">
+                    <div className="t1">Searching for jobs…</div>
+                    <div className="t2">
+                        {findContacts
+                            ? 'Also looking up company emails & websites — this can take ~10 seconds.'
+                            : 'Fetching matching vacancies.'}
+                    </div>
+                </div>
+            </div>
+            <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+                {[92, 100, 96, 88, 99].map((w, i) => (
+                    <div key={i} className="skel" style={{ height: 42, width: `${w}%` }} />
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function SearchForm({ profile, onSearching }) {
     const { data, setData, post, processing } = useForm({
         role: profile.preferred_role || '',
         location: profile.location || '',
@@ -16,7 +46,11 @@ function SearchForm({ profile }) {
 
     const submit = (e) => {
         e.preventDefault();
-        post('/search', { preserveScroll: true });
+        post('/search', {
+            preserveScroll: true,
+            onStart: () => onSearching({ active: true, findContacts: data.find_contacts && !hasSite }),
+            onFinish: () => onSearching({ active: false, findContacts: false }),
+        });
     };
 
     return (
@@ -77,7 +111,12 @@ function SearchForm({ profile }) {
                 )}
 
                 <button type="submit" className="btn btn-primary" style={{ marginTop: 16 }} disabled={processing}>
-                    {processing ? 'Searching…' : 'Search Jobs'}
+                    {processing ? <><Spinner /> Searching…</> : <>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            {Icons.search}
+                        </svg>
+                        Search Jobs
+                    </>}
                 </button>
             </form>
         </div>
@@ -86,6 +125,10 @@ function SearchForm({ profile }) {
 
 export default function Search({ profile, jobSites, results, searched, searchError, hasDocuments }) {
     const [selected, setSelected] = useState(() => new Set());
+    const [searching, setSearching] = useState({ active: false, findContacts: false });
+
+    // Fresh results → clear stale selection.
+    useEffect(() => { setSelected(new Set()); }, [results]);
 
     const toggle = (i) => {
         const next = new Set(selected);
@@ -119,11 +162,13 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                 </div>
             )}
 
-            <SearchForm profile={profile} />
+            <SearchForm profile={profile} onSearching={setSearching} />
 
-            {searchError && <div className="alert alert-error">{searchError}</div>}
+            {searching.active && <SearchingCard findContacts={searching.findContacts} />}
 
-            {searched && !searchError && (
+            {!searching.active && searchError && <div className="alert alert-error"><div className="alert-body">{searchError}</div></div>}
+
+            {!searching.active && searched && !searchError && (
                 <div className="card">
                     <div className="toolbar">
                         <h2 style={{ margin: 0 }}>{results.length} Job(s) Found</h2>
@@ -136,7 +181,10 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                     </div>
 
                     {results.length === 0 ? (
-                        <div className="empty">No jobs found matching your criteria. Try broadening your search.</div>
+                        <EmptyState icon="search" title="No jobs found">
+                            Nothing matched your criteria. Try a broader role, another location,
+                            or search a tech park like Technopark or Infopark.
+                        </EmptyState>
                     ) : (
                         <>
                             <div className="table-wrap">
@@ -152,27 +200,33 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                                     </thead>
                                     <tbody>
                                         {results.map((job, i) => (
-                                            <tr key={i}>
+                                            <tr key={i} className={selected.has(i) ? 'selected' : ''}
+                                                onClick={(e) => { if (e.target.tagName !== 'A' && e.target.tagName !== 'INPUT') toggle(i); }}
+                                                style={{ cursor: 'pointer' }}>
                                                 <td><input type="checkbox" checked={selected.has(i)} onChange={() => toggle(i)} /></td>
                                                 <td>
                                                     <strong>{job.job_title}</strong>
                                                     <br /><span className="muted" style={{ fontSize: 11 }}>{job.source}</span>
                                                 </td>
                                                 <td>
-                                                    {job.employer_logo && (
-                                                        <img src={job.employer_logo} alt="" style={{ width: 20, height: 20, borderRadius: 4, verticalAlign: 'middle', marginRight: 4 }} />
-                                                    )}
-                                                    {job.company}
+                                                    <div className="co-cell">
+                                                        <span className="co-avatar">{(job.company || '?')[0].toUpperCase()}</span>
+                                                        <span style={{ fontWeight: 500 }}>{job.company}</span>
+                                                    </div>
                                                 </td>
                                                 <td>{job.location || '—'}</td>
                                                 <td>
                                                     {job.company_email
-                                                        ? <a href={`mailto:${job.company_email}`} style={{ fontSize: 12.5 }}>{job.company_email}</a>
+                                                        ? <a className="cell-chip" href={`mailto:${job.company_email}`} title={job.company_email}>
+                                                            <ChipIcon icon={Icons.mail} />{job.company_email}
+                                                          </a>
                                                         : <span className="muted">—</span>}
                                                 </td>
                                                 <td>
                                                     {job.company_website
-                                                        ? <a href={job.company_website} target="_blank" rel="noopener" style={{ fontSize: 12.5 }}>{job.company_website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</a>
+                                                        ? <a className="cell-chip" href={job.company_website} target="_blank" rel="noopener" title={job.company_website}>
+                                                            <ChipIcon icon={Icons.globe} />{job.company_website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                                                          </a>
                                                         : <span className="muted">—</span>}
                                                 </td>
                                                 <td>
