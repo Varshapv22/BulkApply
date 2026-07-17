@@ -99,28 +99,71 @@ function ThemeMenu({ theme, onToggleTheme }) {
     );
 }
 
-function Flash({ type, message }) {
-    const [visible, setVisible] = useState(true);
-    // Re-show on a new message, then auto-dismiss after 6s.
-    useEffect(() => {
-        setVisible(true);
-        const t = setTimeout(() => setVisible(false), 6000);
-        return () => clearTimeout(t);
-    }, [message]);
+let toastSeq = 0;
 
-    if (!message || !visible) return null;
+/**
+ * Always-visible toast notifications for every form/button submission —
+ * anchored to the viewport (not the page's scroll position), so a success or
+ * error message is seen even if the button that triggered it was scrolled
+ * far down a long table. Reads Laravel session flash from every completed
+ * Inertia visit, and also surfaces validation failures as a toast.
+ */
+function ToastHost() {
+    const [toasts, setToasts] = useState([]);
+
+    const push = (type, message) => {
+        if (!message) return;
+        const id = ++toastSeq;
+        setToasts((t) => [...t, { id, type, message }]);
+        setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 6000);
+    };
+    const dismiss = (id) => setToasts((t) => t.filter((x) => x.id !== id));
+
+    useEffect(() => {
+        const offSuccess = router.on('success', (event) => {
+            const flash = event.detail.page.props.flash || {};
+            push('success', flash.status);
+            push('error', flash.error);
+        });
+        const offError = router.on('error', (event) => {
+            const errors = Object.values(event.detail.errors || {});
+            if (errors.length) push('error', errors[0]);
+        });
+        return () => { offSuccess(); offError(); };
+    }, []);
+
+    if (toasts.length === 0) return null;
+
     return (
-        <div className={`alert alert-${type}`}>
-            <div className="alert-body">{message}</div>
-            <button className="alert-close" onClick={() => setVisible(false)} aria-label="Dismiss">✕</button>
+        <div className="toast-host">
+            {toasts.map((t) => (
+                <div key={t.id} className={`toast toast-${t.type}`}>
+                    <span className="toast-ico">{t.type === 'success' ? '✓' : '!'}</span>
+                    <span className="toast-msg">{t.message}</span>
+                    <button className="toast-close" onClick={() => dismiss(t.id)} aria-label="Dismiss">✕</button>
+                </div>
+            ))}
         </div>
     );
+}
+
+/** Thin animated bar under the topbar while any Inertia request is in flight. */
+function ProgressBar() {
+    const [active, setActive] = useState(false);
+
+    useEffect(() => {
+        const offStart = router.on('start', () => setActive(true));
+        const offFinish = router.on('finish', () => setActive(false));
+        return () => { offStart(); offFinish(); };
+    }, []);
+
+    if (!active) return null;
+    return <div className="topbar-progress"><div className="topbar-progress-bar" /></div>;
 }
 
 export default function Layout({ children }) {
     const { props, url } = usePage();
     const user = props.auth?.user;
-    const flash = props.flash || {};
     const errors = props.errors || {};
     // Open the Gmail account we actually send FROM (not the browser default).
     const gmailSentUrl = props.mailFrom
@@ -193,11 +236,10 @@ export default function Layout({ children }) {
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </button>
                     <ThemeMenu theme={theme} onToggleTheme={toggleTheme} />
+                    <ProgressBar />
                 </header>
 
                 <div className="content">
-                    <Flash type="success" message={flash.status} />
-                    <Flash type="error" message={flash.error} />
                     {errorList.length > 0 && (
                         <div className="alert alert-error">
                             <div className="alert-body">
@@ -209,6 +251,8 @@ export default function Layout({ children }) {
                     {children}
                 </div>
             </div>
+
+            <ToastHost />
         </div>
     );
 }

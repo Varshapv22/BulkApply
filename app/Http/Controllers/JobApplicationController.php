@@ -7,6 +7,7 @@ use App\Models\EmailTemplate;
 use App\Models\JobApplication;
 use App\Models\Profile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -84,7 +85,10 @@ class JobApplicationController extends Controller
             'notes'          => ['nullable', 'string'],
         ]);
 
-        JobApplication::create($data + ['status' => JobApplication::STATUS_PENDING]);
+        JobApplication::create($data + [
+            'status'  => JobApplication::STATUS_PENDING,
+            'user_id' => Auth::id(),
+        ]);
 
         return redirect()->route('jobs.index')->with('status', 'Job added.');
     }
@@ -148,12 +152,13 @@ class JobApplicationController extends Controller
             JobApplication::create([
                 'company'         => $company,
                 'job_title'       => $record['job_title'] ?? null,
-                'recruiter_name'  => $record['recruiter_name'] ?? null,
+                'recruiter_name'  => $record['  '] ?? null,
                 'recruiter_email' => $email,
                 'job_url'         => $record['job_url'] ?? null,
                 'location'        => $record['location'] ?? null,
                 'notes'           => $record['notes'] ?? null,
                 'status'          => JobApplication::STATUS_PENDING,
+                'user_id'         => Auth::id(),
             ]);
             $imported++;
         }
@@ -176,6 +181,9 @@ class JobApplicationController extends Controller
 
         if (! $profile->hasDocuments()) {
             return back()->with('error', 'Upload your resume and cover letter on the Profile page before sending.');
+        }
+        if (! $profile->hasMailCredentials()) {
+            return back()->with('error', 'Connect your email sender in Settings before sending.');
         }
 
         $jobs = JobApplication::sendable()->get();
@@ -205,6 +213,9 @@ class JobApplicationController extends Controller
 
         if (! $profile->hasDocuments()) {
             return back()->with('error', 'Upload your resume and cover letter on the Profile page before sending.');
+        }
+        if (! $profile->hasMailCredentials()) {
+            return back()->with('error', 'Connect your email sender in Settings before sending.');
         }
 
         $job->update(['status' => JobApplication::STATUS_QUEUED, 'error' => null]);

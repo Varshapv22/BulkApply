@@ -12,6 +12,8 @@ class Profile extends Model
     protected $casts = [
         'send_weekdays_only' => 'boolean',
         'preferred_sites'    => 'array',
+        // Encrypted at rest with APP_KEY — never stored or transmitted in plain text.
+        'mail_password'      => 'encrypted',
     ];
 
     public const JOB_SITES = [
@@ -46,6 +48,12 @@ class Profile extends Model
     public function hasDocuments(): bool
     {
         return filled($this->resume_path) && filled($this->cover_letter_path);
+    }
+
+    /** Whether this account has connected its own email sender. */
+    public function hasMailCredentials(): bool
+    {
+        return filled($this->mail_username) && filled($this->mail_password);
     }
 
     public function isInsideSendingWindow(): bool

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
-import { PageHead, Stat, Badge, Icons, EmptyState } from '../components';
+import { PageHead, Stat, Badge, Icons, EmptyState, IconField, ChipIcon, Spinner } from '../components';
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -62,6 +62,8 @@ function PipelineDropdown({ value, labels, onChange }) {
 function ImportAndAdd() {
     const importForm = useForm({ csv: null });
     const addForm = useForm({ company: '', job_title: '', recruiter_name: '', recruiter_email: '' });
+    const [dragOver, setDragOver] = useState(false);
+    const fileRef = useRef(null);
 
     const doImport = (e) => {
         e.preventDefault();
@@ -71,38 +73,73 @@ function ImportAndAdd() {
         e.preventDefault();
         addForm.post('/jobs', { onSuccess: () => addForm.reset() });
     };
+    const pickFile = (file) => { if (file) importForm.setData('csv', file); };
 
     return (
-        <details className="card">
-            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Import CSV or Add Manually</summary>
-            <div className="row" style={{ marginTop: 16 }}>
+        <details className="card add-jobs-card">
+            <summary>
+                <span className="add-jobs-summary-ico"><ChipIcon icon={Icons.plus} /></span>
                 <div>
-                    <h2 style={{ fontSize: 15 }}>Import from CSV</h2>
+                    <div className="add-jobs-summary-title">Import CSV or Add Manually</div>
+                    <div className="hint" style={{ margin: 0 }}>Bring in existing leads or add a single job by hand.</div>
+                </div>
+                <svg className="add-jobs-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round">
+                    {Icons.chevronDown}
+                </svg>
+            </summary>
+
+            <div className="add-jobs-body">
+                <div className="add-jobs-panel">
+                    <h2 style={{ fontSize: 14.5 }}>Import from CSV</h2>
                     <form onSubmit={doImport}>
-                        <input type="file" accept=".csv,.txt" required
-                            onChange={(e) => importForm.setData('csv', e.target.files[0])} />
-                        <div style={{ marginTop: 12, display: 'flex', gap: 10, alignItems: 'center' }}>
-                            <button type="submit" className="btn btn-primary btn-sm" disabled={importForm.processing}>Import</button>
+                        <div
+                            className={`dropzone${dragOver ? ' drag' : ''}${importForm.data.csv ? ' filled' : ''}`}
+                            onClick={() => fileRef.current?.click()}
+                            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                            onDragLeave={() => setDragOver(false)}
+                            onDrop={(e) => { e.preventDefault(); setDragOver(false); pickFile(e.dataTransfer.files[0]); }}
+                        >
+                            <ChipIcon icon={Icons.upload} />
+                            {importForm.data.csv ? (
+                                <span className="dropzone-file">{importForm.data.csv.name}</span>
+                            ) : (
+                                <>
+                                    <span><strong>Click to choose</strong> or drag a CSV file here</span>
+                                    <span className="muted" style={{ fontSize: 11.5 }}>.csv or .txt</span>
+                                </>
+                            )}
+                            <input ref={fileRef} type="file" accept=".csv,.txt" required hidden
+                                onChange={(e) => pickFile(e.target.files[0])} />
+                        </div>
+                        <div style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <button type="submit" className="btn btn-primary btn-sm" disabled={importForm.processing || !importForm.data.csv}>
+                                {importForm.processing ? 'Importing…' : 'Import'}
+                            </button>
                             <a className="btn-link" href="/jobs/template">Download template</a>
                         </div>
                     </form>
                 </div>
-                <div>
-                    <h2 style={{ fontSize: 15 }}>Add one manually</h2>
+
+                <div className="add-jobs-divider" />
+
+                <div className="add-jobs-panel">
+                    <h2 style={{ fontSize: 14.5 }}>Add one manually</h2>
                     <form onSubmit={doAdd}>
                         <div className="row">
-                            <div><input type="text" placeholder="Company *" required value={addForm.data.company}
-                                onChange={(e) => addForm.setData('company', e.target.value)} /></div>
-                            <div><input type="text" placeholder="Job title" value={addForm.data.job_title}
-                                onChange={(e) => addForm.setData('job_title', e.target.value)} /></div>
+                            <IconField icon={Icons.building} type="text" placeholder="Company *" required
+                                value={addForm.data.company} onChange={(e) => addForm.setData('company', e.target.value)} />
+                            <IconField icon={Icons.briefcase} type="text" placeholder="Job title"
+                                value={addForm.data.job_title} onChange={(e) => addForm.setData('job_title', e.target.value)} />
                         </div>
-                        <div className="row">
-                            <div><input type="text" placeholder="Recruiter name" value={addForm.data.recruiter_name}
-                                onChange={(e) => addForm.setData('recruiter_name', e.target.value)} /></div>
-                            <div><input type="email" placeholder="Recruiter email *" required value={addForm.data.recruiter_email}
-                                onChange={(e) => addForm.setData('recruiter_email', e.target.value)} /></div>
+                        <div className="row" style={{ marginTop: 12 }}>
+                            <IconField icon={Icons.user} type="text" placeholder="Recruiter name"
+                                value={addForm.data.recruiter_name} onChange={(e) => addForm.setData('recruiter_name', e.target.value)} />
+                            <IconField icon={Icons.mail} type="email" placeholder="Recruiter email *" required
+                                value={addForm.data.recruiter_email} onChange={(e) => addForm.setData('recruiter_email', e.target.value)} />
                         </div>
-                        <button type="submit" className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} disabled={addForm.processing}>Add job</button>
+                        <button type="submit" className="btn btn-primary btn-sm" style={{ marginTop: 14 }} disabled={addForm.processing}>
+                            <ChipIcon icon={Icons.plus} /> Add job
+                        </button>
                     </form>
                 </div>
             </div>
@@ -188,18 +225,36 @@ function PreviewModal({ jobId, onClose }) {
 export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, counts, filters }) {
     const [previewId, setPreviewId] = useState(null);
     const [templateId, setTemplateId] = useState('');
+    const [sendingAll, setSendingAll] = useState(false);
+    const [clearingAll, setClearingAll] = useState(false);
+    const [busyIds, setBusyIds] = useState(() => new Set());
+
+    const setBusy = (id, busy) => setBusyIds((s) => {
+        const next = new Set(s);
+        busy ? next.add(id) : next.delete(id);
+        return next;
+    });
 
     const sendAll = () => {
-        if (confirm(`Queue and email ${counts.pending} application(s) now?`)) {
-            router.post('/jobs/send', { email_template_id: templateId || null });
-        }
+        if (!confirm(`Queue and email ${counts.pending} application(s) now?`)) return;
+        setSendingAll(true);
+        router.post('/jobs/send', { email_template_id: templateId || null }, {
+            onFinish: () => setSendingAll(false),
+        });
     };
-    const sendOne = (id) => router.post(`/jobs/${id}/send`);
+    const sendOne = (id) => {
+        setBusy(id, true);
+        router.post(`/jobs/${id}/send`, {}, { onFinish: () => setBusy(id, false) });
+    };
     const clearAll = () => {
-        if (confirm('Delete ALL jobs? This cannot be undone.')) router.post('/jobs/clear');
+        if (!confirm('Delete ALL jobs? This cannot be undone.')) return;
+        setClearingAll(true);
+        router.post('/jobs/clear', {}, { onFinish: () => setClearingAll(false) });
     };
     const destroy = (id) => {
-        if (confirm('Delete this job?')) router.delete(`/jobs/${id}`);
+        if (!confirm('Delete this job?')) return;
+        setBusy(id, true);
+        router.delete(`/jobs/${id}`, { onFinish: () => setBusy(id, false) });
     };
     const updatePipeline = (id, value) =>
         router.patch(`/jobs/${id}/pipeline`, { pipeline_status: value }, { preserveScroll: true });
@@ -235,13 +290,15 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                             ))}
                         </select>
                     )}
-                    <button className="btn btn-primary" disabled={counts.pending === 0} onClick={sendAll}>
-                        Send {counts.pending} pending
+                    <button className="btn btn-primary" disabled={counts.pending === 0 || sendingAll} onClick={sendAll}>
+                        {sendingAll ? <><Spinner /> Sending…</> : `Send ${counts.pending} pending`}
                     </button>
                     <div className="spacer" />
                     <a href="/jobs/export" className="btn btn-ghost btn-sm">Export CSV</a>
                     {counts.total > 0 && (
-                        <button className="btn-link" style={{ color: 'var(--red)' }} onClick={clearAll}>Clear all</button>
+                        <button className="btn-link" style={{ color: 'var(--red)' }} onClick={clearAll} disabled={clearingAll}>
+                            {clearingAll ? <><Spinner dark size={12} /> Clearing…</> : 'Clear all'}
+                        </button>
                     )}
                 </div>
 
@@ -299,11 +356,15 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                                         <td className="muted">{job.sent_at || '—'}</td>
                                         <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
                                             {job.status !== 'sent' &&
-                                                <button className="btn btn-ghost btn-sm" onClick={() => sendOne(job.id)}>Send</button>}
+                                                <button className="btn btn-ghost btn-sm" disabled={busyIds.has(job.id)} onClick={() => sendOne(job.id)}>
+                                                    {busyIds.has(job.id) ? <Spinner dark size={12} /> : 'Send'}
+                                                </button>}
                                             {' '}
                                             <button className="btn btn-ghost btn-sm" onClick={() => setPreviewId(job.id)} title="Preview email">Preview</button>
                                             {' '}
-                                            <button className="btn btn-danger btn-sm" onClick={() => destroy(job.id)}>✕</button>
+                                            <button className="btn btn-danger btn-sm" disabled={busyIds.has(job.id)} onClick={() => destroy(job.id)}>
+                                                {busyIds.has(job.id) ? <Spinner dark size={12} /> : '✕'}
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}

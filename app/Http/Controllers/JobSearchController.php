@@ -209,6 +209,7 @@ class JobSearchController extends Controller
                 'status'          => $applyType === 'email'
                     ? JobApplication::STATUS_QUEUED
                     : JobApplication::STATUS_PENDING,
+                'user_id'         => $profile->user_id,
             ]);
 
             $imported++;

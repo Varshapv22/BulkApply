@@ -35,7 +35,31 @@ export const Icons = {
     xCircle: <><circle cx="12" cy="12" r="9" />{P('m15 9-6 6')}{P('m9 9 6 6')}</>,
     check: <>{P('M20 6 9 17l-5-5')}</>,
     chevronDown: <>{P('m6 9 6 6 6-6')}</>,
+    user: <>{P('M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2')}<circle cx="12" cy="7" r="4" /></>,
+    upload: <>{P('M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4')}{P('M17 8l-5-5-5 5')}{P('M12 3v12')}</>,
+    plus: <>{P('M12 5v14')}{P('M5 12h14')}</>,
+    tag: <>{P('M12 2H2v10l9.29 9.29a1 1 0 0 0 1.42 0l8.58-8.58a1 1 0 0 0 0-1.42L12 2Z')}<circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" /></>,
+    save: <>{P('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z')}{P('M17 21v-8H7v8')}{P('M7 3v5h8')}</>,
+    trash: <>{P('M3 6h18')}{P('M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6')}{P('M10 11v6')}{P('M14 11v6')}{P('M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2')}</>,
 };
+
+export const ChipIcon = ({ icon }) => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        {icon}
+    </svg>
+);
+
+export const IconField = React.forwardRef(function IconField({ icon, as = 'input', children, ...props }, ref) {
+    const Tag = as;
+    return (
+        <div className="input-icon-wrap">
+            <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {icon}
+            </svg>
+            <Tag ref={ref} {...props}>{children}</Tag>
+        </div>
+    );
+});
 
 export function Spinner({ dark = false, size = 16 }) {
     return <span className={`spinner${dark ? ' dark' : ''}`} style={{ width: size, height: size }} />;

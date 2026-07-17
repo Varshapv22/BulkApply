@@ -46,6 +46,11 @@ TXT;
                 'max_emails_per_hour' => $profile->max_emails_per_hour,
                 'followup_days'       => $profile->followup_days,
                 'webhook_url'         => $profile->webhook_url,
+                // The password is write-only — never sent back to the browser,
+                // even encrypted. Only its connection status is exposed.
+                'mail_username'       => $profile->mail_username,
+                'mail_connected'      => $profile->hasMailCredentials(),
+                'mail_from_name'      => $profile->mail_from_name,
             ],
             'jobSites'    => Profile::JOB_SITES,
             'defaultBody' => self::DEFAULT_BODY,
@@ -73,6 +78,10 @@ TXT;
             'preferred_sites'    => ['nullable', 'array'],
             'preferred_sites.*'  => ['string'],
             'skills'             => ['nullable', 'string', 'max:2000'],
+            'mail_username'      => ['nullable', 'email', 'max:255'],
+            'mail_password'      => ['nullable', 'string', 'max:255'],
+            'mail_from_name'     => ['nullable', 'string', 'max:255'],
+            'mail_disconnect'    => ['nullable', 'boolean'],
         ]);
 
         $profile = Profile::current();
@@ -94,6 +103,24 @@ TXT;
             'preferred_sites'    => $data['preferred_sites'] ?? [],
             'skills'             => $data['skills'] ?? null,
         ]);
+
+        if ($request->boolean('mail_disconnect')) {
+            $profile->mail_username  = null;
+            $profile->mail_password  = null;
+            $profile->mail_from_name = null;
+        } else {
+            if (array_key_exists('mail_username', $data)) {
+                $profile->mail_username = $data['mail_username'] ?? null;
+            }
+            // Leave the password field blank on re-save to keep the currently
+            // stored one — only overwrite when the user actually typed a new one.
+            if (filled($data['mail_password'] ?? null)) {
+                $profile->mail_password = $data['mail_password'];
+            }
+            if (array_key_exists('mail_from_name', $data)) {
+                $profile->mail_from_name = $data['mail_from_name'] ?? null;
+            }
+        }
 
         if ($request->hasFile('resume')) {
             $this->deleteIfExists($profile->resume_path);

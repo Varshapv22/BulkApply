@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
-import { PageHead, Badge, Icons, Spinner, EmptyState } from '../components';
-
-const ChipIcon = ({ icon }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        {icon}
-    </svg>
-);
+import { PageHead, Badge, Icons, Spinner, EmptyState, ChipIcon, IconField } from '../components';
 
 const MAX_SKILL_CHIPS = 4;
 
@@ -60,17 +54,6 @@ function SearchingCard({ findContacts }) {
 }
 
 const QUICK_SITES = ['Technopark', 'Infopark', 'Cyberpark', 'Indeed', 'Naukri', 'LinkedIn'];
-
-function IconField({ icon, ...props }) {
-    return (
-        <div className="input-icon-wrap">
-            <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {icon}
-            </svg>
-            <input {...props} />
-        </div>
-    );
-}
 
 function Switch({ checked, onChange, label, hint }) {
     return (
@@ -135,9 +118,9 @@ function SearchForm({ profile, onSearching }) {
     };
 
     return (
-        <div className="card search-card">
-            <div className="search-card-head">
-                <span className="search-card-ico"><ChipIcon icon={Icons.sparkle} /></span>
+        <div className="card hero-card">
+            <div className="hero-card-head">
+                <span className="hero-card-ico"><ChipIcon icon={Icons.sparkle} /></span>
                 <div>
                     <h2 style={{ margin: 0 }}>Find your next role</h2>
                     <p className="hint" style={{ margin: '3px 0 0' }}>
@@ -229,6 +212,8 @@ export default function Search({ profile, jobSites, results, searched, searchErr
         setSelected(selected.size === results.length ? new Set() : new Set(results.map((_, i) => i)));
     };
 
+    const [applying, setApplying] = useState(false);
+
     const apply = () => {
         const jobs = [...selected].map((i) => {
             const j = results[i];
@@ -238,7 +223,8 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                 apply_url: j.apply_url, source: j.source,
             };
         });
-        router.post('/search/apply', { jobs });
+        setApplying(true);
+        router.post('/search/apply', { jobs }, { onFinish: () => setApplying(false) });
     };
 
     return (
@@ -337,8 +323,8 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                             </div>
 
                             <div style={{ marginTop: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                                <button className="btn btn-primary" disabled={selected.size === 0} onClick={apply}>
-                                    Apply to Selected Jobs
+                                <button className="btn btn-primary" disabled={selected.size === 0 || applying} onClick={apply}>
+                                    {applying ? <><Spinner /> Applying…</> : 'Apply to Selected Jobs'}
                                 </button>
                                 <span className="muted" style={{ fontSize: 13 }}>{selected.size} selected</span>
                                 <span className="muted" style={{ fontSize: 12 }}>
