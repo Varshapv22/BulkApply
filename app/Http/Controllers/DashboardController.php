@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\JobApplication;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
@@ -66,7 +67,16 @@ class DashboardController extends Controller
             ])
             ->latest('updated_at')
             ->limit(10)
-            ->get();
+            ->get()
+            ->map(fn ($job) => [
+                'id'              => $job->id,
+                'company'         => $job->company,
+                'job_title'       => $job->job_title,
+                'recruiter_name'  => $job->recruiter_name,
+                'recruiter_email' => $job->recruiter_email,
+                'status'          => $job->status,
+                'when'            => $job->updated_at->diffForHumans(),
+            ]);
 
         // Email tracking stats
         $tracking = [
@@ -83,9 +93,18 @@ class DashboardController extends Controller
             ->pluck('count', 'pipeline_status')
             ->all();
 
-        return view('dashboard', compact(
-            'counts', 'sentRate', 'chartData', 'thisWeek', 'lastWeek',
-            'topCompanies', 'recentActivity', 'tracking', 'pipelineStats'
-        ));
+        return Inertia::render('Dashboard', [
+            'counts'         => $counts,
+            'sentRate'       => $sentRate,
+            'chartData'      => $chartData->values(),
+            'thisWeek'       => $thisWeek,
+            'lastWeek'       => $lastWeek,
+            'weekStart'      => now()->startOfWeek()->format('M j'),
+            'topCompanies'   => $topCompanies,
+            'recentActivity' => $recentActivity,
+            'tracking'       => $tracking,
+            'pipelineStats'  => $pipelineStats,
+            'pipelineLabels' => JobApplication::PIPELINE_STATUSES,
+        ]);
     }
 }

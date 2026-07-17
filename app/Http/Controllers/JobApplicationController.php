@@ -8,6 +8,8 @@ use App\Models\JobApplication;
 use App\Models\Profile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class JobApplicationController extends Controller
@@ -29,10 +31,31 @@ class JobApplicationController extends Controller
         $query->orderByRaw("CASE WHEN status IN ('pending','queued','failed') THEN 0 ELSE 1 END ASC")
               ->orderBy($sortField, $sortDir);
 
-        return view('jobs', [
-            'jobs'      => $query->get(),
-            'profile'   => Profile::current(),
-            'templates' => EmailTemplate::all(),
+        $jobs = $query->get()->map(fn ($job) => [
+            'id'              => $job->id,
+            'company'         => $job->company,
+            'job_title'       => $job->job_title,
+            'job_url'         => $job->job_url,
+            'apply_type'      => $job->apply_type,
+            'apply_url'       => $job->apply_url,
+            'source'          => $job->source,
+            'recruiter_name'  => $job->recruiter_name,
+            'recruiter_email' => $job->recruiter_email,
+            'status'          => $job->status,
+            'error'           => $job->error,
+            'error_short'     => $job->error ? Str::limit($job->error, 40) : null,
+            'pipeline_status' => $job->pipeline_status,
+            'opened_at'       => $job->opened_at?->toDateTimeString(),
+            'clicked_at'      => $job->clicked_at?->toDateTimeString(),
+            'followup_count'  => $job->followup_count,
+            'sent_at'         => $job->sent_at ? $job->sent_at->diffForHumans() : null,
+        ]);
+
+        return Inertia::render('Jobs', [
+            'jobs'            => $jobs,
+            'hasDocuments'    => Profile::current()->hasDocuments(),
+            'templates'      => EmailTemplate::all(['id', 'name', 'is_default']),
+            'pipelineLabels'  => JobApplication::PIPELINE_STATUSES,
             'counts'    => [
                 'total'   => JobApplication::count(),
                 'pending' => JobApplication::whereIn('status', [JobApplication::STATUS_PENDING, JobApplication::STATUS_FAILED])->count(),
