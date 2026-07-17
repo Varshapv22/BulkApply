@@ -11,11 +11,12 @@ const ACCENTS = [
 ];
 
 const NAV = [
-    { href: '/dashboard', label: 'Dashboard', match: '/dashboard', icon: 'grid' },
-    { href: '/search',    label: 'Find Jobs', match: '/search',    icon: 'search' },
-    { href: '/jobs',      label: 'Applications', match: '/jobs',   icon: 'list' },
-    { href: '/templates', label: 'Templates', match: '/templates', icon: 'mail' },
-    { href: '/profile',   label: 'Settings',  match: '/profile',   icon: 'cog' },
+    { href: '/dashboard',    label: 'Dashboard', match: '/dashboard', icon: 'grid' },
+    { href: '/search',       label: 'Find Jobs', match: '/search',    icon: 'search' },
+    { href: '/jobs',         label: 'Applications', match: '/jobs',   icon: 'list' },
+    { href: '/resume-check', label: 'Resume Check', match: '/resume-check', icon: 'doc' },
+    { href: '/templates',    label: 'Templates', match: '/templates', icon: 'mail' },
+    { href: '/profile',      label: 'Settings',  match: '/profile',   icon: 'cog' },
 ];
 
 function Icon({ name }) {
@@ -24,6 +25,7 @@ function Icon({ name }) {
         search: <><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></>,
         list: <><line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" /><line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" /></>,
         mail: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 5L2 7" /></>,
+        doc: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><path d="m9 15 2 2 4-4" /></>,
         cog: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>,
     };
     return (
@@ -93,6 +95,24 @@ function ThemeMenu({ theme, onToggleTheme }) {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+function Flash({ type, message }) {
+    const [visible, setVisible] = useState(true);
+    // Re-show on a new message, then auto-dismiss after 6s.
+    useEffect(() => {
+        setVisible(true);
+        const t = setTimeout(() => setVisible(false), 6000);
+        return () => clearTimeout(t);
+    }, [message]);
+
+    if (!message || !visible) return null;
+    return (
+        <div className={`alert alert-${type}`}>
+            <div className="alert-body">{message}</div>
+            <button className="alert-close" onClick={() => setVisible(false)} aria-label="Dismiss">✕</button>
         </div>
     );
 }
@@ -176,12 +196,14 @@ export default function Layout({ children }) {
                 </header>
 
                 <div className="content">
-                    {flash.status && <div className="alert alert-success">{flash.status}</div>}
-                    {flash.error && <div className="alert alert-error">{flash.error}</div>}
+                    <Flash type="success" message={flash.status} />
+                    <Flash type="error" message={flash.error} />
                     {errorList.length > 0 && (
                         <div className="alert alert-error">
-                            <strong>Please fix:</strong>
-                            <ul>{errorList.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                            <div className="alert-body">
+                                <strong>Please fix:</strong>
+                                <ul>{errorList.map((e, i) => <li key={i}>{e}</li>)}</ul>
+                            </div>
                         </div>
                     )}
                     {children}

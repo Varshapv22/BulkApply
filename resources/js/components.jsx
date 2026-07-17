@@ -23,7 +23,28 @@ export const Icons = {
     click: <>{P('M9 9l5 12 1.8-5.2L21 14 9 9z')}{P('M7.2 2.2 8 5.1')}{P('m5.1 7.2-2.9-.8')}{P('M2.2 16.8 5.1 16')}{P('m16.8 5.1-.8 2.9')}</>,
     rate: <>{P('M3 3v18h18')}{P('m19 9-5 5-4-4-3 3')}</>,
     list: <>{P('M8 6h13')}{P('M8 12h13')}{P('M8 18h13')}{P('M3 6h.01')}{P('M3 12h.01')}{P('M3 18h.01')}</>,
+    mail: <><rect x="2" y="4" width="20" height="16" rx="2" />{P('m22 7-10 5L2 7')}</>,
+    globe: <><circle cx="12" cy="12" r="9" />{P('M3 12h18')}{P('M12 3a15 15 0 0 1 0 18')}{P('M12 3a15 15 0 0 0 0 18')}</>,
+    search: <><circle cx="11" cy="11" r="7" />{P('m21 21-4.35-4.35')}</>,
 };
+
+export function Spinner({ dark = false, size = 16 }) {
+    return <span className={`spinner${dark ? ' dark' : ''}`} style={{ width: size, height: size }} />;
+}
+
+export function EmptyState({ icon = 'search', title, children }) {
+    return (
+        <div className="empty">
+            <div className="empty-ico">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {Icons[icon] || Icons.search}
+                </svg>
+            </div>
+            <div className="empty-title">{title}</div>
+            <div className="empty-sub">{children}</div>
+        </div>
+    );
+}
 
 export function Stat({ label, value, accent = 'primary', icon }) {
     return (

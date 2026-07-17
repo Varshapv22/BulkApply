@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
-import { PageHead, Stat, Badge, Icons } from '../components';
+import { PageHead, Stat, Badge, Icons, EmptyState } from '../components';
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -194,7 +194,9 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                 </div>
 
                 {jobs.length === 0 ? (
-                    <div className="empty">No applications yet. <Link href="/search">Find Jobs</Link> to get started, or import a CSV above.</div>
+                    <EmptyState icon="briefcase" title="No applications yet">
+                        <Link href="/search">Find Jobs</Link> to search and auto-apply, or import a CSV above.
+                    </EmptyState>
                 ) : (
                     <div className="table-wrap">
                         <table>
@@ -208,11 +210,16 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                                 {jobs.map((job) => (
                                     <tr key={job.id}>
                                         <td>
-                                            <strong>{job.company}</strong><br />
-                                            <span className="muted">{job.job_title || '—'}</span>
-                                            {job.job_url && <> · <a href={job.job_url} target="_blank" rel="noopener">link</a></>}
-                                            {job.apply_type === 'link' && job.apply_url &&
-                                                <> · <a href={job.apply_url} target="_blank" rel="noopener" style={{ color: 'var(--amber)' }}>Apply on portal</a></>}
+                                            <div className="co-cell">
+                                                <span className="co-avatar">{(job.company || '?')[0].toUpperCase()}</span>
+                                                <div style={{ minWidth: 0 }}>
+                                                    <strong>{job.company}</strong><br />
+                                                    <span className="muted">{job.job_title || '—'}</span>
+                                                    {job.job_url && <> · <a href={job.job_url} target="_blank" rel="noopener">link</a></>}
+                                                    {job.apply_type === 'link' && job.apply_url &&
+                                                        <> · <a href={job.apply_url} target="_blank" rel="noopener" style={{ color: 'var(--amber)' }}>Apply on portal</a></>}
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>
                                             {job.source ? <Badge status="queued">{job.source}</Badge> : (
@@ -229,7 +236,7 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                                         </td>
                                         <td>
                                             <select value={job.pipeline_status || 'applied'} onChange={(e) => updatePipeline(job.id, e.target.value)}
-                                                style={{ padding: '5px 8px', fontSize: 12, width: 'auto' }}>
+                                                className={`pipe-select pipe-${job.pipeline_status || 'applied'}`}>
                                                 {Object.entries(pipelineLabels).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
                                             </select>
                                         </td>
