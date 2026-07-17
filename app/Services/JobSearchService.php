@@ -4,92 +4,77 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class JobSearchService
 {
     /**
-     * Search for jobs using the RapidAPI JSearch API.
-     * Free tier: 500 requests/month. Aggregates Indeed, LinkedIn, Glassdoor, etc.
+     * Search for jobs using the Adzuna API (https://developer.adzuna.com).
+     * Free tier: real jobs with location search across many countries.
      *
+     * @param  array  $options  ['sort_by' => relevance|date|salary, 'full_time' => bool]
      * @return array{jobs: array, error: ?string}
      */
-    public function search(string $role, string $location, array $sites = [], int $limit = 20): array
+    public function search(string $role, string $location, array $options = [], int $limit = 20): array
     {
-        $apiKey = config('services.jsearch.api_key');
+        $appId   = config('services.adzuna.app_id');
+        $appKey  = config('services.adzuna.app_key');
+        $country = config('services.adzuna.country', 'in');
 
-        if (!$apiKey) {
-            return ['jobs' => [], 'error' => 'Job search API key not configured. Add RAPIDAPI_KEY to your .env file.'];
+        if (!$appId || !$appKey) {
+            return [
+                'jobs'  => [],
+                'error' => 'Job search API not configured. Add ADZUNA_APP_ID and ADZUNA_APP_KEY to your .env file. Get free credentials at https://developer.adzuna.com.',
+            ];
         }
 
         try {
-            // Build the query — JSearch supports site filters in the query
-            $query = $role;
-            if ($location) {
-                $query .= ' in ' . $location;
-            }
+            // A keyword (company/board/extra term) narrows the query further.
+            $what = trim($role . ' ' . ($options['keyword'] ?? ''));
 
             $params = [
-                'query'          => $query,
-                'page'           => 1,
-                'num_pages'      => 1,
-                'date_posted'    => 'month', // jobs from last month
-                'remote_jobs_only' => false,
+                'app_id'           => $appId,
+                'app_key'          => $appKey,
+                'what'             => $what,
+                'results_per_page' => min(max($limit, 1), 50),
+                'content-type'     => 'application/json',
             ];
+            if ($location) {
+                $params['where'] = $location;
+            }
+            if (!empty($options['sort_by']) && in_array($options['sort_by'], ['relevance', 'date', 'salary'], true)) {
+                $params['sort_by'] = $options['sort_by'];
+            }
+            if (!empty($options['full_time'])) {
+                $params['full_time'] = 1;
+            }
 
+            // Adzuna is country-scoped: /v1/api/jobs/{country}/search/{page}
             $response = Http::timeout(15)
-                ->withHeaders([
-                    'X-RapidAPI-Key'  => $apiKey,
-                    'X-RapidAPI-Host' => 'jsearch.p.rapidapi.com',
-                ])
-                ->get('https://jsearch.p.rapidapi.com/search-v2', $params);
+                ->get("https://api.adzuna.com/v1/api/jobs/{$country}/search/1", $params);
 
             if (!$response->successful()) {
-                $status = $response->status();
-                if ($status === 429) {
-                    return ['jobs' => [], 'error' => 'API rate limit exceeded. Free tier allows 500 requests/month.'];
+                $status     = $response->status();
+                $apiMessage = $response->json('exception') ?? $response->json('display') ?? $response->json('message');
+
+                if ($status === 401 || $status === 403) {
+                    return ['jobs' => [], 'error' => 'Invalid Adzuna credentials. Check ADZUNA_APP_ID and ADZUNA_APP_KEY in your .env.'];
                 }
-                if ($status === 403) {
-                    return ['jobs' => [], 'error' => 'Invalid API key. Check your RAPIDAPI_KEY in .env.'];
+                if ($status === 429) {
+                    return ['jobs' => [], 'error' => 'Adzuna rate limit exceeded. Please try again later.'];
                 }
                 if ($status === 404) {
-                    return ['jobs' => [], 'error' => 'Your RapidAPI key is not subscribed to the JSearch API. Subscribe to the free Basic plan at https://rapidapi.com/letscrape-6bRBa3QguO5/api/jsearch and use that app\'s key.'];
+                    return ['jobs' => [], 'error' => "No Adzuna coverage for country '{$country}'. Set ADZUNA_COUNTRY in .env to a supported code (e.g. in, us, gb)."];
                 }
-                return ['jobs' => [], 'error' => "API returned status {$status}."];
+                return ['jobs' => [], 'error' => $apiMessage
+                    ? "Adzuna API error ({$status}): {$apiMessage}"
+                    : "Adzuna API returned status {$status}."];
             }
 
-            $data = $response->json();
-            // JSearch v5 /search-v2 nests jobs under data.jobs (was a flat data[] in older versions)
-            $results = $data['data']['jobs'] ?? $data['data'] ?? [];
-
-            // Filter by selected sites if specified
-            if (!empty($sites)) {
-                $siteMap = [
-                    'indeed'        => 'indeed.com',
-                    'linkedin'      => 'linkedin.com',
-                    'glassdoor'     => 'glassdoor.com',
-                    'ziprecruiter'  => 'ziprecruiter.com',
-                    'dice'          => 'dice.com',
-                    'monster'       => 'monster.com',
-                    'careerbuilder' => 'careerbuilder.com',
-                ];
-                $allowedDomains = array_map(fn($s) => $siteMap[$s] ?? $s, $sites);
-
-                $results = array_filter($results, function ($job) use ($allowedDomains) {
-                    $url = $job['job_apply_link'] ?? $job['job_google_link'] ?? '';
-                    foreach ($allowedDomains as $domain) {
-                        if (stripos($url, $domain) !== false) return true;
-                    }
-                    // Also check employer_website
-                    $website = $job['employer_website'] ?? '';
-                    foreach ($allowedDomains as $domain) {
-                        if (stripos($website, $domain) !== false) return true;
-                    }
-                    return false;
-                });
-            }
+            $results = $response->json('results') ?? [];
 
             $jobs = [];
-            foreach (array_slice(array_values($results), 0, $limit) as $item) {
+            foreach (array_slice($results, 0, $limit) as $item) {
                 $jobs[] = $this->normalizeJob($item);
             }
 
@@ -102,44 +87,34 @@ class JobSearchService
     }
 
     /**
-     * Normalize a JSearch API result to our standard format.
+     * Normalize an Adzuna API result to our standard job format.
      */
     private function normalizeJob(array $item): array
     {
-        // Try to extract a contact email from the description
-        $description = $item['job_description'] ?? '';
+        $description = $item['description'] ?? '';
+
+        // Try to extract a contact email from the description (rare, but enables email apply).
         $email = null;
         if (preg_match('/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/', $description, $m)) {
             $email = $m[0];
         }
 
-        // Determine the source site from the apply link
-        $applyLink = $item['job_apply_link'] ?? $item['job_google_link'] ?? '';
-        $source = 'Unknown';
-        $sourceSites = ['indeed.com' => 'Indeed', 'linkedin.com' => 'LinkedIn', 'glassdoor.com' => 'Glassdoor',
-                        'ziprecruiter.com' => 'ZipRecruiter', 'dice.com' => 'Dice', 'monster.com' => 'Monster'];
-        foreach ($sourceSites as $domain => $name) {
-            if (stripos($applyLink, $domain) !== false) {
-                $source = $name;
-                break;
-            }
-        }
-        if ($source === 'Unknown' && !empty($item['job_publisher'])) {
-            $source = $item['job_publisher'];
-        }
+        $applyLink = $item['redirect_url'] ?? '';
+        $company   = $item['company']['display_name'] ?? 'Unknown';
+        $location  = $item['location']['display_name'] ?? '';
 
         return [
-            'company'         => $item['employer_name'] ?? 'Unknown',
-            'job_title'       => $item['job_title'] ?? 'Unknown',
-            'location'        => $item['job_city'] ?? $item['job_state'] ?? ($item['job_is_remote'] ? 'Remote' : ''),
+            'company'         => trim(strip_tags($company)) ?: 'Unknown',
+            'job_title'       => trim(strip_tags($item['title'] ?? 'Unknown')),
+            'location'        => $location,
             'recruiter_email' => $email,
             'job_url'         => $applyLink,
             'apply_url'       => $applyLink,
-            'source'          => $source,
+            'source'          => 'Adzuna',
             'apply_type'      => $email ? 'email' : 'link',
-            'description'     => \Illuminate\Support\Str::limit(strip_tags($description), 200),
-            'posted'          => $item['job_posted_at_datetime_utc'] ?? null,
-            'employer_logo'   => $item['employer_logo'] ?? null,
+            'description'     => Str::limit(trim(strip_tags($description)), 200),
+            'posted'          => $item['created'] ?? null,
+            'employer_logo'   => null,
         ];
     }
 }

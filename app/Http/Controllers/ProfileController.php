@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Profile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 use ZipArchive;
 
 class ProfileController extends Controller
@@ -22,8 +23,28 @@ TXT;
 
     public function edit()
     {
-        return view('profile', [
-            'profile'     => Profile::current(),
+        $profile = Profile::current();
+
+        return Inertia::render('Profile', [
+            'profile' => [
+                'full_name'           => $profile->full_name,
+                'email'               => $profile->email,
+                'phone'               => $profile->phone,
+                'location'            => $profile->location,
+                'preferred_role'      => $profile->preferred_role,
+                'preferred_sites'     => $profile->preferred_sites ?? [],
+                'email_subject'       => $profile->email_subject,
+                'email_body'          => $profile->email_body,
+                'resume_name'         => $profile->resume_name,
+                'cover_letter_name'   => $profile->cover_letter_name,
+                'send_start_hour'     => $profile->send_start_hour,
+                'send_end_hour'       => $profile->send_end_hour,
+                'send_weekdays_only'  => (bool) $profile->send_weekdays_only,
+                'max_emails_per_hour' => $profile->max_emails_per_hour,
+                'followup_days'       => $profile->followup_days,
+                'webhook_url'         => $profile->webhook_url,
+            ],
+            'jobSites'    => Profile::JOB_SITES,
             'defaultBody' => self::DEFAULT_BODY,
         ]);
     }

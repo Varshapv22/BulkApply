@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\EmailTemplate;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class EmailTemplateController extends Controller
 {
     public function index()
     {
-        return view('templates', [
+        return Inertia::render('Templates', [
             'templates' => EmailTemplate::latest()->get(),
         ]);
     }
