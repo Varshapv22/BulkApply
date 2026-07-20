@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "BulkApply Extension",
+  "version": "1.0",
+  "description": "Scrape jobs from LinkedIn/Indeed and save to BulkApply.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8080/*",
+    "http://localhost:8080/*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.linkedin.com/*", "*://*.indeed.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

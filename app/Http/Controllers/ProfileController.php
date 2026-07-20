@@ -23,9 +23,10 @@ Best regards,
 {your_name}
 TXT;
 
-    public function edit()
+    public function edit(Request $request)
     {
         $profile = Profile::current();
+        $resumes = $request->user()->resumes()->orderByDesc('is_default')->orderByDesc('created_at')->get();
 
         return Inertia::render('Profile', [
             'profile' => [
@@ -54,6 +55,7 @@ TXT;
             ],
             'jobSites'    => Profile::JOB_SITES,
             'defaultBody' => self::DEFAULT_BODY,
+            'resumes'     => $resumes,
         ]);
     }
 

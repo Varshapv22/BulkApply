@@ -38,6 +38,11 @@ class JobApplication extends Model
         return $this->belongsTo(EmailTemplate::class);
     }
 
+    public function resume()
+    {
+        return $this->belongsTo(Resume::class);
+    }
+
     public function scopeSendable($query)
     {
         return $query->whereIn('status', [self::STATUS_PENDING, self::STATUS_FAILED]);
