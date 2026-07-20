@@ -35,6 +35,7 @@ return array(
     'App\\Services\\SiteJobService' => $baseDir . '/app/Services/SiteJobService.php',
     'App\\Services\\SkillExtractor' => $baseDir . '/app/Services/SkillExtractor.php',
     'App\\Services\\TechnoparkJobService' => $baseDir . '/app/Services/TechnoparkJobService.php',
+    'App\\Services\\UserMailer' => $baseDir . '/app/Services/UserMailer.php',
     'Attribute' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
     'Brick\\Math\\BigDecimal' => $vendorDir . '/brick/math/src/BigDecimal.php',
     'Brick\\Math\\BigInteger' => $vendorDir . '/brick/math/src/BigInteger.php',

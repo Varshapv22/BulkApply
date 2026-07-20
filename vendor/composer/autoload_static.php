@@ -576,6 +576,7 @@ class ComposerStaticInit53b5d56b3b7e3cbac1713e68c8850f6c
         'App\\Services\\SiteJobService' => __DIR__ . '/../..' . '/app/Services/SiteJobService.php',
         'App\\Services\\SkillExtractor' => __DIR__ . '/../..' . '/app/Services/SkillExtractor.php',
         'App\\Services\\TechnoparkJobService' => __DIR__ . '/../..' . '/app/Services/TechnoparkJobService.php',
+        'App\\Services\\UserMailer' => __DIR__ . '/../..' . '/app/Services/UserMailer.php',
         'Attribute' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Attribute.php',
         'Brick\\Math\\BigDecimal' => __DIR__ . '/..' . '/brick/math/src/BigDecimal.php',
         'Brick\\Math\\BigInteger' => __DIR__ . '/..' . '/brick/math/src/BigInteger.php',
