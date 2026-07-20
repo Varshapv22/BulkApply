@@ -196,9 +196,10 @@ function SearchForm({ profile, onSearching }) {
     );
 }
 
-export default function Search({ profile, jobSites, results, searched, searchError, hasDocuments }) {
+export default function Search({ profile, jobSites, results, searched, searchError, hasDocuments, resumes = [] }) {
     const [selected, setSelected] = useState(() => new Set());
     const [searching, setSearching] = useState({ active: false, findContacts: false });
+    const [selectedResumeId, setSelectedResumeId] = useState('');
 
     // Fresh results → clear stale selection.
     useEffect(() => { setSelected(new Set()); }, [results]);
@@ -224,7 +225,7 @@ export default function Search({ profile, jobSites, results, searched, searchErr
             };
         });
         setApplying(true);
-        router.post('/search/apply', { jobs }, { onFinish: () => setApplying(false) });
+        router.post('/search/apply', { jobs, resume_id: selectedResumeId || null }, { onFinish: () => setApplying(false) });
     };
 
     return (
@@ -323,6 +324,14 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                             </div>
 
                             <div style={{ marginTop: 16, display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                                {resumes.length > 0 && (
+                                    <select value={selectedResumeId} onChange={e => setSelectedResumeId(e.target.value)} style={{ padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)' }}>
+                                        <option value="">Default Resume</option>
+                                        {resumes.map(r => (
+                                            <option key={r.id} value={r.id}>{r.name}</option>
+                                        ))}
+                                    </select>
+                                )}
                                 <button className="btn btn-primary" disabled={selected.size === 0 || applying} onClick={apply}>
                                     {applying ? <><Spinner /> Applying…</> : 'Apply to Selected Jobs'}
                                 </button>

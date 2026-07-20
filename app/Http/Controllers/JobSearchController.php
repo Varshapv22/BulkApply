@@ -25,6 +25,7 @@ class JobSearchController extends Controller
             'searched'     => false,
             'searchError'  => null,
             'hasDocuments' => $profile->hasDocuments(),
+            'resumes'      => \Illuminate\Support\Facades\Auth::user()->resumes()->orderByDesc('is_default')->get(),
         ]);
     }
 
@@ -103,6 +104,7 @@ class JobSearchController extends Controller
             'searched'     => true,
             'searchError'  => $result['error'],
             'hasDocuments' => $profile->hasDocuments(),
+            'resumes'      => \Illuminate\Support\Facades\Auth::user()->resumes()->orderByDesc('is_default')->get(),
         ]);
     }
 
@@ -169,6 +171,7 @@ class JobSearchController extends Controller
         $request->validate([
             'jobs'   => ['required', 'array', 'min:1'],
             'jobs.*' => ['required', 'array'],
+            'resume_id' => ['nullable', 'exists:resumes,id'],
         ]);
 
         $profile = Profile::current();
@@ -210,6 +213,7 @@ class JobSearchController extends Controller
                     ? JobApplication::STATUS_QUEUED
                     : JobApplication::STATUS_PENDING,
                 'user_id'         => $profile->user_id,
+                'resume_id'       => $request->input('resume_id') ?: $profile->user->resumes()->where('is_default', true)->value('id'),
             ]);
 
             $imported++;

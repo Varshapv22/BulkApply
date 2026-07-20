@@ -9,7 +9,7 @@ function getCookie(name) {
 
 const PLACEHOLDERS = ['{job_title}', '{company}', '{recruiter_name}', '{location}', '{job_url}', '{your_name}'];
 
-export default function Profile({ profile, jobSites, defaultBody }) {
+export default function Profile({ profile, jobSites, defaultBody, resumes = [] }) {
     const { data, setData, post, processing } = useForm({
         full_name: profile.full_name || '',
         email: profile.email || '',
@@ -30,8 +30,11 @@ export default function Profile({ profile, jobSites, defaultBody }) {
         mail_password: '',
         mail_from_name: profile.mail_from_name || '',
         mail_disconnect: false,
-        resume: null,
         cover_letter: null,
+    });
+
+    const { data: resumeData, setData: setResumeData, post: postResume, processing: processingResume, reset: resetResume } = useForm({
+        resume: null
     });
 
     const [parseStatus, setParseStatus] = useState('');
@@ -49,9 +52,18 @@ export default function Profile({ profile, jobSites, defaultBody }) {
     };
 
     const parseResume = () => {
-        if (!data.resume) { setParseStatus('Please select a resume file first.'); return; }
+        // Find default resume to parse
+        const defaultResume = resumes.find(r => r.is_default) || resumes[0];
+        if (!defaultResume) { setParseStatus('Please upload a resume first.'); return; }
+        
+        // We can't upload the file directly if it's already on the server, 
+        // wait, the existing parse logic expects a file upload.
+        // I will keep the original parse logic but ask them to select a file if they want to parse.
+        // Actually, if we have the file on the server, we could parse it there.
+        // For now, let's keep the existing UI where they pick a file to parse.
+        if (!resumeData.resume) { setParseStatus('Please select a file to parse.'); return; }
         const fd = new FormData();
-        fd.append('resume', data.resume);
+        fd.append('resume', resumeData.resume);
         setParsing(true);
         setParseStatus('Parsing…');
         fetch('/profile/parse-resume', {
@@ -72,6 +84,14 @@ export default function Profile({ profile, jobSites, defaultBody }) {
                 setParsing(false);
             })
             .catch(() => { setParseStatus('Parsing failed.'); setParsing(false); });
+    };
+
+    const uploadResume = (e) => {
+        e.preventDefault();
+        postResume('/resumes', {
+            preserveScroll: true,
+            onSuccess: () => resetResume('resume'),
+        });
     };
 
     return (
@@ -126,23 +146,62 @@ export default function Profile({ profile, jobSites, defaultBody }) {
             </div>
 
             <div className="card">
-                <h2>Documents</h2>
-                <p className="hint">PDF, DOC or DOCX, up to 10 MB each. These are attached to every application email.</p>
-                <div className="row">
-                    <div>
-                        <label>Resume</label>
-                        <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setData('resume', e.target.files[0])} />
-                        {profile.resume_name && <p className="muted" style={{ fontSize: 12, margin: '6px 0 0' }}>Current: {profile.resume_name}</p>}
+                <h2>Resumes</h2>
+                <p className="hint">Upload multiple resumes (PDF, DOC/X, max 10MB). Select which one to use when applying.</p>
+                
+                {resumes.length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 14 }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                                    <th style={{ padding: '8px 4px' }}>Name</th>
+                                    <th style={{ padding: '8px 4px', width: 100 }}>Status</th>
+                                    <th style={{ padding: '8px 4px', width: 150, textAlign: 'right' }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {resumes.map(r => (
+                                    <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                        <td style={{ padding: '8px 4px' }}>{r.name}</td>
+                                        <td style={{ padding: '8px 4px' }}>
+                                            {r.is_default ? <span className="badge badge-primary">Default</span> : null}
+                                        </td>
+                                        <td style={{ padding: '8px 4px', textAlign: 'right' }}>
+                                            {!r.is_default && (
+                                                <Link href={`/resumes/${r.id}/default`} method="post" as="button" className="btn-link" style={{ fontSize: 13, marginRight: 12 }}>Make Default</Link>
+                                            )}
+                                            <Link href={`/resumes/${r.id}`} method="delete" as="button" className="btn-link" style={{ fontSize: 13, color: 'var(--red)' }}>Delete</Link>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                    <div>
-                        <label>Cover letter</label>
-                        <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setData('cover_letter', e.target.files[0])} />
-                        {profile.cover_letter_name && <p className="muted" style={{ fontSize: 12, margin: '6px 0 0' }}>Current: {profile.cover_letter_name}</p>}
+                )}
+
+                <div className="row" style={{ alignItems: 'flex-end', background: 'var(--surface-50)', padding: 12, borderRadius: 8 }}>
+                    <div style={{ flex: 1 }}>
+                        <label>Upload new resume</label>
+                        <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setResumeData('resume', e.target.files[0])} />
                     </div>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={uploadResume} disabled={processingResume || !resumeData.resume}>
+                        {processingResume ? 'Uploading...' : 'Upload'}
+                    </button>
                 </div>
+
                 <div style={{ marginTop: 12 }}>
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={parseResume} disabled={parsing}>Auto-fill from resume</button>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={parseResume} disabled={parsing}>Auto-fill Profile from Selected File</button>
                     <span className="muted" style={{ fontSize: 12, marginLeft: 8 }}>{parseStatus}</span>
+                </div>
+            </div>
+
+            <div className="card">
+                <h2>Cover Letter</h2>
+                <p className="hint">PDF, DOC or DOCX, up to 10 MB. Attached to applications when specified.</p>
+                <div>
+                    <label>Cover letter file</label>
+                    <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setData('cover_letter', e.target.files[0])} />
+                    {profile.cover_letter_name && <p className="muted" style={{ fontSize: 12, margin: '6px 0 0' }}>Current: {profile.cover_letter_name}</p>}
                 </div>
             </div>
 

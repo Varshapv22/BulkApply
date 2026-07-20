@@ -35,6 +35,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/parse-resume', [ProfileController::class, 'parseResume'])->name('profile.parseResume');
 
+    // Resumes
+    Route::post('/resumes', [\App\Http\Controllers\ResumeController::class, 'store'])->name('resumes.store');
+    Route::post('/resumes/{resume}/default', [\App\Http\Controllers\ResumeController::class, 'set_default'])->name('resumes.default');
+    Route::delete('/resumes/{resume}', [\App\Http\Controllers\ResumeController::class, 'destroy'])->name('resumes.destroy');
+
     // Resume ATS check
     Route::get('/resume-check', [ResumeCheckController::class, 'index'])->name('resume.check');
 
@@ -61,4 +66,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/jobs/{job}/send', [JobApplicationController::class, 'sendOne'])->name('jobs.sendOne');
     Route::patch('/jobs/{job}/pipeline', [JobApplicationController::class, 'updatePipeline'])->name('jobs.updatePipeline');
     Route::delete('/jobs/{job}', [JobApplicationController::class, 'destroy'])->name('jobs.destroy');
+
+    // Extension
+    Route::get('/extension', function () {
+        return \Inertia\Inertia::render('Extension');
+    })->name('extension');
 });
