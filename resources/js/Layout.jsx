@@ -171,6 +171,12 @@ export default function Layout({ children }) {
         : 'https://mail.google.com/mail/u/0/#sent';
     const [theme, toggleTheme] = useTheme();
     const [open, setOpen] = useState(false);
+    const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
+    const toggleCollapse = () => {
+        const next = !isCollapsed;
+        setIsCollapsed(next);
+        localStorage.setItem('sidebar_collapsed', next);
+    };
 
     // Close mobile sidebar on navigation.
     useEffect(() => { setOpen(false); }, [url]);
@@ -183,9 +189,14 @@ export default function Layout({ children }) {
 
     return (
         <div className="app-shell">
-            <aside className={`sidebar${open ? ' open' : ''}`}>
+            <aside className={`sidebar${open ? ' open' : ''}${isCollapsed ? ' collapsed' : ''}`}>
                 <div className="sidebar-brand">
-                    <span className="dot">B</span> Bulk<span>Apply</span>
+                    <div className="brand-inner">
+                        <span className="dot">B</span> <span className="brand-text">Bulk<span>Apply</span></span>
+                    </div>
+                    <button className="icon-btn desktop-toggle" onClick={toggleCollapse} aria-label="Toggle Sidebar" title={isCollapsed ? 'Expand menu' : 'Collapse menu'}>
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+                    </button>
                 </div>
                 <nav className="sidebar-nav">
                     <div className="sidebar-section">Menu</div>
@@ -194,19 +205,20 @@ export default function Layout({ children }) {
                             key={item.href}
                             href={item.href}
                             className={`nav-item${url.startsWith(item.match) ? ' active' : ''}`}
+                            title={isCollapsed ? item.label : undefined}
                         >
-                            <Icon name={item.icon} /> {item.label}
+                            <Icon name={item.icon} /> <span className="nav-label">{item.label}</span>
                         </Link>
                     ))}
                     <div className="sidebar-section">Tools</div>
-                    <a className="nav-item" href={gmailSentUrl} target="_blank" rel="noopener">
-                        <Icon name="mail" /> Gmail — Sent ↗
+                    <a className="nav-item" href={gmailSentUrl} target="_blank" rel="noopener" title={isCollapsed ? 'Gmail — Sent' : undefined}>
+                        <Icon name="mail" /> <span className="nav-label">Gmail — Sent ↗</span>
                     </a>
                 </nav>
                 <div className="sidebar-footer">
                     <div className="sidebar-user">
                         <span className="avatar">{initials}</span>
-                        <div style={{ minWidth: 0 }}>
+                        <div className="user-info">
                             <div className="name">{user?.name || 'User'}</div>
                             <div className="email">{user?.email}</div>
                         </div>
@@ -220,14 +232,14 @@ export default function Layout({ children }) {
                         <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
                         </svg>
-                        Logout
+                        <span className="nav-label">Logout</span>
                     </button>
                 </div>
             </aside>
 
             {open && <div className="sidebar-backdrop" onClick={() => setOpen(false)} />}
 
-            <div className="main">
+            <div className={`main${isCollapsed ? ' collapsed' : ''}`}>
                 <header className="topbar">
                     <button className="hamburger" onClick={() => setOpen(true)} aria-label="Open menu">☰</button>
                     <span className="page-title">{current?.label || 'BulkApply'}</span>
@@ -239,7 +251,7 @@ export default function Layout({ children }) {
                     <ProgressBar />
                 </header>
 
-                <div className="content">
+                <div className="content animate-enter">
                     {errorList.length > 0 && (
                         <div className="alert alert-error">
                             <div className="alert-body">

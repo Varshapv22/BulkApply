@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 /* ============================================================
    BulkApply — design system v3 (multi-theme SaaS dashboard)
    Two axes: light/dark (data-theme) × accent theme (data-accent).
@@ -64,15 +65,18 @@
     --ring: color-mix(in srgb, var(--primary) 32%, transparent);
     --shadow-primary: 0 10px 24px -8px color-mix(in srgb, var(--primary) 55%, transparent);
     --sidebar-bg: linear-gradient(180deg, color-mix(in srgb, var(--primary) 34%, var(--sidebar-base, #0b1120)) 0%, var(--sidebar-base, #0b1120) 74%);
-    --bg-grad: radial-gradient(1200px 600px at 100% -10%, color-mix(in srgb, var(--primary) 13%, transparent) 0%, transparent 55%),
-               radial-gradient(1000px 520px at -10% 110%, color-mix(in srgb, var(--primary-2) 11%, transparent) 0%, transparent 50%);
+    
+    --glass-blur: blur(24px);
+    --mesh-1: color-mix(in srgb, var(--primary) 22%, transparent);
+    --mesh-2: color-mix(in srgb, var(--primary-2) 15%, transparent);
+    --bg-grad: radial-gradient(900px circle at 80% -10%, var(--mesh-1), transparent 60%), radial-gradient(1100px circle at -10% 120%, var(--mesh-2), transparent 55%), radial-gradient(800px circle at 50% 50%, color-mix(in srgb, var(--blue) 8%, transparent), transparent 60%);
 }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
 body {
     margin: 0;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--bg);
     background-image: var(--bg-grad);
     background-attachment: fixed;
@@ -106,7 +110,7 @@ a:hover { text-decoration: underline; }
     display: inline-flex; align-items: center; justify-content: center; font-size: 17px; color: #fff;
     box-shadow: var(--shadow-primary); font-weight: 800;
 }
-.sidebar-brand span:not(.dot) { background: linear-gradient(90deg,#a5b4fc,#c4b5fd); -webkit-background-clip: text;
+.sidebar-brand span:not(.dot) { background: var(--primary-grad); -webkit-background-clip: text;
     background-clip: text; -webkit-text-fill-color: transparent; }
 .sidebar-nav { padding: 6px 14px; display: flex; flex-direction: column; gap: 3px; flex: 1; overflow-y: auto; }
 .sidebar-section { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--sidebar-text-muted);
@@ -568,3 +572,138 @@ tbody tr.selected:hover { background: var(--primary-soft); }
     border-radius: 11px; border: 1px solid var(--border); background: var(--card-2); cursor: pointer; font-size: 12.5px;
     font-weight: 600; color: var(--text); }
 .theme-pop .mode-btn.active { border-color: var(--primary); background: var(--primary-soft); color: var(--primary-dark); }
+
+
+/* ============================================================
+   NEW GLASSMORPHISM & BENTO BOX ADDITIONS
+   ============================================================ */
+
+body {
+    background-image: var(--bg-grad) !important;
+}
+
+.app-shell { padding: 12px; gap: 12px; }
+
+.sidebar {
+    inset: 12px auto 12px 12px;
+    height: calc(100vh - 24px);
+    border-radius: 24px;
+    background: rgba(255, 255, 255, 0.6) !important;
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+[data-theme="dark"] .sidebar {
+    background: rgba(12, 14, 28, 0.55) !important;
+}
+
+.main { margin-left: 272px; border-radius: 24px; }
+.topbar {
+    margin: -12px -12px 24px -12px;
+    padding: 0 40px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 80%, transparent) 0%, transparent 100%) !important;
+    backdrop-filter: blur(8px);
+    border-bottom: none !important;
+}
+.topbar .page-title { font-family: 'Outfit'; font-size: 22px; }
+
+.card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    transition: transform 0.25s, box-shadow 0.25s;
+}
+[data-theme="dark"] .card {
+    background: rgba(20, 22, 38, 0.65);
+}
+.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+.card h2 { font-family: 'Outfit'; font-size: 18px; }
+
+.bento-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 20px;
+}
+.bento-col-4 { grid-column: span 4; }
+.bento-col-6 { grid-column: span 6; }
+.bento-col-8 { grid-column: span 8; }
+.bento-col-12 { grid-column: span 12; }
+@media (max-width: 1100px) { .bento-col-4, .bento-col-8 { grid-column: span 12; } }
+@media (max-width: 768px) { .bento-col-6 { grid-column: span 12; } }
+
+.stat-bento {
+    background: var(--card); backdrop-filter: var(--glass-blur); border: 1px solid var(--border);
+    border-radius: 24px; padding: 24px; box-shadow: var(--shadow);
+    position: relative; overflow: hidden; transition: all 0.3s;
+    display: flex; flex-direction: column; justify-content: center;
+}
+.stat-bento:hover { transform: translateY(-4px) scale(1.02); box-shadow: var(--shadow-lg); }
+.stat-icon { width: 50px; height: 50px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+.stat-icon svg { width: 24px; height: 24px; }
+.stat-bento .num { font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -.03em; color: var(--heading); font-family: 'Outfit'; }
+.stat-bento .lbl { font-size: 14px; color: var(--muted); font-weight: 600; margin-top: 8px; font-family: 'Inter'; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.animate-enter { animation: bentoEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.animate-delay-1 { animation-delay: 0.05s; }
+.animate-delay-2 { animation-delay: 0.1s; }
+.animate-delay-3 { animation-delay: 0.15s; }
+@keyframes bentoEnter { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 900px) {
+    .sidebar { transform: translateX(-120%); width: 280px; }
+    .sidebar.open { transform: translateX(0); }
+    .main { margin-left: 0; }
+    .topbar { margin: -12px -12px 24px -12px; }
+}
+
+/* Fixes for Sidebar Text Color on Light Glass Background */
+.sidebar {
+    --sidebar-text: #475569;
+    --sidebar-text-muted: #94a3b8;
+}
+[data-theme="dark"] .sidebar {
+    --sidebar-text: #cbd5e1;
+    --sidebar-text-muted: #64748b;
+}
+.sidebar-brand { color: var(--heading) !important; }
+.nav-item:hover {
+    background: rgba(0,0,0,0.05) !important;
+    color: var(--heading) !important;
+}
+[data-theme="dark"] .nav-item:hover {
+    background: rgba(255,255,255,0.05) !important;
+    color: #fff !important;
+}
+
+/* Collapsible Sidebar Additions */
+.sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s; overflow: hidden; white-space: nowrap; }
+.sidebar.collapsed { width: 88px; }
+.sidebar.collapsed .brand-text, .sidebar.collapsed .nav-label, .sidebar.collapsed .user-info { display: none; }
+.sidebar.collapsed .sidebar-section { opacity: 0; height: 0; padding: 0; margin: 10px 0 0 0; overflow: hidden; }
+.sidebar.collapsed .sidebar-brand { padding-left: 0; padding-right: 0; justify-content: center; }
+.sidebar.collapsed .sidebar-user, .sidebar.collapsed .nav-item { justify-content: center; padding-left: 0; padding-right: 0; text-align: center; }
+.sidebar.collapsed .nav-item .ico { margin: 0; }
+.sidebar-footer { transition: all 0.3s; }
+
+.main { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.main.collapsed { margin-left: 100px; }
+
+.desktop-toggle { display: flex; align-items: center; justify-content: center; }
+@media (max-width: 1024px) {
+    .desktop-toggle { display: none !important; }
+}
+
+/* Refined Collapsed Navbar Layout Fixes */
+.sidebar-brand { display: flex; align-items: center; justify-content: space-between; padding-right: 12px; transition: all 0.3s; }
+.brand-inner { display: flex; align-items: center; gap: 8px; }
+.sidebar-user { justify-content: flex-start; }
+.user-info { min-width: 0; }
+.desktop-toggle { border-color: transparent; background: transparent; box-shadow: none; width: 32px; height: 32px; padding: 0; color: var(--muted); }
+
+/* Collapsed state overrides */
+.sidebar.collapsed .sidebar-brand { padding-right: 0; padding-top: 20px; flex-direction: column; gap: 16px; justify-content: center; }
+.sidebar.collapsed .desktop-toggle { background: var(--hover); }
+.sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; gap: 0; }
+.sidebar.collapsed .sidebar-user { justify-content: center; padding: 10px 0; }
