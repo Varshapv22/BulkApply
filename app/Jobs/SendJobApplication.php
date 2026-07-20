@@ -6,7 +6,6 @@ use App\Mail\JobApplicationMail;
 use App\Models\EmailTemplate;
 use App\Models\JobApplication;
 use App\Models\Profile;
-use App\Services\UserMailer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Http;
@@ -33,17 +32,7 @@ class SendJobApplication implements ShouldQueue
             return;
         }
 
-        // Queue workers have no logged-in session, so Profile::current() can't
-        // be trusted here — resolve the account that actually owns this job.
-        $profile = $this->resolveProfile($job);
-
-        if (! $profile->hasMailCredentials()) {
-            $job->update([
-                'status' => JobApplication::STATUS_FAILED,
-                'error'  => 'Email sending not connected. Add your Gmail App Password in Settings.',
-            ]);
-            return;
-        }
+        $profile = Profile::current();
 
         // Rate limit check — release back to queue if over limit
         if ($profile->isRateLimited()) {
@@ -76,17 +65,9 @@ class SendJobApplication implements ShouldQueue
             $customBody = $template->body;
         }
 
-        // Send through THIS account's own connected Gmail, isolated per-user
-        // so credentials never bleed across jobs processed in the same worker.
-        $userMailer = new UserMailer();
-        $mailerName = $userMailer->mailerFor($profile);
-        try {
-            Mail::mailer($mailerName)->to($job->recruiter_email)->send(
-                new JobApplicationMail($job, $profile, $customSubject, $customBody)
-            );
-        } finally {
-            $userMailer->release($mailerName);
-        }
+        Mail::to($job->recruiter_email)->send(
+            new JobApplicationMail($job, $profile, $customSubject, $customBody)
+        );
 
         $updateData = [
             'status'  => JobApplication::STATUS_SENT,
@@ -114,23 +95,9 @@ class SendJobApplication implements ShouldQueue
                 'error'  => substr($e->getMessage(), 0, 1000),
             ]);
 
-            $profile = $this->resolveProfile($job);
+            $profile = Profile::current();
             $this->fireWebhook($profile, $job, 'application_failed');
         }
-    }
-
-    /**
-     * The account that owns this job. Falls back to Profile::current() only
-     * for legacy rows created before applications tracked user_id.
-     */
-    private function resolveProfile(JobApplication $job): Profile
-    {
-        if ($job->user_id) {
-            return Profile::where('user_id', $job->user_id)->first()
-                ?? new Profile(['user_id' => $job->user_id]);
-        }
-
-        return Profile::current();
     }
 
     private function fireWebhook(Profile $profile, JobApplication $job, string $event): void

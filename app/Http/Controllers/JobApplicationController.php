@@ -7,10 +7,7 @@ use App\Models\EmailTemplate;
 use App\Models\JobApplication;
 use App\Models\Profile;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class JobApplicationController extends Controller
@@ -32,31 +29,10 @@ class JobApplicationController extends Controller
         $query->orderByRaw("CASE WHEN status IN ('pending','queued','failed') THEN 0 ELSE 1 END ASC")
               ->orderBy($sortField, $sortDir);
 
-        $jobs = $query->get()->map(fn ($job) => [
-            'id'              => $job->id,
-            'company'         => $job->company,
-            'job_title'       => $job->job_title,
-            'job_url'         => $job->job_url,
-            'apply_type'      => $job->apply_type,
-            'apply_url'       => $job->apply_url,
-            'source'          => $job->source,
-            'recruiter_name'  => $job->recruiter_name,
-            'recruiter_email' => $job->recruiter_email,
-            'status'          => $job->status,
-            'error'           => $job->error,
-            'error_short'     => $job->error ? Str::limit($job->error, 40) : null,
-            'pipeline_status' => $job->pipeline_status,
-            'opened_at'       => $job->opened_at?->toDateTimeString(),
-            'clicked_at'      => $job->clicked_at?->toDateTimeString(),
-            'followup_count'  => $job->followup_count,
-            'sent_at'         => $job->sent_at ? $job->sent_at->diffForHumans() : null,
-        ]);
-
-        return Inertia::render('Jobs', [
-            'jobs'            => $jobs,
-            'hasDocuments'    => Profile::current()->hasDocuments(),
-            'templates'      => EmailTemplate::all(['id', 'name', 'is_default']),
-            'pipelineLabels'  => JobApplication::PIPELINE_STATUSES,
+        return view('jobs', [
+            'jobs'      => $query->get(),
+            'profile'   => Profile::current(),
+            'templates' => EmailTemplate::all(),
             'counts'    => [
                 'total'   => JobApplication::count(),
                 'pending' => JobApplication::whereIn('status', [JobApplication::STATUS_PENDING, JobApplication::STATUS_FAILED])->count(),
@@ -83,12 +59,11 @@ class JobApplicationController extends Controller
             'job_url'        => ['nullable', 'url', 'max:2048'],
             'location'       => ['nullable', 'string', 'max:255'],
             'notes'          => ['nullable', 'string'],
+            'company_website'=> ['nullable', 'url', 'max:2048'],
+            'requirements'   => ['nullable', 'string'],
         ]);
 
-        JobApplication::create($data + [
-            'status'  => JobApplication::STATUS_PENDING,
-            'user_id' => Auth::id(),
-        ]);
+        JobApplication::create($data + ['status' => JobApplication::STATUS_PENDING]);
 
         return redirect()->route('jobs.index')->with('status', 'Job added.');
     }
@@ -152,13 +127,14 @@ class JobApplicationController extends Controller
             JobApplication::create([
                 'company'         => $company,
                 'job_title'       => $record['job_title'] ?? null,
-                'recruiter_name'  => $record['  '] ?? null,
+                'recruiter_name'  => $record['recruiter_name'] ?? null,
                 'recruiter_email' => $email,
                 'job_url'         => $record['job_url'] ?? null,
                 'location'        => $record['location'] ?? null,
                 'notes'           => $record['notes'] ?? null,
+                'company_website' => $record['company_website'] ?? null,
+                'requirements'    => $record['requirements'] ?? null,
                 'status'          => JobApplication::STATUS_PENDING,
-                'user_id'         => Auth::id(),
             ]);
             $imported++;
         }
@@ -181,9 +157,6 @@ class JobApplicationController extends Controller
 
         if (! $profile->hasDocuments()) {
             return back()->with('error', 'Upload your resume and cover letter on the Profile page before sending.');
-        }
-        if (! $profile->hasMailCredentials()) {
-            return back()->with('error', 'Connect your email sender in Settings before sending.');
         }
 
         $jobs = JobApplication::sendable()->get();
@@ -213,9 +186,6 @@ class JobApplicationController extends Controller
 
         if (! $profile->hasDocuments()) {
             return back()->with('error', 'Upload your resume and cover letter on the Profile page before sending.');
-        }
-        if (! $profile->hasMailCredentials()) {
-            return back()->with('error', 'Connect your email sender in Settings before sending.');
         }
 
         $job->update(['status' => JobApplication::STATUS_QUEUED, 'error' => null]);
@@ -282,21 +252,25 @@ class JobApplicationController extends Controller
     }
 
     /**
-     * Export all jobs to CSV.
+     * Export jobs to CSV (respects current filters).
      */
-    public function export(): StreamedResponse
+    public function export(Request $request): StreamedResponse
     {
         $columns = [
             'company', 'job_title', 'recruiter_name', 'recruiter_email',
-            'job_url', 'location', 'notes', 'status', 'pipeline_status',
+            'job_url', 'location', 'company_website', 'requirements', 'notes', 'status', 'pipeline_status',
             'sent_at', 'opened_at', 'clicked_at', 'followup_count', 'created_at',
         ];
 
-        return response()->streamDownload(function () use ($columns) {
+        return response()->streamDownload(function () use ($columns, $request) {
             $out = fopen('php://output', 'w');
             fputcsv($out, $columns);
 
-            JobApplication::orderBy('created_at', 'desc')
+            JobApplication::query()
+                ->search($request->input('search'))
+                ->filterStatus($request->input('status'))
+                ->filterPipeline($request->input('pipeline'))
+                ->orderBy('created_at', 'desc')
                 ->chunk(200, function ($jobs) use ($out, $columns) {
                     foreach ($jobs as $job) {
                         $row = [];
@@ -317,8 +291,8 @@ class JobApplicationController extends Controller
      */
     public function template(): StreamedResponse
     {
-        $columns = ['company', 'job_title', 'recruiter_name', 'recruiter_email', 'job_url', 'location', 'notes'];
-        $sample  = ['Acme Corp', 'Backend Engineer', 'Jane Doe', 'jane@acme.com', 'https://acme.com/jobs/123', 'Remote', 'Referred by a friend'];
+        $columns = ['company', 'job_title', 'recruiter_name', 'recruiter_email', 'job_url', 'location', 'company_website', 'requirements', 'notes'];
+        $sample  = ['Acme Corp', 'Backend Engineer', 'Jane Doe', 'jane@acme.com', 'https://acme.com/jobs/123', 'Remote', 'https://acme.com', 'PHP, Laravel, 3+ years exp', 'Referred by a friend'];
 
         return response()->streamDownload(function () use ($columns, $sample) {
             $out = fopen('php://output', 'w');
@@ -338,7 +312,66 @@ class JobApplicationController extends Controller
             'job_url', 'url', 'link', 'job_link'                 => 'job_url',
             'location', 'city', 'place'                          => 'location',
             'notes', 'note', 'comments', 'remark'               => 'notes',
+            'company_website', 'website', 'site', 'url'         => 'company_website',
+            'requirements', 'reqs', 'qualifications', 'skills'  => 'requirements',
             default => null,
         };
+    }
+
+    /**
+     * Search for jobs online using RapidAPI JSearch.
+     */
+    public function searchOnline(Request $request)
+    {
+        $role = $request->input('role');
+        $location = $request->input('location');
+
+        if (!$role || !$location) {
+            return response()->json(['error' => 'Role and location are required.'], 400);
+        }
+
+        $apiKey = env('RAPIDAPI_KEY');
+        $apiHost = env('RAPIDAPI_HOST', 'jsearch.p.rapidapi.com');
+
+        if (!$apiKey) {
+            return response()->json(['error' => 'RAPIDAPI_KEY is missing in your .env file.'], 500);
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                'x-rapidapi-key' => $apiKey,
+                'x-rapidapi-host' => $apiHost,
+            ])->get("https://{$apiHost}/search", [
+                'query' => "{$role} in {$location}",
+                'page' => '1',
+                'num_pages' => '1',
+            ]);
+
+            if ($response->failed()) {
+                return response()->json(['error' => 'Failed to fetch jobs from RapidAPI. Please check your API key.'], 500);
+            }
+
+            $data = $response->json();
+            $jobs = $data['data'] ?? [];
+
+            $formattedResults = [];
+            foreach ($jobs as $job) {
+                $formattedResults[] = [
+                    'company' => $job['employer_name'] ?? 'Unknown Company',
+                    'job_title' => $job['job_title'] ?? $role,
+                    'recruiter_name' => '', // APIs rarely provide recruiter names directly
+                    'recruiter_email' => '', // APIs rarely provide recruiter emails directly
+                    'location' => $job['job_city'] ? ($job['job_city'] . ', ' . ($job['job_state'] ?? '')) : $location,
+                    'job_url' => $job['job_apply_link'] ?? '',
+                    'company_website' => $job['employer_website'] ?? '',
+                    'requirements' => \Illuminate\Support\Str::limit($job['job_description'] ?? '', 150),
+                ];
+            }
+
+            return response()->json(['results' => $formattedResults]);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An error occurred while fetching jobs: ' . $e->getMessage()], 500);
+        }
     }
 }

@@ -3,11 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Profile;
-use App\Services\SkillExtractor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Inertia;
-use Smalot\PdfParser\Parser as PdfParser;
 use ZipArchive;
 
 class ProfileController extends Controller
@@ -25,34 +22,8 @@ TXT;
 
     public function edit()
     {
-        $profile = Profile::current();
-
-        return Inertia::render('Profile', [
-            'profile' => [
-                'full_name'           => $profile->full_name,
-                'email'               => $profile->email,
-                'phone'               => $profile->phone,
-                'location'            => $profile->location,
-                'preferred_role'      => $profile->preferred_role,
-                'preferred_sites'     => $profile->preferred_sites ?? [],
-                'skills'              => $profile->skills,
-                'email_subject'       => $profile->email_subject,
-                'email_body'          => $profile->email_body,
-                'resume_name'         => $profile->resume_name,
-                'cover_letter_name'   => $profile->cover_letter_name,
-                'send_start_hour'     => $profile->send_start_hour,
-                'send_end_hour'       => $profile->send_end_hour,
-                'send_weekdays_only'  => (bool) $profile->send_weekdays_only,
-                'max_emails_per_hour' => $profile->max_emails_per_hour,
-                'followup_days'       => $profile->followup_days,
-                'webhook_url'         => $profile->webhook_url,
-                // The password is write-only — never sent back to the browser,
-                // even encrypted. Only its connection status is exposed.
-                'mail_username'       => $profile->mail_username,
-                'mail_connected'      => $profile->hasMailCredentials(),
-                'mail_from_name'      => $profile->mail_from_name,
-            ],
-            'jobSites'    => Profile::JOB_SITES,
+        return view('profile', [
+            'profile'     => Profile::current(),
             'defaultBody' => self::DEFAULT_BODY,
         ]);
     }
@@ -74,14 +45,6 @@ TXT;
             'max_emails_per_hour'=> ['nullable', 'integer', 'min:0', 'max:1000'],
             'followup_days'      => ['nullable', 'integer', 'min:0', 'max:30'],
             'webhook_url'        => ['nullable', 'url', 'max:2048'],
-            'preferred_role'     => ['nullable', 'string', 'max:255'],
-            'preferred_sites'    => ['nullable', 'array'],
-            'preferred_sites.*'  => ['string'],
-            'skills'             => ['nullable', 'string', 'max:2000'],
-            'mail_username'      => ['nullable', 'email', 'max:255'],
-            'mail_password'      => ['nullable', 'string', 'max:255'],
-            'mail_from_name'     => ['nullable', 'string', 'max:255'],
-            'mail_disconnect'    => ['nullable', 'boolean'],
         ]);
 
         $profile = Profile::current();
@@ -99,28 +62,7 @@ TXT;
             'max_emails_per_hour'=> $data['max_emails_per_hour'] ?? 0,
             'followup_days'      => $data['followup_days'] ?? 0,
             'webhook_url'        => $data['webhook_url'] ?? null,
-            'preferred_role'     => $data['preferred_role'] ?? null,
-            'preferred_sites'    => $data['preferred_sites'] ?? [],
-            'skills'             => $data['skills'] ?? null,
         ]);
-
-        if ($request->boolean('mail_disconnect')) {
-            $profile->mail_username  = null;
-            $profile->mail_password  = null;
-            $profile->mail_from_name = null;
-        } else {
-            if (array_key_exists('mail_username', $data)) {
-                $profile->mail_username = $data['mail_username'] ?? null;
-            }
-            // Leave the password field blank on re-save to keep the currently
-            // stored one — only overwrite when the user actually typed a new one.
-            if (filled($data['mail_password'] ?? null)) {
-                $profile->mail_password = $data['mail_password'];
-            }
-            if (array_key_exists('mail_from_name', $data)) {
-                $profile->mail_from_name = $data['mail_from_name'] ?? null;
-            }
-        }
 
         if ($request->hasFile('resume')) {
             $this->deleteIfExists($profile->resume_path);
@@ -163,17 +105,10 @@ TXT;
         }
 
         $extracted = [
-            'name'   => null,
-            'email'  => null,
-            'phone'  => null,
-            'skills' => null,
+            'name'  => null,
+            'email' => null,
+            'phone' => null,
         ];
-
-        // Detect skills mentioned in the resume so Find Jobs can highlight matches.
-        $skills = (new SkillExtractor())->extract($text);
-        if (!empty($skills)) {
-            $extracted['skills'] = implode(', ', $skills);
-        }
 
         // Extract email
         if (preg_match('/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/', $text, $m)) {
@@ -215,19 +150,48 @@ TXT;
         return strip_tags($content);
     }
 
-    /**
-     * Real PDF text extraction (handles compressed streams and font/ToUnicode
-     * character maps). A naive byte-level regex scan — the previous approach
-     * here — produces garbage for most modern PDFs (Word/Google Docs/Canva
-     * exports), so name/email/phone/skills silently failed to extract.
-     */
     private function extractTextFromPdf(string $path): string
     {
-        try {
-            return (new PdfParser())->parseFile($path)->getText();
-        } catch (\Throwable $e) {
-            return '';
+        $content = file_get_contents($path);
+        if (!$content) return '';
+
+        $text = '';
+
+        // Try to extract text from PDF streams
+        if (preg_match_all('/stream\s*\n(.*?)\nendstream/s', $content, $matches)) {
+            foreach ($matches[1] as $stream) {
+                // Try zlib decompression
+                $decoded = @gzuncompress($stream);
+                if (!$decoded) $decoded = @gzinflate($stream);
+                if (!$decoded) $decoded = $stream;
+
+                // Extract text between parentheses (PDF text objects)
+                if (preg_match_all('/\((.*?)\)/s', $decoded, $textMatches)) {
+                    $text .= implode(' ', $textMatches[1]) . "\n";
+                }
+
+                // Extract text from Tj/TJ operators
+                if (preg_match_all('/\[(.*?)\]\s*TJ/s', $decoded, $tjMatches)) {
+                    foreach ($tjMatches[1] as $tj) {
+                        if (preg_match_all('/\((.*?)\)/', $tj, $parts)) {
+                            $text .= implode('', $parts[1]) . ' ';
+                        }
+                    }
+                    $text .= "\n";
+                }
+            }
         }
+
+        // Also try plain text extraction
+        if (preg_match_all('/BT\s*(.*?)\s*ET/s', $content, $btMatches)) {
+            foreach ($btMatches[1] as $block) {
+                if (preg_match_all('/\((.*?)\)/', $block, $textParts)) {
+                    $text .= implode(' ', $textParts[1]) . "\n";
+                }
+            }
+        }
+
+        return $text;
     }
 
     private function extractTextFromDoc(string $path): string

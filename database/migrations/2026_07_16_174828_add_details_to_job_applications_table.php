@@ -6,19 +6,24 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::table('job_applications', function (Blueprint $table) {
-            $table->string('source')->nullable()->after('notes');
-            $table->string('apply_type')->default('email')->after('source'); // email or link
-            $table->string('apply_url')->nullable()->after('apply_type');
+            $table->string('company_website', 2048)->nullable()->after('company');
+            $table->text('requirements')->nullable()->after('location');
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::table('job_applications', function (Blueprint $table) {
-            $table->dropColumn(['source', 'apply_type', 'apply_url']);
+            $table->dropColumn(['company_website', 'requirements']);
         });
     }
 };
