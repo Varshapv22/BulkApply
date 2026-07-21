@@ -364,8 +364,10 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                                                     <strong>{job.company}</strong><br />
                                                     <span className="muted">{job.job_title || '—'}</span>
                                                     {job.job_url && <> · <a href={job.job_url} target="_blank" rel="noopener">link</a></>}
-                                                    {job.apply_type === 'link' && job.apply_url &&
-                                                        <> · <a href={job.apply_url} target="_blank" rel="noopener" style={{ color: 'var(--amber)' }}>Apply on portal</a></>}
+                                                    {(job.apply_type === 'link' || job.apply_type === 'easy_apply') && job.apply_url &&
+                                                        <> · <a href={job.apply_url} target="_blank" rel="noopener" style={{ color: 'var(--amber)' }}>
+                                                            {job.apply_type === 'easy_apply' ? 'Apply on LinkedIn' : 'Apply on portal'}
+                                                        </a></>}
                                                 </div>
                                             </div>
                                         </td>
@@ -394,7 +396,7 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                                         </td>
                                         <td className="muted">{job.sent_at || '—'}</td>
                                         <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
-                                            {job.status !== 'sent' &&
+                                            {job.status !== 'sent' && job.apply_type !== 'easy_apply' &&
                                                 <button className="btn btn-ghost btn-sm" disabled={busyIds.has(job.id)} onClick={() => sendOne(job.id)}>
                                                     {busyIds.has(job.id) ? <Spinner dark size={12} /> : 'Send'}
                                                 </button>}

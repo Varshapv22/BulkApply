@@ -61,7 +61,11 @@ class JobApplicationController extends Controller
                 $activeBatch = [
                     'total'     => $batch->totalJobs,
                     'processed' => $batch->processedJobs(),
-                    'failed'    => $batch->failedJobs,
+                    // $batch->failedJobs only counts jobs whose exception escaped
+                    // to the queue; SendJobApplication catches send errors itself
+                    // and marks the row failed, so count that directly instead.
+                    'failed'    => JobApplication::where('send_batch_id', $batch->id)
+                        ->where('status', JobApplication::STATUS_FAILED)->count(),
                     'pending'   => $batch->pendingJobs,
                     'cancelled' => $batch->cancelled(),
                 ];
@@ -215,15 +219,19 @@ class JobApplicationController extends Controller
 
         $templateId = $request->input('email_template_id');
 
-        $updateData = ['status' => JobApplication::STATUS_QUEUED, 'error' => null];
+        $batch = Bus::batch(
+            $jobs->pluck('id')->map(fn ($id) => new SendJobApplication($id))->all()
+        )->name("Bulk send ({$profile->user_id})")->allowFailures()->dispatch();
+
+        $updateData = [
+            'status'        => JobApplication::STATUS_QUEUED,
+            'error'         => null,
+            'send_batch_id' => $batch->id,
+        ];
         if ($templateId) {
             $updateData['email_template_id'] = $templateId;
         }
         JobApplication::whereIn('id', $jobs->pluck('id'))->update($updateData);
-
-        $batch = Bus::batch(
-            $jobs->pluck('id')->map(fn ($id) => new SendJobApplication($id))->all()
-        )->name("Bulk send ({$profile->user_id})")->allowFailures()->dispatch();
 
         $profile->update(['current_send_batch_id' => $batch->id]);
 
@@ -243,7 +251,7 @@ class JobApplicationController extends Controller
         if ($profile->current_send_batch_id) {
             Bus::findBatch($profile->current_send_batch_id)?->cancel();
 
-            JobApplication::where('user_id', $profile->user_id)
+            JobApplication::where('send_batch_id', $profile->current_send_batch_id)
                 ->where('status', JobApplication::STATUS_QUEUED)
                 ->update(['status' => JobApplication::STATUS_PENDING]);
 
