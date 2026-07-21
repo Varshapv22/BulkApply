@@ -240,6 +240,9 @@ input[type=file] { padding: 9px 12px; cursor: pointer; }
 .alert-warn::before { background: var(--amber); }
 .alert ul { margin: 6px 0 0 18px; }
 
+.batch-progress-track { height: 6px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.batch-progress-fill { height: 100%; border-radius: 4px; background: var(--primary-grad); transition: width .4s ease; }
+
 /* ---------- Table ---------- */
 .table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
 table { width: 100%; border-collapse: collapse; }

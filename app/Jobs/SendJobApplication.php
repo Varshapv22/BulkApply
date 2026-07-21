@@ -7,8 +7,11 @@ use App\Models\EmailTemplate;
 use App\Models\JobApplication;
 use App\Models\Profile;
 use App\Services\UserMailer;
+use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Queue\Middleware\RateLimited;
+use Illuminate\Queue\Middleware\SkipIfBatchCancelled;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -16,13 +19,29 @@ use Throwable;
 
 class SendJobApplication implements ShouldQueue
 {
+    use Batchable;
     use Queueable;
 
-    public int $tries = 3;
     public int $backoff = 30;
 
     public function __construct(public int $jobApplicationId)
     {
+    }
+
+    /**
+     * A rate-limit release requeues indefinitely (no tries budget to burn
+     * through), for up to 3 days — long enough to outlast a tight hourly cap
+     * on a large batch. Real send failures are handled explicitly below and
+     * never rely on this window.
+     */
+    public function retryUntil(): \DateTime
+    {
+        return now()->addDays(3);
+    }
+
+    public function middleware(): array
+    {
+        return [new SkipIfBatchCancelled, new RateLimited('mail-sending')];
     }
 
     public function handle(): void
@@ -35,19 +54,13 @@ class SendJobApplication implements ShouldQueue
 
         // Queue workers have no logged-in session, so Profile::current() can't
         // be trusted here — resolve the account that actually owns this job.
-        $profile = $this->resolveProfile($job);
+        $profile = self::resolveProfileFor($job);
 
         if (! $profile->hasMailCredentials()) {
             $job->update([
                 'status' => JobApplication::STATUS_FAILED,
                 'error'  => 'Email sending not connected. Add your Gmail App Password in Settings.',
             ]);
-            return;
-        }
-
-        // Rate limit check — release back to queue if over limit
-        if ($profile->isRateLimited()) {
-            $this->release(120); // try again in 2 minutes
             return;
         }
 
@@ -81,11 +94,22 @@ class SendJobApplication implements ShouldQueue
         $userMailer = new UserMailer();
         $mailerName = $userMailer->mailerFor($profile);
         try {
-            Mail::mailer($mailerName)->to($job->recruiter_email)->send(
-                new JobApplicationMail($job, $profile, $customSubject, $customBody)
-            );
-        } finally {
-            $userMailer->release($mailerName);
+            try {
+                Mail::mailer($mailerName)->to($job->recruiter_email)->send(
+                    new JobApplicationMail($job, $profile, $customSubject, $customBody)
+                );
+            } finally {
+                $userMailer->release($mailerName);
+            }
+        } catch (Throwable $e) {
+            // A real send failure (bad address, auth error, etc.) — fail once,
+            // immediately, rather than let retryUntil() keep retrying it for days.
+            $job->update([
+                'status' => JobApplication::STATUS_FAILED,
+                'error'  => substr($e->getMessage(), 0, 1000),
+            ]);
+            $this->fireWebhook($profile, $job, 'application_failed');
+            return;
         }
 
         $updateData = [
@@ -114,16 +138,18 @@ class SendJobApplication implements ShouldQueue
                 'error'  => substr($e->getMessage(), 0, 1000),
             ]);
 
-            $profile = $this->resolveProfile($job);
+            $profile = self::resolveProfileFor($job);
             $this->fireWebhook($profile, $job, 'application_failed');
         }
     }
 
     /**
      * The account that owns this job. Falls back to Profile::current() only
-     * for legacy rows created before applications tracked user_id.
+     * for legacy rows created before applications tracked user_id. Shared
+     * with the mail-sending rate limiter (AppServiceProvider::boot()), which
+     * needs to resolve the same profile before this job's handle() runs.
      */
-    private function resolveProfile(JobApplication $job): Profile
+    public static function resolveProfileFor(JobApplication $job): Profile
     {
         if ($job->user_id) {
             return Profile::where('user_id', $job->user_id)->first()
