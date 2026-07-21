@@ -28,13 +28,17 @@ class HandleInertiaRequests extends Middleware
         return array_merge(parent::share($request), [
             'auth' => [
                 'user' => $request->user()
-                    ? $request->user()->only('id', 'name', 'email')
+                    ? array_merge(
+                        $request->user()->only('id', 'name', 'email'),
+                        ['isAdmin' => $request->user()->getRoleNames()->isNotEmpty()]
+                    )
                     : null,
             ],
             'flash' => [
                 'status' => fn () => $request->session()->get('status'),
                 'error'  => fn () => $request->session()->get('error'),
             ],
+            'impersonating' => $request->session()->has('impersonator_id'),
             // The address applications are sent FROM — used to open the correct
             // Gmail account (via ?authuser=) regardless of the browser's default.
             'mailFrom' => config('mail.from.address'),

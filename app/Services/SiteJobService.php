@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\FeatureFlag;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -49,15 +50,15 @@ class SiteJobService
         $host  = $this->host($site);
 
         // 1. Dedicated readers for known Kerala tech-park boards.
-        if (Str::contains($lower, 'infopark') || $host === 'infopark.in') {
+        if ((Str::contains($lower, 'infopark') || $host === 'infopark.in') && FeatureFlag::enabled('source.infopark')) {
             $r = (new InfoparkJobService())->search($role, '', $limit);
             return $this->result(jobs: $r['jobs'], error: $r['error'], handled: true);
         }
-        if (Str::contains($lower, 'technopark') || in_array($host, ['technopark.in', 'technopark.org'], true)) {
+        if ((Str::contains($lower, 'technopark') || in_array($host, ['technopark.in', 'technopark.org'], true)) && FeatureFlag::enabled('source.technopark')) {
             $r = (new TechnoparkJobService())->search($role, '', $limit);
             return $this->result(jobs: $r['jobs'], error: $r['error'], handled: true);
         }
-        if (Str::contains($lower, 'cyberpark') || in_array($host, ['cyberparks.in', 'cyberparkkerala.org'], true)) {
+        if ((Str::contains($lower, 'cyberpark') || in_array($host, ['cyberparks.in', 'cyberparkkerala.org'], true)) && FeatureFlag::enabled('source.cyberpark')) {
             $r = (new CyberparkJobService())->search($role, '', $limit);
             return $this->result(jobs: $r['jobs'], error: $r['error'], handled: true);
         }

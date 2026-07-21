@@ -73,3 +73,5 @@ Route::middleware('auth')->group(function () {
         return \Inertia\Inertia::render('Extension');
     })->name('extension');
 });
+
+require __DIR__.'/admin.php';

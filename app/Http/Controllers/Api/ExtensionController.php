@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\FeatureFlag;
 use App\Models\JobApplication;
 use App\Models\Profile;
 use App\Models\User;
@@ -46,6 +47,11 @@ class ExtensionController extends Controller
         ]);
 
         $user = $request->user();
+
+        $sourceFlag = 'source.' . strtolower($data['source'] ?? '');
+        if (($data['source'] ?? null) && !FeatureFlag::enabled($sourceFlag)) {
+            return response()->json(['message' => "Saving jobs from {$data['source']} is currently disabled by the administrator."], 403);
+        }
 
         // Duplicate check: same company+title, or the exact same posting URL
         // scraped again (title/casing can drift slightly between visits).

@@ -94,6 +94,18 @@ a:hover { text-decoration: underline; }
 
 /* ---------- App shell ---------- */
 .app-shell { display: flex; min-height: 100vh; }
+.app-shell.has-impersonation-banner { padding-top: 40px; }
+
+.impersonation-banner {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 300; height: 40px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    background: var(--amber); color: #1a1200; font-size: 13px; font-weight: 600;
+}
+.impersonation-banner button {
+    background: rgba(0,0,0,.15); border: none; color: inherit; font-weight: 700;
+    padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12.5px;
+}
+.impersonation-banner button:hover { background: rgba(0,0,0,.25); }
 
 .sidebar {
     width: 256px; flex-shrink: 0; background: var(--sidebar-bg); color: var(--sidebar-text);
@@ -122,8 +134,8 @@ a:hover { text-decoration: underline; }
 }
 .nav-item:hover { background: rgba(255,255,255,.05); color: #fff; text-decoration: none; }
 .nav-item.active { background: var(--primary-grad); color: #fff; box-shadow: var(--shadow); }
-.nav-item.active .ico { opacity: 1; }
-.nav-item .ico { width: 18px; height: 18px; flex-shrink: 0; opacity: .75; }
+.nav-item.active .ico, .nav-item.active > svg { opacity: 1; }
+.nav-item .ico, .nav-item > svg { width: 18px; height: 18px; flex-shrink: 0; opacity: .75; }
 .sidebar-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,.06); }
 .sidebar-user { display: flex; align-items: center; gap: 11px; padding: 8px; font-size: 13px; border-radius: 12px;
     background: rgba(255,255,255,.03); }
@@ -145,12 +157,12 @@ a:hover { text-decoration: underline; }
 .topbar .page-title { font-size: 15px; font-weight: 700; color: var(--heading); letter-spacing: -.01em; }
 .topbar .spacer { flex: 1; }
 .hamburger { display: none; background: none; border: none; color: var(--text); font-size: 22px; cursor: pointer; }
-.content { padding: 30px 44px; max-width: 1600px; width: 100%; margin: 0 auto; animation: fadeUp .35s ease both; }
+.content { padding: 20px 24px; width: 100%; animation: fadeUp .35s ease both; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-.page-head { margin-bottom: 26px; }
-.page-head h1 { font-size: 27px; font-weight: 800; margin: 0 0 5px; letter-spacing: -.03em; color: var(--heading); }
-.page-head p { margin: 0; color: var(--muted); font-size: 14.5px; }
+.page-head { margin-bottom: 16px; }
+.page-head h1 { font-size: 22px; font-weight: 800; margin: 0 0 3px; letter-spacing: -.03em; color: var(--heading); }
+.page-head p { margin: 0; color: var(--muted); font-size: 13.5px; }
 
 /* ---------- Cards ---------- */
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 24px;
@@ -339,8 +351,8 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
     .sidebar.open { transform: translateX(0); }
     .main { margin-left: 0; }
     .hamburger { display: block; }
-    .content { padding: 22px 16px; }
-    .topbar { padding: 0 18px; }
+    .content { padding: 12px 14px; }
+    .topbar { padding: 0 14px; }
     .sidebar-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,.5); backdrop-filter: blur(2px); z-index: 45; }
 }
 
@@ -577,38 +589,44 @@ tbody tr.selected:hover { background: var(--primary-soft); }
 
 
 /* ============================================================
-   NEW GLASSMORPHISM & BENTO BOX ADDITIONS
+   LAYOUT FIXES — standard flush sidebar + clean topbar
    ============================================================ */
 
-.app-shell { padding: 12px; gap: 12px; }
+/* No outer padding on the shell — sidebar sits flush to edges */
+.app-shell { padding: 0; gap: 0; }
 
+/* Sidebar: full-height, flush left, gradient background restored */
 .sidebar {
-    inset: 12px auto 12px 12px;
-    height: calc(100vh - 24px);
-    border-radius: 24px;
-    background: var(--card);
-    border: 1px solid var(--border);
-    box-shadow: var(--shadow);
+    inset: 0 auto 0 0;
+    height: 100vh;
+    border-radius: 0;
+    background: var(--sidebar-bg);
+    border-right: 1px solid rgba(255,255,255,.06);
+    box-shadow: 4px 0 24px rgba(0,0,0,.08);
 }
 
-.main { margin-left: 268px; border-radius: 24px; }
+/* Main: standard left margin matching sidebar width */
+.main { margin-left: 256px; border-radius: 0; }
+
+/* Topbar: standard sticky bar, no negative margins */
 .topbar {
-    margin: -12px -12px 24px -12px;
-    padding: 0 40px;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 80%, transparent) 0%, transparent 100%);
-    backdrop-filter: blur(8px);
-    border-bottom: none;
+    margin: 0;
+    padding: 0 24px;
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
 }
-.topbar .page-title { font-family: 'Outfit'; font-size: 22px; }
+.topbar .page-title { font-family: 'Outfit'; font-size: 16px; }
 
+/* Cards: keep rounded corners but no hover lift on every card */
 .card {
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 24px;
-    transition: transform 0.25s, box-shadow 0.25s;
+    border-radius: 18px;
+    transition: box-shadow 0.2s;
 }
-.card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-.card h2 { font-family: 'Outfit'; font-size: 18px; }
+.card:hover { transform: none; box-shadow: var(--shadow-lg); }
+.card h2 { font-family: 'Outfit'; font-size: 17px; }
 
 .bento-grid {
     display: grid;
@@ -641,40 +659,16 @@ tbody tr.selected:hover { background: var(--primary-soft); }
 @keyframes bentoEnter { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: none; } }
 
 @media (max-width: 900px) {
-    .sidebar { transform: translateX(-120%); width: 280px; }
+    .sidebar { transform: translateX(-110%); width: 280px; border-radius: 0; }
     .sidebar.open { transform: translateX(0); }
     .main { margin-left: 0; }
-    .topbar { margin: -12px -12px 24px -12px; }
+    .topbar { padding: 0 18px; }
 }
 
-/* Fixes for Sidebar Text Color on Light Glass Background */
-.sidebar {
-    --sidebar-text: #475569;
-    --sidebar-text-muted: #94a3b8;
-}
-[data-theme="dark"] .sidebar {
-    --sidebar-text: #cbd5e1;
-    --sidebar-text-muted: #64748b;
-}
-.sidebar-brand { color: var(--heading); }
-.nav-item:hover {
-    background: rgba(0,0,0,0.05);
-    color: var(--heading);
-}
-[data-theme="dark"] .nav-item:hover {
-    background: rgba(255,255,255,0.05);
-    color: #fff;
-}
-
-/* Sidebar/card backgrounds are solid var(--card) now, so they already track
-   light/dark (and the prefers-color-scheme fallback) via the base tokens
-   above with no per-component override needed. These two rules only carry
-   forward the sidebar's own text-contrast variables, which aren't part of
-   the base token set. */
-@media (prefers-color-scheme: dark) {
-    :root:not([data-theme]) .sidebar { --sidebar-text: #cbd5e1; --sidebar-text-muted: #64748b; }
-    :root:not([data-theme]) .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
-}
+/* Sidebar uses dark gradient — always light text regardless of page theme */
+.sidebar { --sidebar-text: #c7cdda; --sidebar-text-muted: #7c8598; }
+.sidebar-brand { color: #fff; }
+.nav-item:hover { background: rgba(255,255,255,.05); color: #fff; }
 
 /* Collapsible Sidebar Additions */
 .sidebar { transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s; overflow: hidden; white-space: nowrap; }
@@ -687,7 +681,7 @@ tbody tr.selected:hover { background: var(--primary-soft); }
 .sidebar-footer { transition: all 0.3s; }
 
 .main { transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-.main.collapsed { margin-left: 100px; }
+.main.collapsed { margin-left: 88px; }
 
 .desktop-toggle { display: flex; align-items: center; justify-content: center; }
 @media (max-width: 1024px) {

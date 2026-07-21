@@ -14,8 +14,13 @@ class ResumeController extends Controller
             'resume' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
         ]);
 
+        $remaining = $request->user()->remainingResumeQuota();
+        if ($remaining !== null && $remaining <= 0) {
+            return back()->with('error', 'Your plan\'s resume limit has been reached. Delete an existing resume or upgrade your plan.');
+        }
+
         $file = $request->file('resume');
-        
+
         Resume::create([
             'user_id' => $request->user()->id,
             'name' => $file->getClientOriginalName(),
