@@ -11,6 +11,10 @@ const NAV = [
     { href: '/admin/queue', label: 'Queue', match: '/admin/queue', icon: 'clock' },
     { href: '/admin/job-sources', label: 'Job Sources', match: '/admin/job-sources', icon: 'globe' },
     { href: '/admin/extension', label: 'Extension', match: '/admin/extension', icon: 'sparkle' },
+    { href: '/admin/reports', label: 'Reports', match: '/admin/reports', icon: 'doc' },
+    { href: '/admin/analytics', label: 'Analytics', match: '/admin/analytics', icon: 'target' },
+    { href: '/admin/notifications', label: 'Notifications', match: '/admin/notifications', icon: 'alert' },
+    { href: '/admin/support', label: 'Support', match: '/admin/support', icon: 'chat' },
 ];
 
 function useTheme() {
