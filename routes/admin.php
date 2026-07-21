@@ -1,13 +1,17 @@
 <?php
 
+use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExtensionController;
 use App\Http\Controllers\Admin\JobApplicationController;
 use App\Http\Controllers\Admin\JobSourceController;
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PlanController;
 use App\Http\Controllers\Admin\QueueController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ResumeController;
 use App\Http\Controllers\Admin\SubscriptionController;
+use App\Http\Controllers\Admin\SupportController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -54,4 +58,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/job-sources/reorder', [JobSourceController::class, 'reorder'])->name('jobSources.reorder');
 
     Route::get('/extension', [ExtensionController::class, 'index'])->name('extension.index');
+
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export/{type}', [ReportController::class, 'export'])->name('reports.export');
+
+    Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
+
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.markRead');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+
+    Route::get('/support', [SupportController::class, 'index'])->name('support.index');
+    Route::post('/support/{ticket}/status', [SupportController::class, 'updateStatus'])->name('support.updateStatus');
 });

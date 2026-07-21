@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Mail\JobApplicationMail;
+use App\Models\AdminNotification;
 use App\Models\EmailTemplate;
 use App\Models\JobApplication;
 use App\Models\Profile;
@@ -108,6 +109,7 @@ class SendJobApplication implements ShouldQueue
                 'status' => JobApplication::STATUS_FAILED,
                 'error'  => substr($e->getMessage(), 0, 1000),
             ]);
+            AdminNotification::log('email_failed', "Email to {$job->company} failed: " . substr($e->getMessage(), 0, 200), ['job_id' => $job->id]);
             $this->fireWebhook($profile, $job, 'application_failed');
             return;
         }
@@ -137,6 +139,8 @@ class SendJobApplication implements ShouldQueue
                 'status' => JobApplication::STATUS_FAILED,
                 'error'  => substr($e->getMessage(), 0, 1000),
             ]);
+
+            AdminNotification::log('queue_failed', "Queue job for {$job->company} failed permanently: " . substr($e->getMessage(), 0, 200), ['job_id' => $job->id]);
 
             $profile = self::resolveProfileFor($job);
             $this->fireWebhook($profile, $job, 'application_failed');
@@ -175,8 +179,9 @@ class SendJobApplication implements ShouldQueue
                 'sent_at'   => $job->sent_at?->toIso8601String(),
                 'error'     => $job->error,
             ]);
-        } catch (Throwable) {
+        } catch (Throwable $e) {
             // Don't fail the job for webhook errors
+            AdminNotification::log('webhook_failed', "Webhook to {$profile->webhook_url} failed: " . substr($e->getMessage(), 0, 200), ['job_id' => $job->id]);
         }
     }
 }

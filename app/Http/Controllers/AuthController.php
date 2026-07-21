@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminNotification;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -59,6 +60,8 @@ class AuthController extends Controller
             'email'    => $data['email'],
             'password' => $data['password'],
         ]);
+
+        AdminNotification::log('new_registration', "New user registered: {$user->name} ({$user->email})", ['user_id' => $user->id]);
 
         Auth::login($user);
 
