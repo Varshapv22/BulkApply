@@ -8,8 +8,8 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Process queued emails within the sending window (every 5 minutes)
-Schedule::command('app:send-scheduled')->everyFiveMinutes();
+// Self-heal applications stuck in "queued" from a crashed worker or abandoned batch (every 5 minutes)
+Schedule::command('app:sweep-stale-queued')->everyFiveMinutes();
 
 // Dispatch follow-up emails for overdue applications (hourly)
 Schedule::command('app:dispatch-followups')->hourly();

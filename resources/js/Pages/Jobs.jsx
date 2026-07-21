@@ -222,12 +222,44 @@ function PreviewModal({ jobId, onClose }) {
     );
 }
 
-export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, counts, filters }) {
+function BatchProgress({ batch, onCancel, cancelling }) {
+    const { total, processed, failed, pending } = batch;
+    const pct = total > 0 ? Math.round((processed / total) * 100) : 0;
+
+    return (
+        <div className="alert alert-warn" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                <span>
+                    Sending in the background: <strong>{processed}/{total}</strong> processed
+                    {failed > 0 && <> · <span style={{ color: 'var(--red)' }}>{failed} failed</span></>}
+                    {pending > 0 && <> · {pending} remaining</>}
+                </span>
+                <button type="button" className="btn-link" style={{ color: 'var(--red)' }} onClick={onCancel} disabled={cancelling}>
+                    {cancelling ? 'Cancelling…' : 'Cancel remaining'}
+                </button>
+            </div>
+            <div className="batch-progress-track">
+                <div className="batch-progress-fill" style={{ width: `${pct}%` }} />
+            </div>
+        </div>
+    );
+}
+
+export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, counts, filters, activeBatch }) {
     const [previewId, setPreviewId] = useState(null);
     const [templateId, setTemplateId] = useState('');
     const [sendingAll, setSendingAll] = useState(false);
     const [clearingAll, setClearingAll] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
     const [busyIds, setBusyIds] = useState(() => new Set());
+
+    useEffect(() => {
+        if (!activeBatch) return;
+        const interval = setInterval(() => {
+            router.reload({ only: ['jobs', 'counts', 'activeBatch'], preserveScroll: true, preserveState: true });
+        }, 3000);
+        return () => clearInterval(interval);
+    }, [activeBatch]);
 
     const setBusy = (id, busy) => setBusyIds((s) => {
         const next = new Set(s);
@@ -250,6 +282,11 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
         if (!confirm('Delete ALL jobs? This cannot be undone.')) return;
         setClearingAll(true);
         router.post('/jobs/clear', {}, { onFinish: () => setClearingAll(false) });
+    };
+    const cancelSend = () => {
+        if (!confirm('Cancel the remaining queued sends?')) return;
+        setCancelling(true);
+        router.post('/jobs/send-cancel', {}, { preserveScroll: true, onFinish: () => setCancelling(false) });
     };
     const destroy = (id) => {
         if (!confirm('Delete this job?')) return;
@@ -277,6 +314,8 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                 <Stat label="Failed" value={counts.failed} accent="red" icon={Icons.alert} />
             </div>
 
+            {activeBatch && <BatchProgress batch={activeBatch} onCancel={cancelSend} cancelling={cancelling} />}
+
             <ImportAndAdd />
             <Filters filters={filters} pipelineLabels={pipelineLabels} />
 
@@ -290,7 +329,7 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                             ))}
                         </select>
                     )}
-                    <button className="btn btn-primary" disabled={counts.pending === 0 || sendingAll} onClick={sendAll}>
+                    <button className="btn btn-primary" disabled={counts.pending === 0 || sendingAll || !!activeBatch} onClick={sendAll}>
                         {sendingAll ? <><Spinner /> Sending…</> : `Send ${counts.pending} pending`}
                     </button>
                     <div className="spacer" />

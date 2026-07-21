@@ -8,6 +8,7 @@ use App\Models\JobApplication;
 use App\Models\Profile;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -52,11 +53,29 @@ class JobApplicationController extends Controller
             'sent_at'         => $job->sent_at ? $job->sent_at->diffForHumans() : null,
         ]);
 
+        $profile = Profile::current();
+        $activeBatch = null;
+        if ($profile->current_send_batch_id) {
+            $batch = Bus::findBatch($profile->current_send_batch_id);
+            if ($batch && ! $batch->finished()) {
+                $activeBatch = [
+                    'total'     => $batch->totalJobs,
+                    'processed' => $batch->processedJobs(),
+                    'failed'    => $batch->failedJobs,
+                    'pending'   => $batch->pendingJobs,
+                    'cancelled' => $batch->cancelled(),
+                ];
+            } elseif ($profile->exists) {
+                $profile->update(['current_send_batch_id' => null]);
+            }
+        }
+
         return Inertia::render('Jobs', [
             'jobs'            => $jobs,
-            'hasDocuments'    => Profile::current()->hasDocuments(),
+            'hasDocuments'    => $profile->hasDocuments(),
             'templates'      => EmailTemplate::all(['id', 'name', 'is_default']),
             'pipelineLabels'  => JobApplication::PIPELINE_STATUSES,
+            'activeBatch'     => $activeBatch,
             'counts'    => [
                 'total'   => JobApplication::count(),
                 'pending' => JobApplication::whereIn('status', [JobApplication::STATUS_PENDING, JobApplication::STATUS_FAILED])->count(),
@@ -196,17 +215,42 @@ class JobApplicationController extends Controller
 
         $templateId = $request->input('email_template_id');
 
-        foreach ($jobs as $job) {
-            $updateData = ['status' => JobApplication::STATUS_QUEUED, 'error' => null];
-            if ($templateId) {
-                $updateData['email_template_id'] = $templateId;
-            }
-            $job->update($updateData);
-            SendJobApplication::dispatch($job->id);
+        $updateData = ['status' => JobApplication::STATUS_QUEUED, 'error' => null];
+        if ($templateId) {
+            $updateData['email_template_id'] = $templateId;
         }
+        JobApplication::whereIn('id', $jobs->pluck('id'))->update($updateData);
+
+        $batch = Bus::batch(
+            $jobs->pluck('id')->map(fn ($id) => new SendJobApplication($id))->all()
+        )->name("Bulk send ({$profile->user_id})")->allowFailures()->dispatch();
+
+        $profile->update(['current_send_batch_id' => $batch->id]);
 
         return redirect()->route('jobs.index')
             ->with('status', "Queued {$jobs->count()} application(s). They are being emailed in the background.");
+    }
+
+    /**
+     * Cancel the profile's currently in-flight bulk send batch. Jobs already
+     * picked up by a worker finish normally; anything still queued is
+     * skipped (SkipIfBatchCancelled) and its row reset to pending.
+     */
+    public function cancelSend()
+    {
+        $profile = Profile::current();
+
+        if ($profile->current_send_batch_id) {
+            Bus::findBatch($profile->current_send_batch_id)?->cancel();
+
+            JobApplication::where('user_id', $profile->user_id)
+                ->where('status', JobApplication::STATUS_QUEUED)
+                ->update(['status' => JobApplication::STATUS_PENDING]);
+
+            $profile->update(['current_send_batch_id' => null]);
+        }
+
+        return back()->with('status', 'Remaining sends cancelled.');
     }
 
     public function sendOne(JobApplication $job)

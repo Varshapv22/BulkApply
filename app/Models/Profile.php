@@ -70,17 +70,4 @@ class Profile extends Model
 
         return true;
     }
-
-    public function isRateLimited(): bool
-    {
-        if (!$this->max_emails_per_hour || $this->max_emails_per_hour <= 0) {
-            return false;
-        }
-
-        $sentLastHour = JobApplication::where('status', JobApplication::STATUS_SENT)
-            ->where('sent_at', '>=', now()->subHour())
-            ->count();
-
-        return $sentLastHour >= $this->max_emails_per_hour;
-    }
 }

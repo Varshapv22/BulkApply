@@ -61,6 +61,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/jobs/template', [JobApplicationController::class, 'template'])->name('jobs.template');
     Route::get('/jobs/export', [JobApplicationController::class, 'export'])->name('jobs.export');
     Route::post('/jobs/send', [JobApplicationController::class, 'send'])->name('jobs.send');
+    Route::post('/jobs/send-cancel', [JobApplicationController::class, 'cancelSend'])->name('jobs.sendCancel');
     Route::post('/jobs/clear', [JobApplicationController::class, 'clear'])->name('jobs.clear');
     Route::post('/jobs/preview', [JobApplicationController::class, 'preview'])->name('jobs.preview');
     Route::post('/jobs/{job}/send', [JobApplicationController::class, 'sendOne'])->name('jobs.sendOne');
