@@ -6,6 +6,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailTemplateController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\JobSearchController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ResumeCheckController;
 use App\Http\Controllers\TrackingController;
@@ -28,6 +29,9 @@ Route::get('/track/click/{trackingId}', [TrackingController::class, 'click'])->n
 // --- Contact (public, works for guests and logged-in users) ---
 Route::get('/contact', [ContactController::class, 'show'])->name('contact.show');
 Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+
+// --- CMS pages (public, published only) ---
+Route::get('/p/{slug}', [PageController::class, 'show'])->name('page.show');
 
 // --- Authenticated routes ---
 Route::middleware('auth')->group(function () {

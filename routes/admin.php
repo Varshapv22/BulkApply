@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\AnalyticsController;
+use App\Http\Controllers\Admin\CmsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ExtensionController;
 use App\Http\Controllers\Admin\JobApplicationController;
@@ -70,4 +71,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
 
     Route::get('/support', [SupportController::class, 'index'])->name('support.index');
     Route::post('/support/{ticket}/status', [SupportController::class, 'updateStatus'])->name('support.updateStatus');
+
+    Route::get('/cms', [CmsController::class, 'index'])->name('cms.index');
+    Route::post('/cms', [CmsController::class, 'store'])->name('cms.store');
+    Route::put('/cms/{page}', [CmsController::class, 'update'])->name('cms.update');
+    Route::delete('/cms/{page}', [CmsController::class, 'destroy'])->name('cms.destroy');
 });

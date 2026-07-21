@@ -15,6 +15,7 @@ const NAV = [
     { href: '/admin/analytics', label: 'Analytics', match: '/admin/analytics', icon: 'target' },
     { href: '/admin/notifications', label: 'Notifications', match: '/admin/notifications', icon: 'alert' },
     { href: '/admin/support', label: 'Support', match: '/admin/support', icon: 'chat' },
+    { href: '/admin/cms', label: 'CMS', match: '/admin/cms', icon: 'doc' },
 ];
 
 function useTheme() {
