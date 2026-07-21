@@ -7,7 +7,7 @@
    ============================================================ */
 
 /* ---- Accent themes: set only the 3 hue vars ---- */
-:root                       { --primary: #6366f1; --primary-dark: #4f46e5; --primary-2: #a855f7; } /* Indigo */
+:root                       { --primary: #4f5fe0; --primary-dark: #4048c7; --primary-2: #6b76e8; } /* Slate indigo */
 :root[data-accent="violet"] { --primary: #8b5cf6; --primary-dark: #7c3aed; --primary-2: #d946ef; }
 :root[data-accent="emerald"]{ --primary: #10b981; --primary-dark: #059669; --primary-2: #22d3ee; }
 :root[data-accent="ocean"]  { --primary: #0ea5e9; --primary-dark: #0284c7; --primary-2: #6366f1; }
@@ -63,7 +63,6 @@
     --primary-soft: color-mix(in srgb, var(--primary) 14%, var(--card));
     --primary-grad: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
     --ring: color-mix(in srgb, var(--primary) 32%, transparent);
-    --shadow-primary: 0 10px 24px -8px color-mix(in srgb, var(--primary) 55%, transparent);
     --sidebar-bg: linear-gradient(180deg, color-mix(in srgb, var(--primary) 34%, var(--sidebar-base, #0b1120)) 0%, var(--sidebar-base, #0b1120) 74%);
     
     --glass-blur: blur(24px);
@@ -108,7 +107,7 @@ a:hover { text-decoration: underline; }
 .sidebar-brand .dot {
     width: 36px; height: 36px; border-radius: 11px; background: var(--primary-grad);
     display: inline-flex; align-items: center; justify-content: center; font-size: 17px; color: #fff;
-    box-shadow: var(--shadow-primary); font-weight: 800;
+    box-shadow: var(--shadow); font-weight: 800;
 }
 .sidebar-brand span:not(.dot) { background: var(--primary-grad); -webkit-background-clip: text;
     background-clip: text; -webkit-text-fill-color: transparent; }
@@ -122,16 +121,16 @@ a:hover { text-decoration: underline; }
     background: transparent; border: 0; font-family: inherit; text-align: left; width: 100%;
 }
 .nav-item:hover { background: rgba(255,255,255,.05); color: #fff; text-decoration: none; }
-.nav-item.active { background: var(--primary-grad); color: #fff; box-shadow: var(--shadow-primary); }
+.nav-item.active { background: var(--primary-grad); color: #fff; box-shadow: var(--shadow); }
 .nav-item.active .ico { opacity: 1; }
 .nav-item .ico { width: 18px; height: 18px; flex-shrink: 0; opacity: .75; }
 .sidebar-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,.06); }
 .sidebar-user { display: flex; align-items: center; gap: 11px; padding: 8px; font-size: 13px; border-radius: 12px;
     background: rgba(255,255,255,.03); }
 .sidebar-user .avatar {
-    width: 34px; height: 34px; border-radius: 10px; background: var(--primary-grad); color: #fff;
+    width: 34px; height: 34px; border-radius: 10px; background: var(--primary); color: #fff;
     display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0;
-    box-shadow: var(--shadow-primary);
+    box-shadow: var(--shadow);
 }
 .sidebar-user .name { color: #fff; font-weight: 600; line-height: 1.2; }
 .sidebar-user .email { color: var(--sidebar-text-muted); font-size: 11px; line-height: 1.3;
@@ -169,7 +168,7 @@ a:hover { text-decoration: underline; }
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 18px; margin-bottom: 24px; }
 .stat { background: var(--card); border: 1px solid var(--border); border-radius: 18px; padding: 20px;
     box-shadow: var(--shadow); position: relative; overflow: hidden; transition: transform .18s, box-shadow .18s; }
-.stat::after { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--primary-grad); opacity: .0; transition: opacity .18s; }
+.stat::after { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--primary); opacity: .0; transition: opacity .18s; }
 .stat:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
 .stat:hover::after { opacity: 1; }
 .stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
@@ -213,7 +212,7 @@ input[type=file] { padding: 9px 12px; cursor: pointer; }
     font-family: inherit; white-space: nowrap; transition: transform .12s, box-shadow .15s, background .15s, filter .15s; }
 .btn:hover { text-decoration: none; }
 .btn:active { transform: translateY(1px); }
-.btn-primary { background: var(--primary-grad); color: #fff; box-shadow: var(--shadow-primary); }
+.btn-primary { background: var(--primary-grad); color: #fff; box-shadow: var(--shadow); }
 .btn-primary:hover { filter: brightness(1.07); box-shadow: 0 12px 28px -8px color-mix(in srgb, var(--primary) 60%, transparent); transform: translateY(-1px); }
 .btn-ghost { background: var(--card); color: var(--text); border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
 .btn-ghost:hover { background: var(--hover); }
@@ -485,12 +484,12 @@ tbody tr.selected:hover { background: var(--primary-soft); }
 .empty .empty-title { font-weight: 700; color: var(--heading); font-size: 15px; margin-bottom: 4px; }
 .empty .empty-sub { font-size: 13.5px; line-height: 1.6; max-width: 420px; margin: 0 auto; }
 
-/* ---------- Hero card (gradient-topped card with icon+title header) ---------- */
+/* ---------- Hero card (accent-topped card with icon+title header) ---------- */
 .hero-card { position: relative; overflow: hidden; padding-top: 26px; }
-.hero-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--primary-grad); }
+.hero-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--primary); }
 .hero-card-head { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
-.hero-card-ico { width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0; background: var(--primary-grad);
-    color: #fff; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow-primary); }
+.hero-card-ico { width: 46px; height: 46px; border-radius: 14px; flex-shrink: 0; background: var(--primary);
+    color: #fff; display: inline-flex; align-items: center; justify-content: center; box-shadow: var(--shadow); }
 .hero-card-ico svg { width: 22px; height: 22px; }
 .hero-card-ico.sm { width: 38px; height: 38px; border-radius: 11px; }
 .hero-card-ico.sm svg { width: 17px; height: 17px; }
@@ -508,7 +507,7 @@ tbody tr.selected:hover { background: var(--primary-soft); }
 .quick-pick { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border-strong); background: var(--card-2);
     color: var(--text); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: all .15s; font-family: inherit; }
 .quick-pick:hover { border-color: var(--primary); color: var(--primary); }
-.quick-pick.active { background: var(--primary-grad); border-color: transparent; color: #fff; box-shadow: var(--shadow-primary); }
+.quick-pick.active { background: var(--primary); border-color: transparent; color: #fff; box-shadow: var(--shadow); }
 
 .search-options-row { display: flex; align-items: center; gap: 28px; flex-wrap: wrap; margin: 22px 0 4px;
     padding: 16px 18px; background: var(--card-2); border: 1px solid var(--border); border-radius: 13px; }
@@ -518,7 +517,7 @@ tbody tr.selected:hover { background: var(--primary-soft); }
     flex-shrink: 0; transition: background .18s; border: 1px solid var(--border-strong); }
 .switch .knob { position: absolute; top: 1px; left: 1px; width: 18px; height: 18px; border-radius: 50%; background: #fff;
     box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .18s; }
-.switch.on { background: var(--primary-grad); border-color: transparent; }
+.switch.on { background: var(--primary); border-color: transparent; }
 .switch.on .knob { transform: translateX(16px); }
 .switch-txt { font-size: 13.5px; font-weight: 600; color: var(--text); }
 
@@ -581,45 +580,32 @@ tbody tr.selected:hover { background: var(--primary-soft); }
    NEW GLASSMORPHISM & BENTO BOX ADDITIONS
    ============================================================ */
 
-body {
-    background-image: var(--bg-grad) !important;
-}
-
 .app-shell { padding: 12px; gap: 12px; }
 
 .sidebar {
     inset: 12px auto 12px 12px;
     height: calc(100vh - 24px);
     border-radius: 24px;
-    background: rgba(255, 255, 255, 0.6) !important;
-    backdrop-filter: var(--glass-blur);
-    -webkit-backdrop-filter: var(--glass-blur);
+    background: var(--card);
     border: 1px solid var(--border);
     box-shadow: var(--shadow);
 }
-[data-theme="dark"] .sidebar {
-    background: rgba(12, 14, 28, 0.55) !important;
-}
 
-.main { margin-left: 272px; border-radius: 24px; }
+.main { margin-left: 268px; border-radius: 24px; }
 .topbar {
     margin: -12px -12px 24px -12px;
     padding: 0 40px;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 80%, transparent) 0%, transparent 100%) !important;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 80%, transparent) 0%, transparent 100%);
     backdrop-filter: blur(8px);
-    border-bottom: none !important;
+    border-bottom: none;
 }
 .topbar .page-title { font-family: 'Outfit'; font-size: 22px; }
 
 .card {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: var(--glass-blur);
+    background: var(--card);
     border: 1px solid var(--border);
     border-radius: 24px;
     transition: transform 0.25s, box-shadow 0.25s;
-}
-[data-theme="dark"] .card {
-    background: rgba(20, 22, 38, 0.65);
 }
 .card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .card h2 { font-family: 'Outfit'; font-size: 18px; }
@@ -637,14 +623,14 @@ body {
 @media (max-width: 768px) { .bento-col-6 { grid-column: span 12; } }
 
 .stat-bento {
-    background: var(--card); backdrop-filter: var(--glass-blur); border: 1px solid var(--border);
+    background: var(--card); border: 1px solid var(--border);
     border-radius: 24px; padding: 24px; box-shadow: var(--shadow);
     position: relative; overflow: hidden; transition: all 0.3s;
     display: flex; flex-direction: column; justify-content: center;
 }
 .stat-bento:hover { transform: translateY(-4px) scale(1.02); box-shadow: var(--shadow-lg); }
-.stat-icon { width: 50px; height: 50px; border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; }
-.stat-icon svg { width: 24px; height: 24px; }
+.stat-bento .stat-icon { width: 50px; height: 50px; border-radius: 14px; margin-bottom: 16px; }
+.stat-bento .stat-icon svg { width: 24px; height: 24px; }
 .stat-bento .num { font-size: 40px; font-weight: 800; line-height: 1; letter-spacing: -.03em; color: var(--heading); font-family: 'Outfit'; }
 .stat-bento .lbl { font-size: 14px; color: var(--muted); font-weight: 600; margin-top: 8px; font-family: 'Inter'; text-transform: uppercase; letter-spacing: 0.05em; }
 
@@ -670,14 +656,24 @@ body {
     --sidebar-text: #cbd5e1;
     --sidebar-text-muted: #64748b;
 }
-.sidebar-brand { color: var(--heading) !important; }
+.sidebar-brand { color: var(--heading); }
 .nav-item:hover {
-    background: rgba(0,0,0,0.05) !important;
-    color: var(--heading) !important;
+    background: rgba(0,0,0,0.05);
+    color: var(--heading);
 }
 [data-theme="dark"] .nav-item:hover {
-    background: rgba(255,255,255,0.05) !important;
-    color: #fff !important;
+    background: rgba(255,255,255,0.05);
+    color: #fff;
+}
+
+/* Sidebar/card backgrounds are solid var(--card) now, so they already track
+   light/dark (and the prefers-color-scheme fallback) via the base tokens
+   above with no per-component override needed. These two rules only carry
+   forward the sidebar's own text-contrast variables, which aren't part of
+   the base token set. */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme]) .sidebar { --sidebar-text: #cbd5e1; --sidebar-text-muted: #64748b; }
+    :root:not([data-theme]) .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
 }
 
 /* Collapsible Sidebar Additions */
@@ -695,7 +691,7 @@ body {
 
 .desktop-toggle { display: flex; align-items: center; justify-content: center; }
 @media (max-width: 1024px) {
-    .desktop-toggle { display: none !important; }
+    .desktop-toggle { display: none; }
 }
 
 /* Refined Collapsed Navbar Layout Fixes */

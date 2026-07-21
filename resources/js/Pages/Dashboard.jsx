@@ -74,7 +74,7 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                <div className="card bento-col-4 animate-delay-2" style={{ background: 'var(--primary-grad)', color: '#fff' }}>
+                <div className="card bento-col-4 animate-delay-2" style={{ background: 'var(--primary)', color: '#fff' }}>
                     <h2 style={{ color: '#fff' }}>This Week</h2>
                     <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 'auto' }}>Applications added since {weekStart}</p>
                     

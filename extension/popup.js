@@ -8,6 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoutBtn = document.getElementById('logoutBtn');
     const saveBtn = document.getElementById('saveBtn');
     const scrapeBtn = document.getElementById('scrapeBtn');
+    const easyApplyBtn = document.getElementById('easyApplyBtn');
+
+    let scraped = { description: '', source: 'Web', hasEasyApply: false };
+    let savedJobId = null;
 
     // Check auth status
     chrome.storage.local.get(['token'], (result) => {
@@ -62,10 +66,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    const SUPPORTED_HOSTS = ['linkedin.com', 'indeed.com', 'naukri.com', 'glassdoor.', 'greenhouse.io', 'lever.co'];
+    const isSupportedUrl = (url) => SUPPORTED_HOSTS.some((h) => url.includes(h));
+
     // Scrape Page
     scrapeBtn.addEventListener('click', () => {
+        savedJobId = null;
+        document.getElementById('easyApplyStatus').textContent = '';
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs[0].url.includes('linkedin.com') || tabs[0].url.includes('indeed.com')) {
+            if (isSupportedUrl(tabs[0].url)) {
                 chrome.tabs.sendMessage(tabs[0].id, { action: "scrape" }, (response) => {
                     if (chrome.runtime.lastError) {
                         console.error(chrome.runtime.lastError);
@@ -75,11 +84,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         document.getElementById('jobCompany').value = response.company || '';
                         document.getElementById('jobTitle').value = response.title || '';
                         document.getElementById('jobLocation').value = response.location || '';
+                        scraped.description = response.description || '';
+                        scraped.source = response.source || 'Web';
+                        scraped.hasEasyApply = !!response.hasEasyApply;
                     }
+                    easyApplyBtn.classList.toggle('hidden', !scraped.hasEasyApply);
                 });
             } else {
                 document.getElementById('saveStatus').style.color = '#ef4444';
-                document.getElementById('saveStatus').textContent = 'Please visit a LinkedIn or Indeed job page.';
+                document.getElementById('saveStatus').textContent = 'Please visit a supported job page (LinkedIn, Indeed, Naukri, Glassdoor, Greenhouse, Lever).';
             }
         });
     });
@@ -104,7 +117,6 @@ document.addEventListener('DOMContentLoaded', () => {
         chrome.storage.local.get(['token'], async (result) => {
             chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
                 const url = tabs[0].url;
-                const source = url.includes('linkedin') ? 'LinkedIn' : url.includes('indeed') ? 'Indeed' : 'Web';
 
                 try {
                     const res = await fetch(`${API_URL}/api/extension/jobs`, {
@@ -119,15 +131,18 @@ document.addEventListener('DOMContentLoaded', () => {
                             job_title: title,
                             location: location,
                             job_url: url,
-                            source: source
+                            source: scraped.source,
+                            description: scraped.description || null,
+                            apply_type: scraped.hasEasyApply ? 'easy_apply' : 'link',
                         })
                     });
 
                     const data = await res.json();
-                    
+
                     if (res.ok) {
                         statusDiv.style.color = '#10b981';
                         statusDiv.textContent = data.message || 'Job saved!';
+                        savedJobId = data.job ? data.job.id : null;
                     } else if (res.status === 401) {
                         chrome.storage.local.remove(['token']);
                         showLoginView();
@@ -144,6 +159,51 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+    });
+
+    // Auto-fill Easy Apply
+    easyApplyBtn.addEventListener('click', async () => {
+        const statusDiv = document.getElementById('easyApplyStatus');
+        easyApplyBtn.disabled = true;
+        easyApplyBtn.textContent = 'Filling…';
+        statusDiv.textContent = '';
+
+        try {
+            const { token } = await chrome.storage.local.get(['token']);
+            const profileRes = await fetch(`${API_URL}/api/extension/profile`, {
+                headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+            });
+            if (!profileRes.ok) throw new Error('Could not load your profile.');
+            const profile = await profileRes.json();
+
+            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            const result = await chrome.tabs.sendMessage(tabs[0].id, { action: 'startEasyApply', profile });
+
+            if (result.status === 'failed') {
+                statusDiv.style.color = '#ef4444';
+                statusDiv.textContent = result.error || 'Could not auto-fill this application.';
+            } else {
+                statusDiv.style.color = '#10b981';
+                statusDiv.textContent = result.unmapped > 0
+                    ? `Filled ${result.filled} field(s) — ${result.unmapped} need your input. Review and submit in LinkedIn.`
+                    : `Filled ${result.filled} field(s). Review and submit in LinkedIn.`;
+            }
+
+            if (savedJobId) {
+                chrome.runtime.sendMessage({
+                    action: 'reportAutoApplyStatus',
+                    jobApplicationId: savedJobId,
+                    status: result.status,
+                    error: result.error || null,
+                });
+            }
+        } catch (e) {
+            statusDiv.style.color = '#ef4444';
+            statusDiv.textContent = e.message || 'Something went wrong.';
+        } finally {
+            easyApplyBtn.disabled = false;
+            easyApplyBtn.textContent = 'Auto-fill Easy Apply';
+        }
     });
 
     function showLoginView() {

@@ -26,6 +26,7 @@ class JobApplication extends Model
         'opened_at'  => 'datetime',
         'clicked_at' => 'datetime',
         'followup_at' => 'datetime',
+        'applied_at' => 'datetime',
     ];
 
     public function user()
@@ -45,7 +46,10 @@ class JobApplication extends Model
 
     public function scopeSendable($query)
     {
-        return $query->whereIn('status', [self::STATUS_PENDING, self::STATUS_FAILED]);
+        // Easy Apply jobs don't have a real recruiter email — they're meant
+        // to be applied to directly on LinkedIn, not queued into a bulk send.
+        return $query->whereIn('status', [self::STATUS_PENDING, self::STATUS_FAILED])
+            ->where('apply_type', '!=', 'easy_apply');
     }
 
     public function scopeSearch($query, ?string $search)
