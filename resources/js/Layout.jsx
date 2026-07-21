@@ -188,7 +188,13 @@ export default function Layout({ children }) {
         .split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
     return (
-        <div className="app-shell">
+        <div className={`app-shell${props.impersonating ? ' has-impersonation-banner' : ''}`}>
+            {props.impersonating && (
+                <div className="impersonation-banner">
+                    Viewing as {user?.name} ({user?.email}) —
+                    <button type="button" onClick={() => router.post('/admin/impersonate/return')}>Return to admin</button>
+                </div>
+            )}
             <aside className={`sidebar${open ? ' open' : ''}${isCollapsed ? ' collapsed' : ''}`}>
                 <div className="sidebar-brand">
                     <div className="brand-inner">
@@ -214,6 +220,11 @@ export default function Layout({ children }) {
                     <Link href="/extension" className={`nav-item${url.startsWith('/extension') ? ' active' : ''}`} title={isCollapsed ? 'Browser Extension' : undefined}>
                         <Icon name="cog" /> <span className="nav-label">Browser Extension</span>
                     </Link>
+                    {user?.isAdmin && (
+                        <Link href="/admin" className="nav-item" title={isCollapsed ? 'Admin Panel' : undefined}>
+                            <Icon name="cog" /> <span className="nav-label">Admin Panel</span>
+                        </Link>
+                    )}
                     <a className="nav-item" href={gmailSentUrl} target="_blank" rel="noopener" title={isCollapsed ? 'Gmail — Sent' : undefined}>
                         <Icon name="mail" /> <span className="nav-label">Gmail — Sent ↗</span>
                     </a>

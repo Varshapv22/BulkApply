@@ -217,6 +217,18 @@ class JobApplicationController extends Controller
             return back()->with('error', 'No pending jobs to send.');
         }
 
+        $remainingQuota = Auth::user()->remainingEmailQuota();
+        $limitedByPlan = false;
+        if ($remainingQuota !== null) {
+            if ($remainingQuota <= 0) {
+                return back()->with('error', 'Your plan\'s email limit has been reached. Upgrade your plan to send more.');
+            }
+            if ($jobs->count() > $remainingQuota) {
+                $jobs = $jobs->take($remainingQuota);
+                $limitedByPlan = true;
+            }
+        }
+
         $templateId = $request->input('email_template_id');
 
         $batch = Bus::batch(
@@ -235,8 +247,12 @@ class JobApplicationController extends Controller
 
         $profile->update(['current_send_batch_id' => $batch->id]);
 
-        return redirect()->route('jobs.index')
-            ->with('status', "Queued {$jobs->count()} application(s). They are being emailed in the background.");
+        $message = "Queued {$jobs->count()} application(s). They are being emailed in the background.";
+        if ($limitedByPlan) {
+            $message .= ' Some pending jobs were skipped because your plan\'s email limit was reached.';
+        }
+
+        return redirect()->route('jobs.index')->with('status', $message);
     }
 
     /**
@@ -270,6 +286,11 @@ class JobApplicationController extends Controller
         }
         if (! $profile->hasMailCredentials()) {
             return back()->with('error', 'Connect your email sender in Settings before sending.');
+        }
+
+        $remainingQuota = Auth::user()->remainingEmailQuota();
+        if ($remainingQuota !== null && $remainingQuota <= 0) {
+            return back()->with('error', 'Your plan\'s email limit has been reached. Upgrade your plan to send more.');
         }
 
         $job->update(['status' => JobApplication::STATUS_QUEUED, 'error' => null]);

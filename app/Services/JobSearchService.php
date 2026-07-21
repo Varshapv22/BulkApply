@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\FeatureFlag;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -17,6 +18,10 @@ class JobSearchService
      */
     public function search(string $role, string $location, array $options = [], int $limit = 20): array
     {
+        if (!FeatureFlag::enabled('source.adzuna')) {
+            return ['jobs' => [], 'error' => 'Web-wide job search is currently disabled by the administrator.'];
+        }
+
         $appId   = config('services.adzuna.app_id');
         $appKey  = config('services.adzuna.app_key');
         $country = config('services.adzuna.country', 'in');

@@ -22,6 +22,18 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
+            $user = Auth::user();
+
+            if (!$user->is_active) {
+                Auth::logout();
+                return back()->withErrors(['email' => 'This account has been suspended.'])->onlyInput('email');
+            }
+
+            $user->forceFill([
+                'last_login_at' => now(),
+                'last_login_ip' => $request->ip(),
+            ])->save();
+
             $request->session()->regenerate();
             return redirect()->intended('/dashboard');
         }
