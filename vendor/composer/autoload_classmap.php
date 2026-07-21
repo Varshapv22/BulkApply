@@ -8,6 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'App\\Console\\Commands\\DispatchFollowUps' => $baseDir . '/app/Console/Commands/DispatchFollowUps.php',
     'App\\Console\\Commands\\SendScheduledEmails' => $baseDir . '/app/Console/Commands/SendScheduledEmails.php',
+    'App\\Http\\Controllers\\Api\\ExtensionController' => $baseDir . '/app/Http/Controllers/Api/ExtensionController.php',
     'App\\Http\\Controllers\\AuthController' => $baseDir . '/app/Http/Controllers/AuthController.php',
     'App\\Http\\Controllers\\Controller' => $baseDir . '/app/Http/Controllers/Controller.php',
     'App\\Http\\Controllers\\DashboardController' => $baseDir . '/app/Http/Controllers/DashboardController.php',
