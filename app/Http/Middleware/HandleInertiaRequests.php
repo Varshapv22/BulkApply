@@ -29,7 +29,7 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user()
                     ? array_merge(
-                        $request->user()->only('id', 'name', 'email'),
+                        $request->user()->only('id', 'name', 'email', 'is_active'),
                         ['isAdmin' => $request->user()->getRoleNames()->isNotEmpty()]
                     )
                     : null,

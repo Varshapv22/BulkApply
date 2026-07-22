@@ -57,7 +57,7 @@ class AuthController extends Controller
 
         $this->completeLogin($request, $user);
 
-        return redirect()->intended('/dashboard');
+        return redirect()->intended($user->getRoleNames()->isNotEmpty() ? '/admin' : '/dashboard');
     }
 
     public function showTwoFactorChallenge(Request $request)
@@ -102,7 +102,7 @@ class AuthController extends Controller
         Auth::login($user, $remember);
         $this->completeLogin($request, $user);
 
-        return redirect()->intended('/dashboard');
+        return redirect()->intended($user->getRoleNames()->isNotEmpty() ? '/admin' : '/dashboard');
     }
 
     private function completeLogin(Request $request, User $user): void
