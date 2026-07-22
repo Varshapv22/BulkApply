@@ -34,7 +34,7 @@ export default function AdminAnalyticsIndex({ days, userGrowth, applicationGrowt
             <PageHead title="Analytics" subtitle="Platform growth and email performance over time." />
 
             <div className="card card-pad-sm">
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {[7, 30, 90].map((d) => (
                         <button key={d} className={`btn btn-sm ${days === d ? 'btn-primary' : 'btn-ghost'}`}
                             onClick={() => router.get('/admin/analytics', { days: d })}>

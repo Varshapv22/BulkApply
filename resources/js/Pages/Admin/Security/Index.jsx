@@ -84,19 +84,21 @@ function IpRules({ ipRules }) {
             </form>
 
             {ipRules.length === 0 ? <p className="muted">No IP rules configured.</p> : (
-                <table>
-                    <thead><tr><th>IP / CIDR</th><th>Type</th><th>Note</th><th></th></tr></thead>
-                    <tbody>
-                        {ipRules.map((r) => (
-                            <tr key={r.id}>
-                                <td>{r.ip_or_cidr}</td>
-                                <td><Badge status={r.type === 'block' ? 'failed' : 'sent'}>{r.type}</Badge></td>
-                                <td>{r.note || '—'}</td>
-                                <td><button className="btn btn-ghost btn-sm" onClick={() => remove(r.id)}>Remove</button></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <div className="table-wrap">
+                    <table>
+                        <thead><tr><th>IP / CIDR</th><th>Type</th><th>Note</th><th></th></tr></thead>
+                        <tbody>
+                            {ipRules.map((r) => (
+                                <tr key={r.id}>
+                                    <td>{r.ip_or_cidr}</td>
+                                    <td><Badge status={r.type === 'block' ? 'failed' : 'sent'}>{r.type}</Badge></td>
+                                    <td>{r.note || '—'}</td>
+                                    <td><button className="btn btn-ghost btn-sm" onClick={() => remove(r.id)}>Remove</button></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             )}
         </div>
     );

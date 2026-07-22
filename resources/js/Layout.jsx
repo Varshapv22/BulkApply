@@ -263,9 +263,59 @@ function ProgressBar() {
     return <div className="topbar-progress"><div className="topbar-progress-bar" /></div>;
 }
 
+function TrialExpiredModal({ plans }) {
+    return createPortal(
+        <div className="modal-overlay" style={{ zIndex: 9999 }}>
+            <div className="modal" style={{ maxWidth: 680, width: '100%' }}>
+                <div style={{ textAlign: 'center', padding: '8px 0 20px' }}>
+                    <div style={{ fontSize: 42, marginBottom: 8 }}>⏰</div>
+                    <h2 className="modal-title" style={{ fontSize: 22, marginBottom: 6 }}>Your Free Trial Has Ended</h2>
+                    <p style={{ color: 'var(--muted)', fontSize: 14 }}>
+                        Your 7-day free trial is over. Choose a plan below to continue using BulkApply.
+                    </p>
+                </div>
+
+                {plans.length === 0 ? (
+                    <p style={{ textAlign: 'center', color: 'var(--muted)', padding: '20px 0' }}>
+                        No plans are available right now. Please contact support.
+                    </p>
+                ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fit, minmax(180px, 1fr))`, gap: 14, marginTop: 8 }}>
+                        {plans.map((plan) => (
+                            <div key={plan.id} className="card card-pad-sm" style={{ border: '1.5px solid var(--border-strong)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--heading)' }}>{plan.name}</div>
+                                <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)' }}>
+                                    ${plan.price}
+                                    <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}>
+                                        /{plan.billing_interval === 'monthly' ? 'mo' : 'yr'}
+                                    </span>
+                                </div>
+                                <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 13, color: 'var(--muted)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                    <li>✓ {plan.email_limit ? `${plan.email_limit} emails` : 'Unlimited emails'}</li>
+                                    <li>✓ {plan.resume_limit ? `${plan.resume_limit} resumes` : 'Unlimited resumes'}</li>
+                                    {plan.daily_application_limit && <li>✓ {plan.daily_application_limit} apps/day</li>}
+                                    {plan.chrome_extension_access && <li>✓ Chrome extension</li>}
+                                    {plan.ats_checker_access && <li>✓ ATS checker</li>}
+                                </ul>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13, marginTop: 20 }}>
+                    To upgrade your account, please contact us or reach out to your administrator.
+                </p>
+            </div>
+        </div>,
+        document.body
+    );
+}
+
 export default function Layout({ children }) {
     const { props, url } = usePage();
     const user = props.auth?.user;
+    const trial = props.trial;
+    const plans = props.plans || [];
     const errors = props.errors || {};
     // Open the Gmail account we actually send FROM (not the browser default).
     const gmailSentUrl = props.mailFrom
@@ -395,6 +445,7 @@ export default function Layout({ children }) {
             {profileModalOpen && (
                 <ProfileModal user={user} onClose={() => setProfileModalOpen(false)} />
             )}
+            {trial?.expired && <TrialExpiredModal plans={plans} />}
         </div>
     );
 }

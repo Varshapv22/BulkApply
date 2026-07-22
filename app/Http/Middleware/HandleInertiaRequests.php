@@ -46,6 +46,37 @@ class HandleInertiaRequests extends Middleware
             // The address applications are sent FROM — used to open the correct
             // Gmail account (via ?authuser=) regardless of the browser's default.
             'mailFrom' => config('mail.from.address'),
+            // Free trial status — null for admins and subscribed users.
+            'trial' => function () use ($request) {
+                $user = $request->user();
+                if (! $user || $user->getRoleNames()->isNotEmpty()) {
+                    return null;
+                }
+                if ($user->activeSubscription()) {
+                    return null;
+                }
+                $trialEndsAt = $user->created_at->addDays(7);
+                $expired     = now()->greaterThan($trialEndsAt);
+                $daysLeft    = $expired ? 0 : (int) now()->diffInDays($trialEndsAt);
+
+                return [
+                    'expired'       => $expired,
+                    'days_left'     => $daysLeft,
+                    'trial_ends_at' => $trialEndsAt->toDateString(),
+                ];
+            },
+            // Active plans — shared so the upgrade modal can list them without a separate request.
+            'plans' => function () use ($request) {
+                $user = $request->user();
+                if (! $user || $user->getRoleNames()->isNotEmpty() || $user->activeSubscription()) {
+                    return [];
+                }
+
+                return \App\Models\Plan::where('is_active', true)
+                    ->orderBy('price')
+                    ->get(['id', 'name', 'price', 'billing_interval', 'email_limit', 'resume_limit', 'daily_application_limit', 'chrome_extension_access', 'ats_checker_access'])
+                    ->toArray();
+            },
         ]);
     }
 }

@@ -30,32 +30,34 @@ export default function AdminUserShow({ user, profile, resumes, applicationCount
 
             <div className="card">
                 <h2>Account</h2>
-                <table>
-                    <tbody>
-                        <tr><td>Status</td><td><Badge status={user.is_active ? 'sent' : 'failed'}>{user.is_active ? 'Active' : 'Suspended'}</Badge></td></tr>
-                        <tr><td>Email verified</td><td>{user.email_verified_at ? new Date(user.email_verified_at).toLocaleString() : <Badge status="pending">Not verified</Badge>}</td></tr>
-                        <tr><td>Last login</td><td>{user.last_login_at ? `${new Date(user.last_login_at).toLocaleString()} from ${user.last_login_ip || 'unknown IP'}` : 'Never'}</td></tr>
-                        <tr><td>Joined</td><td>{new Date(user.created_at).toLocaleString()}</td></tr>
-                        <tr>
-                            <td>Role</td>
-                            <td>
-                                <select value={role} onChange={(e) => { setRole(e.target.value); post(`/admin/users/${user.id}/role`, { role: e.target.value || null }); }} style={{ width: 'auto' }}>
-                                    <option value="">No role (regular user)</option>
-                                    {allRoles.map((r) => <option key={r} value={r}>{r}</option>)}
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>Plan</td>
-                            <td>
-                                <select value={planId} onChange={(e) => changePlan(e.target.value)} style={{ width: 'auto' }}>
-                                    <option value="">No plan (unlimited)</option>
-                                    {plans.map((p) => <option key={p.id} value={p.id}>{p.name} (${p.price})</option>)}
-                                </select>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                <div className="table-wrap">
+                    <table>
+                        <tbody>
+                            <tr><td>Status</td><td><Badge status={user.is_active ? 'sent' : 'failed'}>{user.is_active ? 'Active' : 'Suspended'}</Badge></td></tr>
+                            <tr><td>Email verified</td><td>{user.email_verified_at ? new Date(user.email_verified_at).toLocaleString() : <Badge status="pending">Not verified</Badge>}</td></tr>
+                            <tr><td>Last login</td><td>{user.last_login_at ? `${new Date(user.last_login_at).toLocaleString()} from ${user.last_login_ip || 'unknown IP'}` : 'Never'}</td></tr>
+                            <tr><td>Joined</td><td>{new Date(user.created_at).toLocaleString()}</td></tr>
+                            <tr>
+                                <td>Role</td>
+                                <td>
+                                    <select value={role} onChange={(e) => { setRole(e.target.value); post(`/admin/users/${user.id}/role`, { role: e.target.value || null }); }} style={{ width: 'auto' }}>
+                                        <option value="">No role (regular user)</option>
+                                        {allRoles.map((r) => <option key={r} value={r}>{r}</option>)}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Plan</td>
+                                <td>
+                                    <select value={planId} onChange={(e) => changePlan(e.target.value)} style={{ width: 'auto' }}>
+                                        <option value="">No plan (unlimited)</option>
+                                        {plans.map((p) => <option key={p.id} value={p.id}>{p.name} (${p.price})</option>)}
+                                    </select>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
 
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 16 }}>
                     <button className="btn btn-ghost btn-sm" onClick={() => post(`/admin/users/${user.id}/toggle-active`)}>
@@ -78,42 +80,46 @@ export default function AdminUserShow({ user, profile, resumes, applicationCount
             {profile && (
                 <div className="card">
                     <h2>Profile</h2>
-                    <table>
-                        <tbody>
-                            <tr><td>Full name</td><td>{profile.full_name || '—'}</td></tr>
-                            <tr><td>Contact email</td><td>{profile.email || '—'}</td></tr>
-                            <tr><td>Phone</td><td>{profile.phone || '—'}</td></tr>
-                            <tr><td>Location</td><td>{profile.location || '—'}</td></tr>
-                            <tr><td>Preferred role</td><td>{profile.preferred_role || '—'}</td></tr>
-                            <tr><td>Skills</td><td>{profile.skills || '—'}</td></tr>
-                            <tr><td>Documents uploaded</td><td>{profile.has_documents ? 'Yes' : 'No'}</td></tr>
-                            <tr>
-                                <td>Email sender</td>
-                                <td>{profile.has_mail_credentials ? `Connected (${profile.mail_username})` : 'Not connected'}</td>
-                            </tr>
-                            <tr><td>Max emails/hour</td><td>{profile.max_emails_per_hour ?? '—'}</td></tr>
-                            <tr><td>Follow-up days</td><td>{profile.followup_days ?? '—'}</td></tr>
-                            <tr><td>Webhook URL</td><td>{profile.webhook_url || '—'}</td></tr>
-                        </tbody>
-                    </table>
+                    <div className="table-wrap">
+                        <table>
+                            <tbody>
+                                <tr><td>Full name</td><td>{profile.full_name || '—'}</td></tr>
+                                <tr><td>Contact email</td><td>{profile.email || '—'}</td></tr>
+                                <tr><td>Phone</td><td>{profile.phone || '—'}</td></tr>
+                                <tr><td>Location</td><td>{profile.location || '—'}</td></tr>
+                                <tr><td>Preferred role</td><td>{profile.preferred_role || '—'}</td></tr>
+                                <tr><td>Skills</td><td>{profile.skills || '—'}</td></tr>
+                                <tr><td>Documents uploaded</td><td>{profile.has_documents ? 'Yes' : 'No'}</td></tr>
+                                <tr>
+                                    <td>Email sender</td>
+                                    <td>{profile.has_mail_credentials ? `Connected (${profile.mail_username})` : 'Not connected'}</td>
+                                </tr>
+                                <tr><td>Max emails/hour</td><td>{profile.max_emails_per_hour ?? '—'}</td></tr>
+                                <tr><td>Follow-up days</td><td>{profile.followup_days ?? '—'}</td></tr>
+                                <tr><td>Webhook URL</td><td>{profile.webhook_url || '—'}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
             <div className="card">
                 <h2>Resumes</h2>
                 {resumes.length === 0 ? <p className="muted">No resumes uploaded.</p> : (
-                    <table>
-                        <thead><tr><th>Name</th><th>Default</th><th>Uploaded</th></tr></thead>
-                        <tbody>
-                            {resumes.map((r) => (
-                                <tr key={r.id}>
-                                    <td>{r.name}</td>
-                                    <td>{r.is_default ? <Badge status="sent">Default</Badge> : '—'}</td>
-                                    <td>{new Date(r.created_at).toLocaleDateString()}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <div className="table-wrap">
+                        <table>
+                            <thead><tr><th>Name</th><th>Default</th><th>Uploaded</th></tr></thead>
+                            <tbody>
+                                {resumes.map((r) => (
+                                    <tr key={r.id}>
+                                        <td>{r.name}</td>
+                                        <td>{r.is_default ? <Badge status="sent">Default</Badge> : '—'}</td>
+                                        <td>{new Date(r.created_at).toLocaleDateString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </>
