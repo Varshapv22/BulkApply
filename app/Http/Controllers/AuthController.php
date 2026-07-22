@@ -137,9 +137,10 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
-            'name'     => $data['name'],
-            'email'    => $data['email'],
-            'password' => $data['password'],
+            'name'          => $data['name'],
+            'email'         => $data['email'],
+            'password'      => $data['password'],
+            'trial_ends_at' => now()->addDays(7),
         ]);
 
         AdminNotification::log('new_registration', "New user registered: {$user->name} ({$user->email})", ['user_id' => $user->id]);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use Carbon\Carbon;
 use App\Models\JobApplication;
 use App\Models\Plan;
 use App\Models\Profile;
@@ -71,15 +72,16 @@ class UserController extends Controller
 
         return Inertia::render('Admin/Users/Show', [
             'user' => [
-                'id'              => $user->id,
-                'name'            => $user->name,
-                'email'           => $user->email,
-                'is_active'       => $user->is_active,
-                'email_verified_at' => $user->email_verified_at,
-                'roles'           => $user->roles->pluck('name'),
-                'last_login_at'   => $user->last_login_at,
-                'last_login_ip'   => $user->last_login_ip,
-                'created_at'      => $user->created_at,
+                'id'               => $user->id,
+                'name'             => $user->name,
+                'email'            => $user->email,
+                'is_active'        => $user->is_active,
+                'email_verified_at'=> $user->email_verified_at,
+                'roles'            => $user->roles->pluck('name'),
+                'last_login_at'    => $user->last_login_at,
+                'last_login_ip'    => $user->last_login_ip,
+                'created_at'       => $user->created_at,
+                'trial_ends_at'    => $user->trial_ends_at?->toDateString(),
             ],
             'profile' => $profile ? [
                 'full_name'          => $profile->full_name,
@@ -102,6 +104,18 @@ class UserController extends Controller
             'currentPlan' => $user->activePlan()?->only('id', 'name'),
             'plans' => Plan::where('is_active', true)->get(['id', 'name', 'price']),
         ]);
+    }
+
+    public function updateTrialEnds(Request $request, User $user)
+    {
+        $data = $request->validate([
+            'trial_ends_at' => ['nullable', 'date'],
+        ]);
+
+        $user->forceFill(['trial_ends_at' => $data['trial_ends_at'] ? Carbon::parse($data['trial_ends_at'])->endOfDay() : null])->save();
+        AuditLog::record('user.update_trial', $user, ['trial_ends_at' => $data['trial_ends_at']]);
+
+        return back()->with('status', 'Trial end date updated.');
     }
 
     public function toggleActive(User $user)
