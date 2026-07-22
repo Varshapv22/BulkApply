@@ -11,18 +11,20 @@ export default function AdminFeaturesIndex({ features }) {
             <PageHead title="Feature Management" subtitle="Enable or disable platform-wide features." />
 
             <div className="card">
-                <table>
-                    <thead><tr><th>Feature</th><th>Status</th><th></th></tr></thead>
-                    <tbody>
-                        {features.map((f) => (
-                            <tr key={f.id}>
-                                <td>{f.label}</td>
-                                <td><Badge status={f.enabled ? 'sent' : 'failed'}>{f.enabled ? 'Enabled' : 'Disabled'}</Badge></td>
-                                <td><button className="btn btn-ghost btn-sm" onClick={() => toggle(f)}>{f.enabled ? 'Disable' : 'Enable'}</button></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <div className="table-wrap">
+                    <table>
+                        <thead><tr><th>Feature</th><th>Status</th><th></th></tr></thead>
+                        <tbody>
+                            {features.map((f) => (
+                                <tr key={f.id}>
+                                    <td>{f.label}</td>
+                                    <td><Badge status={f.enabled ? 'sent' : 'failed'}>{f.enabled ? 'Enabled' : 'Disabled'}</Badge></td>
+                                    <td><button className="btn btn-ghost btn-sm" onClick={() => toggle(f)}>{f.enabled ? 'Disable' : 'Enable'}</button></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </>
     );

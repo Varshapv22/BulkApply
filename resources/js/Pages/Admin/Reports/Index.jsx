@@ -23,10 +23,12 @@ export default function AdminReportsIndex({ registrations, byCompany, byPipeline
                     <h2>Applications by Company (top 10)</h2>
                     <a className="btn btn-ghost btn-sm" href="/admin/reports/export/companies">Export CSV</a>
                 </div>
-                <table>
-                    <thead><tr><th>Company</th><th>Applications</th></tr></thead>
-                    <tbody>{byCompany.map((c) => <tr key={c.company}><td>{c.company}</td><td>{c.count}</td></tr>)}</tbody>
-                </table>
+                <div className="table-wrap">
+                    <table>
+                        <thead><tr><th>Company</th><th>Applications</th></tr></thead>
+                        <tbody>{byCompany.map((c) => <tr key={c.company}><td>{c.company}</td><td>{c.count}</td></tr>)}</tbody>
+                    </table>
+                </div>
             </div>
 
             <div className="card">
@@ -34,10 +36,12 @@ export default function AdminReportsIndex({ registrations, byCompany, byPipeline
                     <h2>Pipeline Report</h2>
                     <a className="btn btn-ghost btn-sm" href="/admin/reports/export/pipeline">Export CSV</a>
                 </div>
-                <table>
-                    <thead><tr><th>Stage</th><th>Count</th></tr></thead>
-                    <tbody>{Object.entries(byPipeline).map(([stage, count]) => <tr key={stage}><td>{stage}</td><td>{count}</td></tr>)}</tbody>
-                </table>
+                <div className="table-wrap">
+                    <table>
+                        <thead><tr><th>Stage</th><th>Count</th></tr></thead>
+                        <tbody>{Object.entries(byPipeline).map(([stage, count]) => <tr key={stage}><td>{stage}</td><td>{count}</td></tr>)}</tbody>
+                    </table>
+                </div>
             </div>
 
             <div className="card">

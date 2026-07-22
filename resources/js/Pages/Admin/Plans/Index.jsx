@@ -81,32 +81,34 @@ export default function AdminPlansIndex({ plans }) {
             )}
 
             <div className="card">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th><th>Price</th><th>Email limit</th><th>Resume limit</th>
-                            <th>Daily apps</th><th>Subscribers</th><th>Status</th><th></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {plans.map((p) => (
-                            <tr key={p.id}>
-                                <td>{p.name}</td>
-                                <td>${p.price}/{p.billing_interval === 'monthly' ? 'mo' : 'yr'}</td>
-                                <td>{p.email_limit ?? 'Unlimited'}</td>
-                                <td>{p.resume_limit ?? 'Unlimited'}</td>
-                                <td>{p.daily_application_limit ?? 'Unlimited'}</td>
-                                <td>{p.subscriptions_count}</td>
-                                <td><Badge status={p.is_active ? 'sent' : 'failed'}>{p.is_active ? 'Active' : 'Disabled'}</Badge></td>
-                                <td style={{ display: 'flex', gap: 6 }}>
-                                    <button className="btn btn-ghost btn-sm" onClick={() => setEditing(p)}>Edit</button>
-                                    <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(p)}>{p.is_active ? 'Disable' : 'Enable'}</button>
-                                    <button className="btn btn-danger btn-sm" onClick={() => destroy(p)}>Delete</button>
-                                </td>
+                <div className="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Name</th><th>Price</th><th>Email limit</th><th>Resume limit</th>
+                                <th>Daily apps</th><th>Subscribers</th><th>Status</th><th></th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {plans.map((p) => (
+                                <tr key={p.id}>
+                                    <td>{p.name}</td>
+                                    <td>${p.price}/{p.billing_interval === 'monthly' ? 'mo' : 'yr'}</td>
+                                    <td>{p.email_limit ?? 'Unlimited'}</td>
+                                    <td>{p.resume_limit ?? 'Unlimited'}</td>
+                                    <td>{p.daily_application_limit ?? 'Unlimited'}</td>
+                                    <td>{p.subscriptions_count}</td>
+                                    <td><Badge status={p.is_active ? 'sent' : 'failed'}>{p.is_active ? 'Active' : 'Disabled'}</Badge></td>
+                                    <td style={{ display: 'flex', gap: 6 }}>
+                                        <button className="btn btn-ghost btn-sm" onClick={() => setEditing(p)}>Edit</button>
+                                        <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(p)}>{p.is_active ? 'Disable' : 'Enable'}</button>
+                                        <button className="btn btn-danger btn-sm" onClick={() => destroy(p)}>Delete</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </>
     );

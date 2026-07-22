@@ -46,10 +46,12 @@ export default function AdminApiIndex({ configs, stats, recentRequests }) {
 
             <div className="card">
                 <h2>API Configuration</h2>
-                <table>
-                    <thead><tr><th>Integration</th><th>Status</th><th></th></tr></thead>
-                    <tbody>{configs.map((c) => <ConfigRow key={c.id} config={c} />)}</tbody>
-                </table>
+                <div className="table-wrap">
+                    <table>
+                        <thead><tr><th>Integration</th><th>Status</th><th></th></tr></thead>
+                        <tbody>{configs.map((c) => <ConfigRow key={c.id} config={c} />)}</tbody>
+                    </table>
+                </div>
             </div>
 
             <div className="card">

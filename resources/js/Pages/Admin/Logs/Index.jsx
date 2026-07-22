@@ -11,7 +11,7 @@ export default function AdminLogsIndex({ lines, level, exists }) {
             <PageHead title="Logs" subtitle="Tail of storage/logs/laravel.log (most recent 200 entries)." />
 
             <div className="card card-pad-sm">
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     {['', 'ERROR', 'WARNING', 'INFO'].map((l) => (
                         <button key={l} className={`btn btn-sm ${level === l || (!level && !l) ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setLevel(l)}>
                             {l || 'All'}

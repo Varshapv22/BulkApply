@@ -20,22 +20,24 @@ export default function AdminBackupIndex({ backups }) {
                 <p className="muted" style={{ fontSize: 12 }}>Restoring is intentionally not a one-click UI action — download the backup and restore it manually (or via CLI) to avoid an accidental overwrite of live data.</p>
 
                 {backups.length === 0 ? <p className="muted">No backups yet.</p> : (
-                    <table>
-                        <thead><tr><th>File</th><th>Size</th><th>Created</th><th></th></tr></thead>
-                        <tbody>
-                            {backups.map((b) => (
-                                <tr key={b.name}>
-                                    <td>{b.name}</td>
-                                    <td>{(b.size_kb / 1024).toFixed(1)} MB</td>
-                                    <td>{b.created_at}</td>
-                                    <td style={{ display: 'flex', gap: 6 }}>
-                                        <a className="btn btn-ghost btn-sm" href={`/admin/backup/${b.name}/download`}>Download</a>
-                                        <button className="btn btn-danger btn-sm" onClick={() => destroy(b.name)}>Delete</button>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                    <div className="table-wrap">
+                        <table>
+                            <thead><tr><th>File</th><th>Size</th><th>Created</th><th></th></tr></thead>
+                            <tbody>
+                                {backups.map((b) => (
+                                    <tr key={b.name}>
+                                        <td>{b.name}</td>
+                                        <td>{(b.size_kb / 1024).toFixed(1)} MB</td>
+                                        <td>{b.created_at}</td>
+                                        <td style={{ display: 'flex', gap: 6 }}>
+                                            <a className="btn btn-ghost btn-sm" href={`/admin/backup/${b.name}/download`}>Download</a>
+                                            <button className="btn btn-danger btn-sm" onClick={() => destroy(b.name)}>Delete</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
         </>

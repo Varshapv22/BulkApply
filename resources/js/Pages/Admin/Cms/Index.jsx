@@ -60,24 +60,26 @@ export default function AdminCmsIndex({ pages }) {
             )}
 
             <div className="card">
-                <table>
-                    <thead><tr><th>Slug</th><th>Title</th><th>Status</th><th>Updated</th><th></th></tr></thead>
-                    <tbody>
-                        {pages.map((p) => (
-                            <tr key={p.id}>
-                                <td>/p/{p.slug}</td>
-                                <td>{p.title}</td>
-                                <td><Badge status={p.status === 'published' ? 'sent' : 'pending'}>{p.status}</Badge></td>
-                                <td>{new Date(p.updated_at).toLocaleDateString()}</td>
-                                <td style={{ display: 'flex', gap: 6 }}>
-                                    {p.status === 'published' && <a className="btn btn-ghost btn-sm" href={`/p/${p.slug}`} target="_blank" rel="noopener">View</a>}
-                                    <button className="btn btn-ghost btn-sm" onClick={() => setEditing(p)}>Edit</button>
-                                    <button className="btn btn-danger btn-sm" onClick={() => destroy(p)}>Delete</button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <div className="table-wrap">
+                    <table>
+                        <thead><tr><th>Slug</th><th>Title</th><th>Status</th><th>Updated</th><th></th></tr></thead>
+                        <tbody>
+                            {pages.map((p) => (
+                                <tr key={p.id}>
+                                    <td>/p/{p.slug}</td>
+                                    <td>{p.title}</td>
+                                    <td><Badge status={p.status === 'published' ? 'sent' : 'pending'}>{p.status}</Badge></td>
+                                    <td>{new Date(p.updated_at).toLocaleDateString()}</td>
+                                    <td style={{ display: 'flex', gap: 6 }}>
+                                        {p.status === 'published' && <a className="btn btn-ghost btn-sm" href={`/p/${p.slug}`} target="_blank" rel="noopener">View</a>}
+                                        <button className="btn btn-ghost btn-sm" onClick={() => setEditing(p)}>Edit</button>
+                                        <button className="btn btn-danger btn-sm" onClick={() => destroy(p)}>Delete</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </>
     );

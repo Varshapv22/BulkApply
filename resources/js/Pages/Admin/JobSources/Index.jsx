@@ -11,18 +11,20 @@ export default function AdminJobSourcesIndex({ sources }) {
             <PageHead title="Job Search Sources" subtitle="Enable or disable each job search / extension source." />
 
             <div className="card">
-                <table>
-                    <thead><tr><th>Source</th><th>Status</th><th></th></tr></thead>
-                    <tbody>
-                        {sources.map((s) => (
-                            <tr key={s.id}>
-                                <td>{s.label}</td>
-                                <td><Badge status={s.enabled ? 'sent' : 'failed'}>{s.enabled ? 'Enabled' : 'Disabled'}</Badge></td>
-                                <td><button className="btn btn-ghost btn-sm" onClick={() => toggle(s)}>{s.enabled ? 'Disable' : 'Enable'}</button></td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <div className="table-wrap">
+                    <table>
+                        <thead><tr><th>Source</th><th>Status</th><th></th></tr></thead>
+                        <tbody>
+                            {sources.map((s) => (
+                                <tr key={s.id}>
+                                    <td>{s.label}</td>
+                                    <td><Badge status={s.enabled ? 'sent' : 'failed'}>{s.enabled ? 'Enabled' : 'Disabled'}</Badge></td>
+                                    <td><button className="btn btn-ghost btn-sm" onClick={() => toggle(s)}>{s.enabled ? 'Disable' : 'Enable'}</button></td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </>
     );
