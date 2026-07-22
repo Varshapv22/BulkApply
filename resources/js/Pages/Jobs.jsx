@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
-import { PageHead, Stat, Badge, Icons, EmptyState, IconField, ChipIcon, Spinner } from '../components';
+import { PageHead, Stat, Badge, Icons, EmptyState, IconField, ChipIcon, Spinner, useConfirm } from '../components';
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -252,6 +252,7 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
     const [clearingAll, setClearingAll] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [busyIds, setBusyIds] = useState(() => new Set());
+    const { confirm, dialog } = useConfirm();
 
     useEffect(() => {
         if (!activeBatch) return;
@@ -267,8 +268,13 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
         return next;
     });
 
-    const sendAll = () => {
-        if (!confirm(`Queue and email ${counts.pending} application(s) now?`)) return;
+    const sendAll = async () => {
+        const ok = await confirm({
+            title: 'Send applications?',
+            message: `Queue and email ${counts.pending} application(s) now?`,
+            confirmLabel: 'Send now',
+        });
+        if (!ok) return;
         setSendingAll(true);
         router.post('/jobs/send', { email_template_id: templateId || null }, {
             onFinish: () => setSendingAll(false),
@@ -278,18 +284,36 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
         setBusy(id, true);
         router.post(`/jobs/${id}/send`, {}, { onFinish: () => setBusy(id, false) });
     };
-    const clearAll = () => {
-        if (!confirm('Delete ALL jobs? This cannot be undone.')) return;
+    const clearAll = async () => {
+        const ok = await confirm({
+            title: 'Delete all jobs?',
+            message: 'This will permanently delete every job in your list. This cannot be undone.',
+            confirmLabel: 'Delete all',
+            danger: true,
+        });
+        if (!ok) return;
         setClearingAll(true);
         router.post('/jobs/clear', {}, { onFinish: () => setClearingAll(false) });
     };
-    const cancelSend = () => {
-        if (!confirm('Cancel the remaining queued sends?')) return;
+    const cancelSend = async () => {
+        const ok = await confirm({
+            title: 'Cancel remaining sends?',
+            message: 'Any applications still queued will not be sent.',
+            confirmLabel: 'Cancel sends',
+            danger: true,
+        });
+        if (!ok) return;
         setCancelling(true);
         router.post('/jobs/send-cancel', {}, { preserveScroll: true, onFinish: () => setCancelling(false) });
     };
-    const destroy = (id) => {
-        if (!confirm('Delete this job?')) return;
+    const destroy = async (id) => {
+        const ok = await confirm({
+            title: 'Delete this job?',
+            message: 'This removes the job and its tracking history. This cannot be undone.',
+            confirmLabel: 'Delete',
+            danger: true,
+        });
+        if (!ok) return;
         setBusy(id, true);
         router.delete(`/jobs/${id}`, { onFinish: () => setBusy(id, false) });
     };
@@ -416,6 +440,7 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
             </div>
 
             {previewId && <PreviewModal jobId={previewId} onClose={() => setPreviewId(null)} />}
+            {dialog}
         </>
     );
 }

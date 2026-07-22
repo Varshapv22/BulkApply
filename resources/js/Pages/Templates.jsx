@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useForm, router } from '@inertiajs/react';
-import { PageHead, Badge, Icons, IconField, ChipIcon, EmptyState } from '../components';
+import { PageHead, Badge, Icons, IconField, ChipIcon, EmptyState, useConfirm } from '../components';
 
 const PLACEHOLDERS = ['{job_title}', '{company}', '{recruiter_name}', '{location}', '{job_url}', '{your_name}'];
 
@@ -101,13 +101,21 @@ function TemplateCard({ template }) {
         is_default: !!template.is_default,
     });
 
+    const { confirm, dialog } = useConfirm();
+
     const save = (e) => {
         e.preventDefault();
         put(`/templates/${template.id}`);
     };
 
-    const destroy = () => {
-        if (confirm('Delete this template?')) router.delete(`/templates/${template.id}`);
+    const destroy = async () => {
+        const ok = await confirm({
+            title: 'Delete this template?',
+            message: `"${template.name}" will be permanently removed.`,
+            confirmLabel: 'Delete',
+            danger: true,
+        });
+        if (ok) router.delete(`/templates/${template.id}`);
     };
 
     return (
@@ -143,6 +151,7 @@ function TemplateCard({ template }) {
                         onChange={(e) => setData('is_default', e.target.checked)} /> Default template
                 </label>
             </form>
+            {dialog}
         </div>
     );
 }

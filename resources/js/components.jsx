@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Head } from '@inertiajs/react';
 
 export function PageHead({ title, subtitle }) {
@@ -97,4 +98,31 @@ export function Stat({ label, value, accent = 'primary', icon }) {
 
 export function Badge({ status, children }) {
     return <span className={`badge ${status}`}>{children ?? status}</span>;
+}
+
+/** Promise-based replacement for native confirm(): const { confirm, dialog } = useConfirm(); ... await confirm({ title, message, confirmLabel, danger }); render {dialog} once near the component's other conditional modals. */
+export function useConfirm() {
+    const [state, setState] = useState(null);
+
+    const confirm = (opts) => new Promise((resolve) => setState({ ...opts, resolve }));
+    const close = (result) => { state?.resolve(result); setState(null); };
+
+    const dialog = state ? createPortal(
+        <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) close(false); }}>
+            <div className="modal modal-sm">
+                <h3 className="modal-title">{state.title || 'Are you sure?'}</h3>
+                <p className="hint" style={{ margin: '0 0 22px' }}>{state.message}</p>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    <button type="button" className="btn btn-ghost" onClick={() => close(false)}>Cancel</button>
+                    <button type="button" autoFocus
+                        className={state.danger ? 'btn btn-danger-solid' : 'btn btn-primary'}
+                        onClick={() => close(true)}>
+                        {state.confirmLabel || 'Confirm'}
+                    </button>
+                </div>
+            </div>
+        </div>, document.body
+    ) : null;
+
+    return { confirm, dialog };
 }
