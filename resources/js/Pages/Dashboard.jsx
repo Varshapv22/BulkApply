@@ -74,17 +74,17 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                <div className="card bento-col-4 animate-delay-2" style={{ background: 'var(--primary)', color: '#fff' }}>
-                    <h2 style={{ color: '#fff' }}>This Week</h2>
-                    <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 'auto' }}>Applications added since {weekStart}</p>
-                    
-                    <div style={{ fontSize: 64, fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, margin: '20px 0' }}>
+                <div className="card bento-col-4 animate-delay-2 stat-bento-hero">
+                    <h2>This Week</h2>
+                    <p className="sub" style={{ fontSize: 13, marginBottom: 'auto' }}>Applications added since {weekStart}</p>
+
+                    <div className="big-num" style={{ fontSize: 64, fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, margin: '20px 0' }}>
                         {thisWeek}
                     </div>
-                    
-                    {diff > 0 && <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 14, fontWeight: 600 }}>↑ +{diff} vs last week</span>}
-                    {diff < 0 && <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: 600 }}>↓ {diff} vs last week</span>}
-                    {diff === 0 && <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>Same as last week</span>}
+
+                    {diff > 0 && <span style={{ color: 'var(--green)', fontSize: 14, fontWeight: 600 }}>↑ +{diff} vs last week</span>}
+                    {diff < 0 && <span style={{ color: 'var(--red)', fontSize: 14, fontWeight: 600 }}>↓ {diff} vs last week</span>}
+                    {diff === 0 && <span className="sub" style={{ fontSize: 14 }}>Same as last week</span>}
                 </div>
 
                 {/* Lower Row */}

@@ -183,12 +183,12 @@ function ProfileModal({ user, onClose }) {
 
     const modal = (
         <div
-            style={{ position: 'fixed', inset: 0, background: 'rgba(8,10,20,.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+            className="modal-overlay"
             onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 20, maxWidth: 460, width: '100%', maxHeight: '85vh', overflowY: 'auto', padding: 28, position: 'relative', boxShadow: 'var(--shadow-lg)' }}>
+            <div className="modal modal-sm">
                 <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
-                <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, color: 'var(--heading)' }}>Account Settings</h3>
+                <h3 className="modal-title">Account Settings</h3>
 
                 <div className="acct-tabs">
                     <button type="button" className={`acct-tab${tab === 'profile' ? ' active' : ''}`} onClick={() => setTab('profile')}>
