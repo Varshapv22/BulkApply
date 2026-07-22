@@ -6,8 +6,11 @@ import AdminLayout from '../../../AdminLayout';
 export default function AdminUserShow({ user, profile, resumes, applicationCounts, allRoles, currentPlan, plans }) {
     const [role, setRole] = useState(user.roles[0] || '');
     const [planId, setPlanId] = useState(currentPlan?.id || '');
+    const [trialEndsAt, setTrialEndsAt] = useState(user.trial_ends_at || '');
 
     const post = (url, data = {}, opts = {}) => router.post(url, data, { preserveScroll: true, ...opts });
+
+    const saveTrialEnds = () => post(`/admin/users/${user.id}/trial-ends`, { trial_ends_at: trialEndsAt || null });
 
     const changePlan = (id) => {
         setPlanId(id);
@@ -53,6 +56,28 @@ export default function AdminUserShow({ user, profile, resumes, applicationCount
                                         <option value="">No plan (unlimited)</option>
                                         {plans.map((p) => <option key={p.id} value={p.id}>{p.name} (${p.price})</option>)}
                                     </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>Trial ends</td>
+                                <td>
+                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <input
+                                            type="date"
+                                            value={trialEndsAt}
+                                            onChange={(e) => setTrialEndsAt(e.target.value)}
+                                            style={{ width: 'auto' }}
+                                        />
+                                        <button className="btn btn-ghost btn-sm" onClick={saveTrialEnds}>Save</button>
+                                        {trialEndsAt && (
+                                            <button className="btn btn-ghost btn-sm" onClick={() => { setTrialEndsAt(''); post(`/admin/users/${user.id}/trial-ends`, { trial_ends_at: null }); }}>
+                                                Clear
+                                            </button>
+                                        )}
+                                        {trialEndsAt && new Date(trialEndsAt) < new Date() && !currentPlan && (
+                                            <Badge status="failed">Expired</Badge>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
