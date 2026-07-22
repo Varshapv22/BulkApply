@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FeatureFlag;
 use App\Models\JobApplication;
 
 class TrackingController extends Controller
@@ -13,7 +14,7 @@ class TrackingController extends Controller
     {
         $job = JobApplication::where('tracking_id', $trackingId)->first();
 
-        if ($job && !$job->opened_at) {
+        if ($job && !$job->opened_at && FeatureFlag::enabled('feature.email_tracking')) {
             $job->update(['opened_at' => now()]);
         }
 
@@ -37,7 +38,7 @@ class TrackingController extends Controller
             abort(404);
         }
 
-        if (!$job->clicked_at) {
+        if (!$job->clicked_at && FeatureFlag::enabled('feature.email_tracking')) {
             $job->update(['clicked_at' => now()]);
         }
 

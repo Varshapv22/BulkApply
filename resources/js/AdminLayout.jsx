@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, usePage, router } from '@inertiajs/react';
 import { ChipIcon, Icons } from './components';
 
@@ -16,6 +17,17 @@ const NAV = [
     { href: '/admin/notifications', label: 'Notifications', match: '/admin/notifications', icon: 'alert' },
     { href: '/admin/support', label: 'Support', match: '/admin/support', icon: 'chat' },
     { href: '/admin/cms', label: 'CMS', match: '/admin/cms', icon: 'doc' },
+    { href: '/admin/api', label: 'API & Integrations', match: '/admin/api', icon: 'globe' },
+    { href: '/admin/webhooks', label: 'Webhooks', match: '/admin/webhooks', icon: 'send' },
+    { href: '/admin/settings', label: 'Settings', match: '/admin/settings', icon: 'save' },
+    { href: '/admin/security', label: 'Security', match: '/admin/security', icon: 'check' },
+    { href: '/admin/audit-logs', label: 'Audit Logs', match: '/admin/audit-logs', icon: 'list' },
+    { href: '/admin/backup', label: 'Backup', match: '/admin/backup', icon: 'save' },
+    { href: '/admin/storage', label: 'Storage', match: '/admin/storage', icon: 'building' },
+    { href: '/admin/monitoring', label: 'Monitoring', match: '/admin/monitoring', icon: 'target' },
+    { href: '/admin/logs', label: 'Logs', match: '/admin/logs', icon: 'doc' },
+    { href: '/admin/database-tools', label: 'Database Tools', match: '/admin/database-tools', icon: 'globe' },
+    { href: '/admin/features', label: 'Feature Management', match: '/admin/features', icon: 'sparkle' },
 ];
 
 function useTheme() {
@@ -73,6 +85,108 @@ function ToastHost() {
     );
 }
 
+/** Same account-settings modal as the main app shell, kept local so AdminLayout has no dependency on Layout.jsx. */
+function ProfileModal({ user, onClose }) {
+    const [tab, setTab] = useState('profile');
+
+    const [profileData, setProfileData] = useState({ name: user?.name || '', email: user?.email || '' });
+    const [profileErrors, setProfileErrors] = useState({});
+    const [profileBusy, setProfileBusy] = useState(false);
+
+    const [passData, setPassData] = useState({ current_password: '', password: '', password_confirmation: '' });
+    const [passErrors, setPassErrors] = useState({});
+    const [passBusy, setPassBusy] = useState(false);
+
+    const submitProfile = (e) => {
+        e.preventDefault();
+        setProfileBusy(true);
+        setProfileErrors({});
+        router.put('/account', profileData, {
+            preserveScroll: true,
+            onError: (errs) => { setProfileErrors(errs); setProfileBusy(false); },
+            onSuccess: () => onClose(),
+        });
+    };
+
+    const submitPassword = (e) => {
+        e.preventDefault();
+        setPassBusy(true);
+        setPassErrors({});
+        router.put('/account/password', passData, {
+            preserveScroll: true,
+            onError: (errs) => { setPassErrors(errs); setPassBusy(false); },
+            onSuccess: () => onClose(),
+        });
+    };
+
+    const modal = (
+        <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(8,10,20,.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+            onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 20, maxWidth: 460, width: '100%', maxHeight: '85vh', overflowY: 'auto', padding: 28, position: 'relative', boxShadow: 'var(--shadow-lg)' }}>
+                <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+                <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, color: 'var(--heading)' }}>Account Settings</h3>
+
+                <div className="acct-tabs">
+                    <button type="button" className={`acct-tab${tab === 'profile' ? ' active' : ''}`} onClick={() => setTab('profile')}>
+                        Edit Profile
+                    </button>
+                    <button type="button" className={`acct-tab${tab === 'password' ? ' active' : ''}`} onClick={() => setTab('password')}>
+                        Change Password
+                    </button>
+                </div>
+
+                {tab === 'profile' ? (
+                    <form onSubmit={submitProfile} style={{ marginTop: 20 }}>
+                        <div style={{ marginBottom: 14 }}>
+                            <label>Name</label>
+                            <input type="text" autoFocus value={profileData.name} onChange={(e) => setProfileData(d => ({ ...d, name: e.target.value }))} />
+                            {profileErrors.name && <p className="field-error">{profileErrors.name}</p>}
+                        </div>
+                        <div style={{ marginBottom: 20 }}>
+                            <label>Email</label>
+                            <input type="email" value={profileData.email} onChange={(e) => setProfileData(d => ({ ...d, email: e.target.value }))} />
+                            {profileErrors.email && <p className="field-error">{profileErrors.email}</p>}
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+                            <button type="submit" className="btn btn-primary" disabled={profileBusy}>
+                                {profileBusy ? 'Saving…' : 'Save Changes'}
+                            </button>
+                        </div>
+                    </form>
+                ) : (
+                    <form onSubmit={submitPassword} style={{ marginTop: 20 }}>
+                        <div style={{ marginBottom: 14 }}>
+                            <label>Current Password</label>
+                            <input type="password" autoComplete="current-password" autoFocus value={passData.current_password} onChange={(e) => setPassData(d => ({ ...d, current_password: e.target.value }))} />
+                            {passErrors.current_password && <p className="field-error">{passErrors.current_password}</p>}
+                        </div>
+                        <div style={{ marginBottom: 14 }}>
+                            <label>New Password</label>
+                            <input type="password" autoComplete="new-password" value={passData.password} onChange={(e) => setPassData(d => ({ ...d, password: e.target.value }))} />
+                            {passErrors.password && <p className="field-error">{passErrors.password}</p>}
+                        </div>
+                        <div style={{ marginBottom: 20 }}>
+                            <label>Confirm New Password</label>
+                            <input type="password" autoComplete="new-password" value={passData.password_confirmation} onChange={(e) => setPassData(d => ({ ...d, password_confirmation: e.target.value }))} />
+                        </div>
+                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                            <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+                            <button type="submit" className="btn btn-primary" disabled={passBusy}>
+                                {passBusy ? 'Updating…' : 'Update Password'}
+                            </button>
+                        </div>
+                    </form>
+                )}
+            </div>
+        </div>
+    );
+
+    return createPortal(modal, document.body);
+}
+
 function ProgressBar() {
     const [active, setActive] = useState(false);
     useEffect(() => {
@@ -89,6 +203,7 @@ export default function AdminLayout({ children }) {
     const user = props.auth?.user;
     const [theme, toggleTheme] = useTheme();
     const [open, setOpen] = useState(false);
+    const [profileModalOpen, setProfileModalOpen] = useState(false);
 
     useEffect(() => { setOpen(false); }, [url]);
 
@@ -119,12 +234,22 @@ export default function AdminLayout({ children }) {
                     </Link>
                 </nav>
                 <div className="sidebar-footer">
-                    <div className="sidebar-user">
+                    <div
+                        className="sidebar-user sidebar-user-btn"
+                        onClick={() => setProfileModalOpen(true)}
+                        title="Edit account"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => e.key === 'Enter' && setProfileModalOpen(true)}
+                    >
                         <span className="avatar">{initials}</span>
                         <div className="user-info">
                             <div className="name">{user?.name || 'Admin'}</div>
                             <div className="email">{user?.email}</div>
                         </div>
+                        <svg className="user-edit-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
                     </div>
                     <button type="button" className="nav-item" style={{ width: '100%', marginTop: 4 }} onClick={() => router.post('/logout')}>
                         <ChipIcon icon={Icons.xCircle} /> <span className="nav-label">Logout</span>
@@ -151,6 +276,10 @@ export default function AdminLayout({ children }) {
             </div>
 
             <ToastHost />
+
+            {profileModalOpen && (
+                <ProfileModal user={user} onClose={() => setProfileModalOpen(false)} />
+            )}
         </div>
     );
 }

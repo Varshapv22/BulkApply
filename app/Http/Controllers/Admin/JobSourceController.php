@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\FeatureFlag;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -19,6 +20,7 @@ class JobSourceController extends Controller
     public function toggle(FeatureFlag $source)
     {
         $source->update(['enabled' => !$source->enabled]);
+        AuditLog::record($source->enabled ? 'job_source.enable' : 'job_source.disable', $source, ['key' => $source->key]);
 
         return back()->with('status', "{$source->label} " . ($source->enabled ? 'enabled' : 'disabled') . '.');
     }

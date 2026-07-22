@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -46,6 +47,7 @@ class QueueController extends Controller
     public function cancelBatch(string $batch)
     {
         Bus::findBatch($batch)?->cancel();
+        AuditLog::record('queue.cancel_batch', null, ['batch_id' => $batch]);
 
         return back()->with('status', 'Batch cancelled.');
     }
@@ -53,6 +55,7 @@ class QueueController extends Controller
     public function deleteFailedJob(int $id)
     {
         DB::table('failed_jobs')->where('id', $id)->delete();
+        AuditLog::record('queue.delete_failed_job', null, ['failed_job_id' => $id]);
 
         return back()->with('status', 'Failed job entry removed.');
     }

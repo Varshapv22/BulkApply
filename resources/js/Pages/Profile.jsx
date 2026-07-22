@@ -18,6 +18,11 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
         preferred_role: profile.preferred_role || '',
         preferred_sites: profile.preferred_sites || [],
         skills: profile.skills || '',
+        bio: profile.bio || '',
+        linkedin_url: profile.linkedin_url || '',
+        portfolio_url: profile.portfolio_url || '',
+        photo: null,
+        photo_remove: false,
         email_subject: profile.email_subject || 'Application for {job_title} at {company}',
         email_body: profile.email_body || defaultBody || '',
         send_start_hour: profile.send_start_hour ?? '',
@@ -39,6 +44,19 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
 
     const [parseStatus, setParseStatus] = useState('');
     const [parsing, setParsing] = useState(false);
+    const [photoPreview, setPhotoPreview] = useState(profile.photo_url || null);
+
+    const onPhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setData((d) => ({ ...d, photo: file, photo_remove: false }));
+        setPhotoPreview(URL.createObjectURL(file));
+    };
+
+    const removePhoto = () => {
+        setData((d) => ({ ...d, photo: null, photo_remove: true }));
+        setPhotoPreview(null);
+    };
 
     const toggleSite = (key) => {
         setData('preferred_sites', data.preferred_sites.includes(key)
@@ -102,6 +120,26 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
             <div className="card">
                 <h2>Your details</h2>
                 <p className="hint">Used to fill <code>{'{your_name}'}</code> in the template and as the reply-to address.</p>
+
+                <div className="row" style={{ alignItems: 'center' }}>
+                    <div style={{ flex: '0 0 auto' }}>
+                        {photoPreview ? (
+                            <img src={photoPreview} alt="Profile photo" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
+                        ) : (
+                            <span className="co-avatar" style={{ width: 64, height: 64, fontSize: 24 }}>{(data.full_name || '?')[0].toUpperCase()}</span>
+                        )}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label>Profile photo</label>
+                        <input type="file" accept="image/*" onChange={onPhotoChange} />
+                        {photoPreview && (
+                            <button type="button" className="btn-link" style={{ fontSize: 13, color: 'var(--red)', marginTop: 4 }} onClick={removePhoto}>
+                                Remove photo
+                            </button>
+                        )}
+                    </div>
+                </div>
+
                 <div className="row">
                     <div>
                         <label>Full name</label>

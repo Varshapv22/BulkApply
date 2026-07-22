@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Jobs\SendFollowUpEmail;
+use App\Models\FeatureFlag;
 use App\Models\JobApplication;
 use Illuminate\Console\Command;
 
@@ -13,6 +14,11 @@ class DispatchFollowUps extends Command
 
     public function handle(): int
     {
+        if (!FeatureFlag::enabled('feature.followups')) {
+            $this->info('Follow-up emails are disabled by the administrator — skipping.');
+            return self::SUCCESS;
+        }
+
         $jobs = JobApplication::where('status', JobApplication::STATUS_SENT)
             ->where('pipeline_status', 'applied')
             ->whereNotNull('followup_at')

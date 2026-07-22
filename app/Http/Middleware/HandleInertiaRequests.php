@@ -38,6 +38,10 @@ class HandleInertiaRequests extends Middleware
                 'status' => fn () => $request->session()->get('status'),
                 'error'  => fn () => $request->session()->get('error'),
             ],
+            // One-shot secrets shown once right after generation (2FA setup) — never persisted to the page beyond this single request.
+            'twoFactorSecret' => fn () => $request->session()->get('twoFactorSecret'),
+            'twoFactorUri' => fn () => $request->session()->get('twoFactorUri'),
+            'recoveryCodes' => fn () => $request->session()->get('recoveryCodes'),
             'impersonating' => $request->session()->has('impersonator_id'),
             // The address applications are sent FROM — used to open the correct
             // Gmail account (via ?authuser=) regardless of the browser's default.

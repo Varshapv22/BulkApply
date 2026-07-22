@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FeatureFlag;
 use App\Models\Profile;
+use App\Models\Setting;
 use App\Services\SkillExtractor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -37,6 +39,10 @@ TXT;
                 'preferred_role'      => $profile->preferred_role,
                 'preferred_sites'     => $profile->preferred_sites ?? [],
                 'skills'              => $profile->skills,
+                'bio'                 => $profile->bio,
+                'linkedin_url'        => $profile->linkedin_url,
+                'portfolio_url'       => $profile->portfolio_url,
+                'photo_url'           => $profile->photo_path ? Storage::disk('public')->url($profile->photo_path) : null,
                 'email_subject'       => $profile->email_subject,
                 'email_body'          => $profile->email_body,
                 'resume_name'         => $profile->resume_name,
@@ -68,8 +74,8 @@ TXT;
             'location'           => ['nullable', 'string', 'max:255'],
             'email_subject'      => ['required', 'string', 'max:255'],
             'email_body'         => ['required', 'string'],
-            'resume'             => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
-            'cover_letter'       => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
+            'resume'             => array_merge(['nullable'], Setting::uploadRules()),
+            'cover_letter'       => array_merge(['nullable'], Setting::uploadRules()),
             'send_start_hour'    => ['nullable', 'integer', 'min:0', 'max:23'],
             'send_end_hour'      => ['nullable', 'integer', 'min:0', 'max:23'],
             'send_weekdays_only' => ['nullable'],
@@ -80,6 +86,11 @@ TXT;
             'preferred_sites'    => ['nullable', 'array'],
             'preferred_sites.*'  => ['string'],
             'skills'             => ['nullable', 'string', 'max:2000'],
+            'bio'                => ['nullable', 'string', 'max:2000'],
+            'linkedin_url'       => ['nullable', 'url', 'max:255'],
+            'portfolio_url'      => ['nullable', 'url', 'max:255'],
+            'photo'              => ['nullable', 'image', 'max:5120'],
+            'photo_remove'       => ['nullable', 'boolean'],
             'mail_username'      => ['nullable', 'email', 'max:255'],
             'mail_password'      => ['nullable', 'string', 'max:255'],
             'mail_from_name'     => ['nullable', 'string', 'max:255'],
@@ -104,6 +115,9 @@ TXT;
             'preferred_role'     => $data['preferred_role'] ?? null,
             'preferred_sites'    => $data['preferred_sites'] ?? [],
             'skills'             => $data['skills'] ?? null,
+            'bio'                => $data['bio'] ?? null,
+            'linkedin_url'       => $data['linkedin_url'] ?? null,
+            'portfolio_url'      => $data['portfolio_url'] ?? null,
         ]);
 
         if ($request->boolean('mail_disconnect')) {
@@ -138,6 +152,14 @@ TXT;
             $profile->cover_letter_name = $file->getClientOriginalName();
         }
 
+        if ($request->hasFile('photo')) {
+            $this->deleteIfExists($profile->photo_path, 'public');
+            $profile->photo_path = $request->file('photo')->store('avatars', 'public');
+        } elseif ($request->boolean('photo_remove')) {
+            $this->deleteIfExists($profile->photo_path, 'public');
+            $profile->photo_path = null;
+        }
+
         $profile->save();
 
         return redirect()->route('profile.edit')->with('status', 'Profile saved.');
@@ -148,8 +170,12 @@ TXT;
      */
     public function parseResume(Request $request)
     {
+        if (!FeatureFlag::enabled('feature.resume_parser')) {
+            abort(403, 'Resume auto-parse is currently disabled by the administrator.');
+        }
+
         $request->validate([
-            'resume' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
+            'resume' => array_merge(['required'], Setting::uploadRules()),
         ]);
 
         $file = $request->file('resume');
@@ -252,10 +278,10 @@ TXT;
         return $text;
     }
 
-    private function deleteIfExists(?string $path): void
+    private function deleteIfExists(?string $path, string $disk = 'local'): void
     {
-        if ($path && Storage::disk('local')->exists($path)) {
-            Storage::disk('local')->delete($path);
+        if ($path && Storage::disk($disk)->exists($path)) {
+            Storage::disk($disk)->delete($path);
         }
     }
 }

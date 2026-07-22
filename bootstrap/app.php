@@ -12,8 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->append(\App\Http\Middleware\EnforceIpRules::class);
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
+        ]);
+
+        $middleware->api(append: [
+            \App\Http\Middleware\LogApiRequests::class,
         ]);
 
         $middleware->alias([

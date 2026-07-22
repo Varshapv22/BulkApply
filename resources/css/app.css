@@ -300,6 +300,16 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
 .modal-close { position: absolute; top: 18px; right: 18px; background: var(--hover); border: none; font-size: 16px;
     cursor: pointer; color: var(--muted); line-height: 1; width: 32px; height: 32px; border-radius: 9px; }
 .modal-close:hover { background: var(--hover-strong); }
+.acct-tabs { display: flex; gap: 4px; background: var(--hover); border-radius: 10px; padding: 4px; }
+.acct-tab { flex: 1; padding: 7px 12px; border: none; border-radius: 8px; font-size: 13px; font-weight: 500;
+    cursor: pointer; background: transparent; color: var(--muted); transition: all .15s; }
+.acct-tab.active { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+.acct-tab:hover:not(.active) { color: var(--text); }
+.field-error { color: var(--red, #ef4444); font-size: 12px; margin: 4px 0 0; }
+.sidebar-user-btn { cursor: pointer; transition: background .15s; }
+.sidebar-user-btn:hover { background: rgba(255,255,255,.1); }
+.user-edit-ico { flex-shrink: 0; opacity: 0; transition: opacity .15s; margin-left: auto; color: var(--sidebar-text-muted); }
+.sidebar-user-btn:hover .user-edit-ico { opacity: 1; }
 
 /* ---------- Auth (split screen) ---------- */
 .auth-wrap { min-height: 100vh; display: grid; grid-template-columns: 1.05fr 1fr; }

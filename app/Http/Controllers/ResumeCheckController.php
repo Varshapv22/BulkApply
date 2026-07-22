@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FeatureFlag;
 use App\Models\Profile;
 use App\Services\ResumeAtsAnalyzer;
 use Illuminate\Support\Facades\Storage;
@@ -14,6 +15,10 @@ class ResumeCheckController extends Controller
      */
     public function index(ResumeAtsAnalyzer $analyzer)
     {
+        if (!FeatureFlag::enabled('feature.ats_checker')) {
+            abort(403, 'The Resume ATS Checker is currently disabled by the administrator.');
+        }
+
         $profile = Profile::current();
 
         $report = null;
