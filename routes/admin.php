@@ -42,6 +42,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/users/{user}/reset-password', [UserController::class, 'resetPassword'])->name('users.resetPassword');
     Route::post('/users/{user}/role', [UserController::class, 'updateRole'])->name('users.updateRole');
     Route::post('/users/{user}/login-as', [UserController::class, 'loginAs'])->name('users.loginAs');
+    Route::post('/users/{user}/trial-ends', [UserController::class, 'updateTrialEnds'])->name('users.updateTrialEnds');
     Route::post('/users/{user}/subscription', [SubscriptionController::class, 'assign'])->name('users.subscription.assign');
     Route::delete('/users/{user}/subscription', [SubscriptionController::class, 'cancel'])->name('users.subscription.cancel');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');

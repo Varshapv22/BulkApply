@@ -55,9 +55,13 @@ class HandleInertiaRequests extends Middleware
                 if ($user->activeSubscription()) {
                     return null;
                 }
-                $trialEndsAt = $user->created_at->addDays(7);
-                $expired     = now()->greaterThan($trialEndsAt);
-                $daysLeft    = $expired ? 0 : (int) now()->diffInDays($trialEndsAt);
+                // trial_ends_at is set by admin (defaults to 7 days from registration).
+                $trialEndsAt = $user->trial_ends_at;
+                if (! $trialEndsAt) {
+                    return null; // no trial set — treat as unrestricted
+                }
+                $expired  = now()->greaterThan($trialEndsAt);
+                $daysLeft = $expired ? 0 : (int) now()->diffInDays($trialEndsAt);
 
                 return [
                     'expired'       => $expired,

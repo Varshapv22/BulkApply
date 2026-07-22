@@ -52,6 +52,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',
+            'trial_ends_at' => 'datetime',
             'last_login_at' => 'datetime',
             'google2fa_enabled' => 'boolean',
             'google2fa_secret' => 'encrypted',
