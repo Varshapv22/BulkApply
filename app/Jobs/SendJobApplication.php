@@ -5,8 +5,10 @@ namespace App\Jobs;
 use App\Mail\JobApplicationMail;
 use App\Models\AdminNotification;
 use App\Models\EmailTemplate;
+use App\Models\FeatureFlag;
 use App\Models\JobApplication;
 use App\Models\Profile;
+use App\Models\WebhookLog;
 use App\Services\UserMailer;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -165,22 +167,40 @@ class SendJobApplication implements ShouldQueue
 
     private function fireWebhook(Profile $profile, JobApplication $job, string $event): void
     {
-        if (blank($profile->webhook_url)) {
+        if (blank($profile->webhook_url) || !FeatureFlag::enabled('feature.webhooks')) {
             return;
         }
 
+        $payload = [
+            'event'     => $event,
+            'company'   => $job->company,
+            'job_title' => $job->job_title,
+            'email'     => $job->recruiter_email,
+            'status'    => $job->status,
+            'sent_at'   => $job->sent_at?->toIso8601String(),
+            'error'     => $job->error,
+        ];
+
         try {
-            Http::timeout(10)->post($profile->webhook_url, [
-                'event'     => $event,
-                'company'   => $job->company,
-                'job_title' => $job->job_title,
-                'email'     => $job->recruiter_email,
-                'status'    => $job->status,
-                'sent_at'   => $job->sent_at?->toIso8601String(),
-                'error'     => $job->error,
+            $response = Http::timeout(10)->post($profile->webhook_url, $payload);
+
+            WebhookLog::create([
+                'job_application_id' => $job->id,
+                'url' => $profile->webhook_url,
+                'payload' => $payload,
+                'response_code' => $response->status(),
+                'success' => $response->successful(),
             ]);
         } catch (Throwable $e) {
             // Don't fail the job for webhook errors
+            WebhookLog::create([
+                'job_application_id' => $job->id,
+                'url' => $profile->webhook_url,
+                'payload' => $payload,
+                'response_code' => null,
+                'success' => false,
+                'error' => substr($e->getMessage(), 0, 500),
+            ]);
             AdminNotification::log('webhook_failed', "Webhook to {$profile->webhook_url} failed: " . substr($e->getMessage(), 0, 200), ['job_id' => $job->id]);
         }
     }

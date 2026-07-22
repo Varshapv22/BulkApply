@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ApiConfig;
 use App\Models\FeatureFlag;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -22,9 +23,9 @@ class JobSearchService
             return ['jobs' => [], 'error' => 'Web-wide job search is currently disabled by the administrator.'];
         }
 
-        $appId   = config('services.adzuna.app_id');
-        $appKey  = config('services.adzuna.app_key');
-        $country = config('services.adzuna.country', 'in');
+        $appId   = ApiConfig::get('adzuna_app_id', config('services.adzuna.app_id'));
+        $appKey  = ApiConfig::get('adzuna_app_key', config('services.adzuna.app_key'));
+        $country = ApiConfig::get('adzuna_country', config('services.adzuna.country', 'in'));
 
         if (!$appId || !$appKey) {
             return [

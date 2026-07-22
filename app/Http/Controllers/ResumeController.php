@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Resume;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -11,7 +12,7 @@ class ResumeController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'resume' => ['required', 'file', 'mimes:pdf,doc,docx', 'max:10240'],
+            'resume' => array_merge(['required'], Setting::uploadRules()),
         ]);
 
         $remaining = $request->user()->remainingResumeQuota();

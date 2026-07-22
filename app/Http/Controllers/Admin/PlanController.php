@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Plan;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -20,7 +21,8 @@ class PlanController extends Controller
     {
         $data = $this->validated($request);
 
-        Plan::create($data);
+        $plan = Plan::create($data);
+        AuditLog::record('plan.create', $plan, $data);
 
         return back()->with('status', 'Plan created.');
     }
@@ -30,6 +32,7 @@ class PlanController extends Controller
         $data = $this->validated($request);
 
         $plan->update($data);
+        AuditLog::record('plan.update', $plan, $data);
 
         return back()->with('status', 'Plan updated.');
     }
@@ -37,6 +40,7 @@ class PlanController extends Controller
     public function toggleActive(Plan $plan)
     {
         $plan->update(['is_active' => !$plan->is_active]);
+        AuditLog::record($plan->is_active ? 'plan.enable' : 'plan.disable', $plan);
 
         return back()->with('status', $plan->is_active ? 'Plan enabled.' : 'Plan disabled.');
     }
@@ -47,6 +51,7 @@ class PlanController extends Controller
             return back()->with('error', 'Cannot delete a plan with subscribers. Disable it instead.');
         }
 
+        AuditLog::record('plan.delete', $plan, ['name' => $plan->name]);
         $plan->delete();
 
         return back()->with('status', 'Plan deleted.');

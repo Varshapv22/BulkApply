@@ -18,6 +18,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
+    Route::get('/2fa-challenge', [AuthController::class, 'showTwoFactorChallenge'])->name('2fa.challenge');
+    Route::post('/2fa-challenge', [AuthController::class, 'verifyTwoFactorChallenge'])->name('2fa.verify');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
@@ -43,6 +45,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/parse-resume', [ProfileController::class, 'parseResume'])->name('profile.parseResume');
+
+    // Account (name / email / password)
+    Route::put('/account', [AuthController::class, 'updateAccount'])->name('account.update');
+    Route::put('/account/password', [AuthController::class, 'updatePassword'])->name('account.password');
 
     // Resumes
     Route::post('/resumes', [\App\Http\Controllers\ResumeController::class, 'store'])->name('resumes.store');

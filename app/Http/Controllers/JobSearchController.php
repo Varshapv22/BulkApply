@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SendJobApplication;
+use App\Models\FeatureFlag;
 use App\Models\JobApplication;
 use App\Models\Profile;
 use App\Services\JobSearchService;
@@ -16,6 +17,10 @@ class JobSearchController extends Controller
 {
     public function index()
     {
+        if (!FeatureFlag::enabled('feature.job_search')) {
+            abort(403, 'Job Search is currently disabled by the administrator.');
+        }
+
         $profile = Profile::current();
 
         return Inertia::render('Search', [

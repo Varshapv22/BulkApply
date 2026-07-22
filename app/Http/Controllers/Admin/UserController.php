@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\JobApplication;
 use App\Models\Plan;
 use App\Models\Profile;
@@ -106,6 +107,7 @@ class UserController extends Controller
     public function toggleActive(User $user)
     {
         $user->forceFill(['is_active' => !$user->is_active])->save();
+        AuditLog::record($user->is_active ? 'user.activate' : 'user.suspend', $user);
 
         return back()->with('status', $user->is_active ? 'User activated.' : 'User suspended.');
     }
@@ -113,6 +115,7 @@ class UserController extends Controller
     public function verifyEmail(User $user)
     {
         $user->forceFill(['email_verified_at' => now()])->save();
+        AuditLog::record('user.verify_email', $user);
 
         return back()->with('status', 'Email marked as verified.');
     }
@@ -121,6 +124,7 @@ class UserController extends Controller
     {
         $password = Str::password(16);
         $user->forceFill(['password' => $password])->save();
+        AuditLog::record('user.reset_password', $user);
 
         return back()->with('status', "New password for {$user->email}: {$password}");
     }
@@ -132,6 +136,7 @@ class UserController extends Controller
         ]);
 
         $user->syncRoles(($data['role'] ?? null) ? [$data['role']] : []);
+        AuditLog::record('user.update_role', $user, ['role' => $data['role'] ?? null]);
 
         return back()->with('status', 'Role updated.');
     }
@@ -142,6 +147,7 @@ class UserController extends Controller
             return back()->with('error', 'You cannot delete your own account.');
         }
 
+        AuditLog::record('user.delete', $user, ['email' => $user->email]);
         $user->delete();
 
         return redirect()->route('admin.users.index')->with('status', 'User deleted.');
@@ -153,6 +159,7 @@ class UserController extends Controller
             return back()->with('error', 'You are already logged in as this user.');
         }
 
+        AuditLog::record('user.login_as', $user);
         $request->session()->put('impersonator_id', Auth::id());
         Auth::login($user);
 

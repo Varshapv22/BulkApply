@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\CmsPage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +23,8 @@ class CmsController extends Controller
     {
         $data = $this->validated($request);
 
-        CmsPage::create($data + ['updated_by' => Auth::id()]);
+        $page = CmsPage::create($data + ['updated_by' => Auth::id()]);
+        AuditLog::record('cms.create', $page, ['slug' => $page->slug, 'status' => $page->status]);
 
         return back()->with('status', 'Page created.');
     }
@@ -32,12 +34,14 @@ class CmsController extends Controller
         $data = $this->validated($request, $page);
 
         $page->update($data + ['updated_by' => Auth::id()]);
+        AuditLog::record('cms.update', $page, ['slug' => $page->slug, 'status' => $page->status]);
 
         return back()->with('status', 'Page updated.');
     }
 
     public function destroy(CmsPage $page)
     {
+        AuditLog::record('cms.delete', $page, ['slug' => $page->slug]);
         $page->delete();
 
         return back()->with('status', 'Page deleted.');

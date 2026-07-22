@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -24,12 +25,15 @@ class SubscriptionController extends Controller
             'starts_at' => now(),
         ]);
 
+        AuditLog::record('subscription.assign', $user, ['plan_id' => $data['plan_id']]);
+
         return back()->with('status', 'Plan assigned to ' . $user->name . '.');
     }
 
     public function cancel(User $user)
     {
         $user->subscriptions()->active()->update(['status' => Subscription::STATUS_CANCELLED]);
+        AuditLog::record('subscription.cancel', $user);
 
         return back()->with('status', 'Subscription cancelled for ' . $user->name . '.');
     }
