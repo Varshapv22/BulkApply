@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Head } from '@inertiajs/react';
+import { Head, Link } from '@inertiajs/react';
 
 export function PageHead({ title, subtitle }) {
     return (
@@ -42,6 +42,8 @@ export const Icons = {
     tag: <>{P('M12 2H2v10l9.29 9.29a1 1 0 0 0 1.42 0l8.58-8.58a1 1 0 0 0 0-1.42L12 2Z')}<circle cx="7" cy="7" r="1.5" fill="currentColor" stroke="none" /></>,
     save: <>{P('M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z')}{P('M17 21v-8H7v8')}{P('M7 3v5h8')}</>,
     trash: <>{P('M3 6h18')}{P('M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6')}{P('M10 11v6')}{P('M14 11v6')}{P('M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2')}</>,
+    card: <><rect x="2" y="5" width="20" height="14" rx="2" />{P('M2 10h20')}</>,
+    bell: <>{P('M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9')}{P('M13.73 21a2 2 0 0 1-3.46 0')}</>,
 };
 
 export const ChipIcon = ({ icon }) => (
@@ -125,4 +127,95 @@ export function useConfirm() {
     ) : null;
 
     return { confirm, dialog };
+}
+
+function getCsrfCookie() {
+    const match = document.cookie.match(/(^| )XSRF-TOKEN=([^;]+)/);
+    return match ? decodeURIComponent(match[2]) : '';
+}
+
+function timeAgo(dateString) {
+    const seconds = Math.max(0, Math.floor((Date.now() - new Date(dateString).getTime()) / 1000));
+    if (seconds < 60) return 'just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(dateString).toLocaleDateString();
+}
+
+/**
+ * Topbar notification bell + dropdown. Data-shape agnostic — pass `getMessage`
+ * to extract display text, since admin notifications (`{message}`) and user
+ * database notifications (`{data: {message}}`) don't share a schema.
+ */
+export function NotificationBell({ unreadCount = 0, recentUrl, markReadUrl, markAllReadUrl, viewAllHref, getMessage }) {
+    const [open, setOpen] = useState(false);
+    const [items, setItems] = useState(null);
+    const [count, setCount] = useState(unreadCount);
+    const ref = useRef(null);
+
+    useEffect(() => setCount(unreadCount), [unreadCount]);
+
+    useEffect(() => {
+        const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', onDoc);
+        return () => document.removeEventListener('mousedown', onDoc);
+    }, []);
+
+    const load = () => {
+        fetch(recentUrl, { headers: { Accept: 'application/json' } })
+            .then((r) => r.json())
+            .then((d) => { setItems(d.notifications || []); setCount(d.unread_count || 0); })
+            .catch(() => setItems([]));
+    };
+
+    const toggle = () => {
+        const next = !open;
+        setOpen(next);
+        if (next) load();
+    };
+
+    const post = (url) => fetch(url, { method: 'POST', headers: { 'X-XSRF-TOKEN': getCsrfCookie() } }).then(load);
+    const markRead = (id) => post(markReadUrl(id));
+    const markAllRead = () => post(markAllReadUrl);
+
+    return (
+        <div className="notif-bell-wrap" ref={ref}>
+            <button className="icon-btn notif-bell-btn" onClick={toggle} aria-label="Notifications" title="Notifications">
+                <ChipIcon icon={Icons.bell} />
+                {count > 0 && <span className="notif-badge">{count > 9 ? '9+' : count}</span>}
+            </button>
+            {open && (
+                <div className="notif-pop">
+                    <div className="notif-pop-head">
+                        <span>Notifications</span>
+                        {count > 0 && <button type="button" className="btn-link" onClick={markAllRead}>Mark all read</button>}
+                    </div>
+                    <div className="notif-pop-list">
+                        {items === null ? (
+                            <div className="notif-pop-empty">Loading…</div>
+                        ) : items.length === 0 ? (
+                            <div className="notif-pop-empty">You're all caught up.</div>
+                        ) : items.map((n) => (
+                            <div
+                                key={n.id}
+                                className={`notif-item${n.read_at ? '' : ' unread'}`}
+                                onClick={() => !n.read_at && markRead(n.id)}
+                                role={n.read_at ? undefined : 'button'}
+                            >
+                                <p>{getMessage(n)}</p>
+                                <span className="notif-item-time">{timeAgo(n.created_at)}</span>
+                            </div>
+                        ))}
+                    </div>
+                    {viewAllHref && (
+                        <Link href={viewAllHref} className="notif-pop-footer">View all</Link>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 }

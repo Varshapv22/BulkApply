@@ -47,6 +47,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/users/{user}/subscription', [SubscriptionController::class, 'cancel'])->name('users.subscription.cancel');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
+    Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+
     Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
     Route::post('/plans', [PlanController::class, 'store'])->name('plans.store');
     Route::put('/plans/{plan}', [PlanController::class, 'update'])->name('plans.update');
@@ -78,6 +80,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics.index');
 
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/recent', [NotificationController::class, 'recent'])->name('notifications.recent');
     Route::post('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.markRead');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
 

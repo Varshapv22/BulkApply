@@ -84,6 +84,18 @@ class HandleInertiaRequests extends Middleware
                     || blank($profile?->location)
                     || ! $user->resumes()->exists();
             },
+            // Unread count for the topbar notification bell — admins see AdminNotification
+            // (platform-wide events), regular users see their own database notifications.
+            'unreadNotifications' => function () use ($request) {
+                $user = $request->user();
+                if (! $user) {
+                    return 0;
+                }
+
+                return $user->getRoleNames()->isNotEmpty()
+                    ? \App\Models\AdminNotification::unread()->count()
+                    : $user->unreadNotifications()->count();
+            },
             // Active plans — shared so the upgrade modal can list them without a separate request.
             'plans' => function () use ($request) {
                 $user = $request->user();
