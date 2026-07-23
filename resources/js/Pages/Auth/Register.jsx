@@ -1,5 +1,6 @@
 import React from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { PasswordInput } from '../../components';
 
 function Tick() {
     return (
@@ -60,11 +61,11 @@ export default function Register({ errors = {} }) {
                             onChange={(e) => setData('email', e.target.value)} placeholder="you@example.com" required />
 
                         <label htmlFor="password">Password</label>
-                        <input id="password" type="password" value={data.password}
+                        <PasswordInput id="password" value={data.password}
                             onChange={(e) => setData('password', e.target.value)} placeholder="At least 8 characters" required />
 
                         <label htmlFor="password_confirmation">Confirm Password</label>
-                        <input id="password_confirmation" type="password" value={data.password_confirmation}
+                        <PasswordInput id="password_confirmation" value={data.password_confirmation}
                             onChange={(e) => setData('password_confirmation', e.target.value)} placeholder="Re-enter password" required />
 
                         <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: 18 }} disabled={processing}>
