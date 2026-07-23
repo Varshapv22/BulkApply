@@ -70,24 +70,18 @@
 /* ---- Derived from the accent (adapt to light/dark automatically) ---- */
 :root {
     --primary-soft: color-mix(in srgb, var(--primary) 9%, var(--card));
-    --primary-grad: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
+    --primary-grad: var(--primary);
     --ring: color-mix(in srgb, var(--primary) 20%, transparent);
-    --sidebar-bg: linear-gradient(180deg, color-mix(in srgb, var(--primary) 22%, var(--sidebar-base, #0b1120)) 0%, var(--sidebar-base, #0b1120) 74%);
-
-    --glass-blur: blur(24px);
-    --mesh-1: color-mix(in srgb, var(--primary) 12%, transparent);
-    --mesh-2: color-mix(in srgb, var(--primary-2) 8%, transparent);
-    --bg-grad: radial-gradient(900px circle at 80% -10%, var(--mesh-1), transparent 60%), radial-gradient(1100px circle at -10% 120%, var(--mesh-2), transparent 55%), radial-gradient(800px circle at 50% 50%, color-mix(in srgb, var(--blue) 4%, transparent), transparent 60%);
+    --sidebar-bg: var(--sidebar-base, #0b1120);
+    --glass-blur: blur(0px);
 }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; overflow-x: hidden; }
 body {
     margin: 0;
-    font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background: var(--bg);
-    background-image: var(--bg-grad);
-    background-attachment: fixed;
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.01em;
@@ -126,11 +120,11 @@ a:hover { text-decoration: underline; }
     color: #fff; letter-spacing: -.02em;
 }
 .sidebar-brand .dot {
-    width: 36px; height: 36px; border-radius: 11px; background: var(--primary-grad);
+    width: 36px; height: 36px; border-radius: 11px; background: var(--primary);
     display: inline-flex; align-items: center; justify-content: center; font-size: 17px; color: #fff;
     box-shadow: var(--shadow); font-weight: 800;
 }
-.sidebar-brand span:not(.dot) { background: var(--primary-grad); -webkit-background-clip: text;
+.sidebar-brand span:not(.dot) { background: var(--primary); -webkit-background-clip: text;
     background-clip: text; -webkit-text-fill-color: transparent; }
 .sidebar-nav { padding: 6px 14px; display: flex; flex-direction: column; gap: 3px; flex: 1; overflow-y: auto; }
 .sidebar-section { font-size: 10.5px; text-transform: uppercase; letter-spacing: .1em; color: var(--sidebar-text-muted);
@@ -142,7 +136,7 @@ a:hover { text-decoration: underline; }
     background: transparent; border: 0; font-family: inherit; text-align: left; width: 100%;
 }
 .nav-item:hover { background: rgba(255,255,255,.05); color: #fff; text-decoration: none; }
-.nav-item.active { background: var(--primary-grad); color: #fff; box-shadow: var(--shadow); }
+.nav-item.active { background: var(--primary); color: #fff; box-shadow: var(--shadow); }
 .nav-item.active .ico, .nav-item.active > svg { opacity: 1; }
 .nav-item .ico, .nav-item > svg { width: 18px; height: 18px; flex-shrink: 0; opacity: .75; }
 .sidebar-footer { padding: 14px; border-top: 1px solid rgba(255,255,255,.06); }
@@ -159,8 +153,7 @@ a:hover { text-decoration: underline; }
 
 .main { flex: 1; margin-left: 256px; display: flex; flex-direction: column; min-width: 0; }
 .topbar {
-    height: 66px; background: color-mix(in srgb, var(--card) 80%, transparent); backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; padding: 0 44px;
+    height: 66px; background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; padding: 0 44px;
     position: sticky; top: 0; z-index: 40;
 }
 .topbar .page-title { font-size: 15px; font-weight: 700; color: var(--heading); letter-spacing: -.01em;
@@ -174,7 +167,7 @@ a:hover { text-decoration: underline; }
 .topbar-user { display: flex; align-items: center; gap: 10px; padding: 5px 14px 5px 5px; border-radius: 30px;
     cursor: pointer; flex-shrink: 0; transition: background .15s; border: 1px solid transparent; }
 .topbar-user:hover { background: var(--hover); border-color: var(--border); }
-.topbar-user .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary-grad); color: #fff;
+.topbar-user .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary); color: #fff;
     display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0;
     box-shadow: var(--shadow); }
 .topbar-user-name { font-size: 13.5px; font-weight: 600; color: var(--heading); white-space: nowrap;
@@ -249,8 +242,8 @@ input[type=file] { padding: 9px 12px; cursor: pointer; }
     font-family: inherit; white-space: nowrap; transition: transform .12s, box-shadow .15s, background .15s, filter .15s; }
 .btn:hover { text-decoration: none; }
 .btn:active { transform: translateY(1px); }
-.btn-primary { background: var(--primary-grad); color: #fff; box-shadow: var(--shadow); }
-.btn-primary:hover { filter: brightness(1.07); box-shadow: 0 12px 28px -8px color-mix(in srgb, var(--primary) 60%, transparent); transform: translateY(-1px); }
+.btn-primary { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
+.btn-primary:hover { filter: brightness(1.07); box-shadow: var(--shadow); }
 .btn-ghost { background: var(--card); color: var(--text); border-color: var(--border-strong); box-shadow: var(--shadow-sm); }
 .btn-ghost:hover { background: var(--hover); }
 .btn-danger { background: transparent; color: var(--red); border-color: transparent; }
@@ -281,7 +274,7 @@ input[type=file] { padding: 9px 12px; cursor: pointer; }
 .alert ul { margin: 6px 0 0 18px; }
 
 .batch-progress-track { height: 6px; border-radius: 4px; background: var(--border); overflow: hidden; }
-.batch-progress-fill { height: 100%; border-radius: 4px; background: var(--primary-grad); transition: width .4s ease; }
+.batch-progress-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width .4s ease; }
 
 /* ---------- Table ---------- */
 .table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
@@ -373,7 +366,7 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
     .auth-hero { display: none; }
     .auth-mobile-brand { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 22px;
         font-weight: 800; margin-bottom: 20px; color: var(--heading); }
-    .auth-mobile-brand .dot { width: 34px; height: 34px; border-radius: 10px; background: var(--primary-grad); color: #fff;
+    .auth-mobile-brand .dot { width: 34px; height: 34px; border-radius: 10px; background: var(--primary); color: #fff;
         display: inline-flex; align-items: center; justify-content: center; }
 }
 
@@ -445,7 +438,7 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
 /* ---------- Top progress bar (any Inertia request in flight) ---------- */
 .topbar-progress { position: absolute; left: 0; right: 0; bottom: -1px; height: 2.5px; overflow: hidden;
     background: transparent; }
-.topbar-progress-bar { position: absolute; top: 0; bottom: 0; width: 40%; background: var(--primary-grad);
+.topbar-progress-bar { position: absolute; top: 0; bottom: 0; width: 40%; background: var(--primary);
     border-radius: 4px; animation: progressSlide 1.1s ease-in-out infinite; }
 @keyframes progressSlide { 0% { left: -40%; } 100% { left: 100%; } }
 
@@ -557,7 +550,7 @@ tbody tr.selected:hover { background: var(--primary-soft); }
     flex: 1 1 250px; max-width: 290px; padding-top: 30px; overflow: hidden;
     transition: transform .18s, box-shadow .18s;
 }
-.plan-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--primary-grad); opacity: .35; }
+.plan-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--primary); opacity: .35; }
 .plan-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
 .plan-card-current { border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring); }
 .plan-card-current::before { opacity: 1; }

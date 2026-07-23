@@ -64,6 +64,35 @@ export const IconField = React.forwardRef(function IconField({ icon, as = 'input
     );
 });
 
+export const PasswordInput = React.forwardRef(function PasswordInput({ icon, style, ...props }, ref) {
+    const [show, setShow] = useState(false);
+    return (
+        <div className={icon ? "input-icon-wrap" : ""} style={{ position: 'relative', ...style }}>
+            {icon && (
+                <svg className="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {icon}
+                </svg>
+            )}
+            <input ref={ref} type={show ? 'text' : 'password'} {...props} style={{ ...props.style, paddingRight: 40, width: '100%' }} />
+            <button
+                type="button"
+                onClick={() => setShow(!show)}
+                style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: 4 }}
+                tabIndex="-1"
+                title={show ? "Hide password" : "Show password"}
+            >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    {show ? (
+                        <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22"/></>
+                    ) : (
+                        <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>
+                    )}
+                </svg>
+            </button>
+        </div>
+    );
+});
+
 export function Spinner({ dark = false, size = 16 }) {
     return <span className={`spinner${dark ? ' dark' : ''}`} style={{ width: size, height: size }} />;
 }

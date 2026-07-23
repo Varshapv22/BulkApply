@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
-import { PageHead, Stat, Badge, Icons } from '../../../components';
+import { PageHead, Stat, Badge, Icons, PasswordInput } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
 function ConfigRow({ config }) {
@@ -21,7 +21,7 @@ function ConfigRow({ config }) {
             <td>
                 {editing ? (
                     <div style={{ display: 'flex', gap: 6 }}>
-                        <input type="password" placeholder="New value" value={value} onChange={(e) => setValue(e.target.value)} style={{ width: 220 }} />
+                        <PasswordInput placeholder="New value" value={value} onChange={(e) => setValue(e.target.value)} style={{ width: 220 }} />
                         <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
                         <button className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>Cancel</button>
                     </div>

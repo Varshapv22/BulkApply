@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, usePage, router } from '@inertiajs/react';
-import { NotificationBell } from './components';
+import { NotificationBell, PasswordInput } from './components';
 
 const ACCENTS = [
     { id: 'indigo',  label: 'Indigo',  c: ['#6366f1', '#a855f7'] },
@@ -225,17 +225,17 @@ function ProfileModal({ user, onClose }) {
                     <form onSubmit={submitPassword} style={{ marginTop: 20 }}>
                         <div style={{ marginBottom: 14 }}>
                             <label>Current Password</label>
-                            <input type="password" autoComplete="current-password" autoFocus value={passData.current_password} onChange={(e) => setPassData(d => ({ ...d, current_password: e.target.value }))} />
+                            <PasswordInput autoComplete="current-password" autoFocus value={passData.current_password} onChange={(e) => setPassData(d => ({ ...d, current_password: e.target.value }))} />
                             {passErrors.current_password && <p className="field-error">{passErrors.current_password}</p>}
                         </div>
                         <div style={{ marginBottom: 14 }}>
                             <label>New Password</label>
-                            <input type="password" autoComplete="new-password" value={passData.password} onChange={(e) => setPassData(d => ({ ...d, password: e.target.value }))} />
+                            <PasswordInput autoComplete="new-password" value={passData.password} onChange={(e) => setPassData(d => ({ ...d, password: e.target.value }))} />
                             {passErrors.password && <p className="field-error">{passErrors.password}</p>}
                         </div>
                         <div style={{ marginBottom: 20 }}>
                             <label>Confirm New Password</label>
-                            <input type="password" autoComplete="new-password" value={passData.password_confirmation} onChange={(e) => setPassData(d => ({ ...d, password_confirmation: e.target.value }))} />
+                            <PasswordInput autoComplete="new-password" value={passData.password_confirmation} onChange={(e) => setPassData(d => ({ ...d, password_confirmation: e.target.value }))} />
                         </div>
                         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
                             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
