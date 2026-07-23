@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, usePage, router } from '@inertiajs/react';
+import { NotificationBell } from './components';
 
 const ACCENTS = [
     { id: 'indigo',  label: 'Indigo',  c: ['#6366f1', '#a855f7'] },
@@ -17,6 +18,7 @@ const NAV = [
     { href: '/jobs',         label: 'Applications', match: '/jobs',   icon: 'list' },
     { href: '/resume-check', label: 'Resume Check', match: '/resume-check', icon: 'doc' },
     { href: '/templates',    label: 'Templates', match: '/templates', icon: 'mail' },
+    { href: '/billing',      label: 'Billing',   match: '/billing',   icon: 'card' },
     { href: '/profile',      label: 'Settings',  match: '/profile',   icon: 'cog' },
 ];
 
@@ -28,6 +30,7 @@ function Icon({ name }) {
         mail: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-10 5L2 7" /></>,
         doc: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><path d="m9 15 2 2 4-4" /></>,
         cog: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>,
+        card: <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></>,
     };
     return (
         <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -453,6 +456,15 @@ export default function Layout({ children }) {
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </button>
                     <ThemeMenu theme={theme} onToggleTheme={toggleTheme} />
+                    {user && (
+                        <NotificationBell
+                            unreadCount={props.unreadNotifications || 0}
+                            recentUrl="/notifications/recent"
+                            markReadUrl={(id) => `/notifications/${id}/read`}
+                            markAllReadUrl="/notifications/mark-all-read"
+                            getMessage={(n) => n.data?.message || 'Notification'}
+                        />
+                    )}
                     {user && (
                         <div
                             className="topbar-user"

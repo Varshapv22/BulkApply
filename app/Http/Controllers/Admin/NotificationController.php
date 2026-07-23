@@ -16,6 +16,14 @@ class NotificationController extends Controller
         ]);
     }
 
+    public function recent()
+    {
+        return response()->json([
+            'notifications' => AdminNotification::latest()->limit(10)->get(),
+            'unread_count' => AdminNotification::unread()->count(),
+        ]);
+    }
+
     public function markRead(AdminNotification $notification)
     {
         $notification->update(['read_at' => now()]);

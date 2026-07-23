@@ -77,7 +77,13 @@ class SiteJobService
             return $this->result(jobs: $r['jobs'], error: $r['error'], handled: $r['handled']);
         }
 
-        // 4. Just a name we can't fetch — caller does an aggregated keyword search.
+        // 4. Company name — try to discover and scrape their official careers page.
+        $careerResult = $this->tryCompanyCareerPage($site, $role, $limit);
+        if ($careerResult['handled']) {
+            return $this->result(jobs: $careerResult['jobs'], error: $careerResult['error'], handled: true);
+        }
+
+        // Nothing found — caller does an aggregated keyword search.
         return $this->result(handled: false);
     }
 
@@ -110,23 +116,12 @@ class SiteJobService
                 ];
             }
 
-            $postings = $this->extractJobPostings($response->body());
-
-            $jobs = [];
-            foreach ($postings as $jp) {
-                if (!$this->matchesRole($jp['title'] . ' ' . $jp['company'], $role)) {
-                    continue;
-                }
-                $jobs[] = $this->normalizeGeneric($jp, $url, $host);
-                if (count($jobs) >= $limit) {
-                    break;
-                }
-            }
+            $jobs = $this->extractAllJobs($response->body(), $url, $host, $role, $limit);
 
             if (empty($jobs)) {
                 return [
                     'jobs'    => [],
-                    'error'   => "Couldn't read job listings directly from {$host} — it may load jobs via JavaScript or not publish standard job data.",
+                    'error'   => "Couldn't read job listings directly from {$host} — it may load jobs via JavaScript or not publish structured job data.",
                     'handled' => true,
                 ];
             }
@@ -283,6 +278,255 @@ class SiteJobService
         $url = Str::startsWith($input, ['http://', 'https://']) ? $input : 'https://' . $input;
         $host = parse_url($url, PHP_URL_HOST);
         return $host ? strtolower(preg_replace('/^www\./', '', $host)) : null;
+    }
+
+    /**
+     * Unified job extractor: tries JSON-LD first, then falls back to HTML heuristics.
+     */
+    private function extractAllJobs(string $html, string $pageUrl, string $host, string $role, int $limit): array
+    {
+        // 1. JSON-LD structured data
+        $postings = $this->extractJobPostings($html);
+        $jobs = [];
+        foreach ($postings as $jp) {
+            if (!$this->matchesRole($jp['title'] . ' ' . $jp['company'], $role)) {
+                continue;
+            }
+            $jobs[] = $this->normalizeGeneric($jp, $pageUrl, $host);
+            if (count($jobs) >= $limit) {
+                return $jobs;
+            }
+        }
+        if (!empty($jobs)) {
+            return $jobs;
+        }
+
+        // 2. Heuristic: <a> links whose URL path looks like an individual job listing
+        $heuristic = $this->extractJobsHeuristic($html, $pageUrl, $host);
+        foreach ($heuristic as $job) {
+            if (!$this->matchesRole($job['job_title'], $role)) {
+                continue;
+            }
+            $jobs[] = $job;
+            if (count($jobs) >= $limit) {
+                return $jobs;
+            }
+        }
+
+        return $jobs;
+    }
+
+    /**
+     * Discover a company's official careers page from a bare name, fetch it
+     * concurrently (JSON-LD + HTML heuristics), and return matching job listings.
+     *
+     * Tries common TLDs (.com, .in, .co.in) and career URL paths (/careers, /jobs…).
+     */
+    private function tryCompanyCareerPage(string $companyName, string $role, int $limit): array
+    {
+        $base = $this->guessBaseDomain($companyName);
+        if (!$base) {
+            return ['jobs' => [], 'error' => null, 'handled' => false];
+        }
+
+        $tlds = ['com', 'in', 'co.in'];
+        $liveDomain = $this->resolveCompanyDomain($base, $tlds);
+        if (!$liveDomain) {
+            return ['jobs' => [], 'error' => null, 'handled' => false];
+        }
+
+        $careerPaths = ['/careers', '/jobs', '/career', '/careers/openings', '/careers/jobs', '/work-with-us', '/openings'];
+        $requests = [];
+        foreach ($careerPaths as $path) {
+            $url = "https://{$liveDomain}{$path}";
+            if ($this->isSafeUrl($url)) {
+                $requests[$path] = $url;
+            }
+        }
+
+        try {
+            $pages = Http::pool(function ($pool) use ($requests) {
+                $out = [];
+                foreach ($requests as $key => $url) {
+                    $out[] = $pool->as($key)->timeout(10)->connectTimeout(6)
+                        ->withHeaders(['User-Agent' => self::UA, 'Accept' => 'text/html'])
+                        ->withOptions(['allow_redirects' => ['max' => 3]])
+                        ->get($url);
+                }
+                return $out;
+            });
+        } catch (\Throwable $e) {
+            Log::warning('Career page fetch failed', ['company' => $companyName, 'error' => $e->getMessage()]);
+            return ['jobs' => [], 'error' => null, 'handled' => false];
+        }
+
+        foreach ($careerPaths as $path) {
+            $resp = $pages[$path] ?? null;
+            if (!$resp || $resp instanceof \Throwable || !$resp->successful()) {
+                continue;
+            }
+            $pageUrl = "https://{$liveDomain}{$path}";
+            $jobs = $this->extractAllJobs($resp->body(), $pageUrl, $liveDomain, $role, $limit);
+            if (!empty($jobs)) {
+                return ['jobs' => $jobs, 'error' => null, 'handled' => true];
+            }
+        }
+
+        return [
+            'jobs'    => [],
+            'error'   => "Found {$liveDomain} but couldn't read job listings from their careers pages — they may load jobs via JavaScript.",
+            'handled' => true,
+        ];
+    }
+
+    /**
+     * Concurrently probe a set of TLD variants and return the first live domain.
+     *
+     * @param  string[]  $tlds
+     */
+    private function resolveCompanyDomain(string $base, array $tlds): ?string
+    {
+        $requests = [];
+        foreach ($tlds as $tld) {
+            $url = "https://{$base}.{$tld}";
+            if ($this->isSafeUrl($url)) {
+                $requests[$tld] = $url;
+            }
+        }
+        if (empty($requests)) {
+            return null;
+        }
+
+        try {
+            $responses = Http::pool(function ($pool) use ($requests) {
+                $out = [];
+                foreach ($requests as $key => $url) {
+                    $out[] = $pool->as($key)->timeout(5)->connectTimeout(4)
+                        ->withHeaders(['User-Agent' => self::UA])
+                        ->head($url);
+                }
+                return $out;
+            });
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        foreach ($tlds as $tld) {
+            $resp = $responses[$tld] ?? null;
+            // 405 Method Not Allowed = server is alive but HEAD not supported
+            if ($resp && !($resp instanceof \Throwable) && ($resp->successful() || $resp->status() === 405)) {
+                return "{$base}.{$tld}";
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Heuristic HTML extraction: find <a> links whose URL path segment clearly
+     * indicates an individual job listing page (not a nav/category link).
+     * Used as a fallback when a careers page has no JSON-LD structured data.
+     */
+    private function extractJobsHeuristic(string $html, string $baseUrl, string $host): array
+    {
+        $jobs = [];
+        $seen = [];
+        $baseSchemeHost = 'https://' . $host;
+
+        preg_match_all('#<a\b[^>]+href=["\']([^"\']*)["\'][^>]*>([\s\S]*?)</a>#i', $html, $matches, PREG_SET_ORDER);
+
+        foreach ($matches as $m) {
+            $href = html_entity_decode(trim($m[1]));
+            $text = trim(strip_tags($m[2]));
+
+            // Skip empty, too short, or banner-length text
+            if (mb_strlen($text) < 5 || mb_strlen($text) > 150) {
+                continue;
+            }
+            // Skip generic navigation labels
+            if (preg_match('/^(home|about|contact|blog|news|products?|services?|login|sign\s*up|register|menu|more|next|prev|back|apply now|click here|read more|learn more|view all|view jobs|see all|all openings|current openings|careers|jobs|openings|our team|team)$/i', $text)) {
+                continue;
+            }
+
+            // Normalise href to absolute
+            if (preg_match('#^https?://#i', $href)) {
+                $linkHost = strtolower(preg_replace('/^www\./', '', parse_url($href, PHP_URL_HOST) ?? ''));
+                if ($linkHost !== $host) {
+                    continue; // off-site link
+                }
+            } elseif (str_starts_with($href, '/')) {
+                $href = $baseSchemeHost . $href;
+            } elseif ($href === '' || str_starts_with($href, '#') || str_starts_with($href, 'mailto:') || str_starts_with($href, 'tel:')) {
+                continue;
+            } else {
+                $href = $baseSchemeHost . '/' . $href;
+            }
+
+            $path = strtolower(parse_url($href, PHP_URL_PATH) ?? '');
+            // Accept only links that clearly point at a single job listing
+            if (!preg_match('#/(job|jobs|career|careers|opening|openings|position|positions|vacancy|vacancies|role|roles)[/\-_]#', $path)) {
+                continue;
+            }
+
+            $key = mb_strtolower($text);
+            if (isset($seen[$key])) {
+                continue;
+            }
+            $seen[$key] = true;
+
+            $jobs[] = [
+                'company'         => $host,
+                'job_title'       => $text,
+                'location'        => '',
+                'recruiter_email' => null,
+                'company_email'   => null,
+                'company_website' => $baseSchemeHost,
+                'company_phone'   => null,
+                'job_url'         => $href,
+                'apply_url'       => $href,
+                'source'          => $host,
+                'apply_type'      => 'link',
+                'description'     => '',
+                'posted'          => null,
+                'employer_logo'   => null,
+            ];
+        }
+
+        return $jobs;
+    }
+
+    /**
+     * Normalise a company name to a bare domain label suitable for TLD guessing.
+     * e.g. "Zoho Corporation Pvt Ltd" → "zoho", "UST Global" → "ust"
+     */
+    private function guessBaseDomain(string $company): ?string
+    {
+        $name = strtolower($company);
+        $name = preg_replace('/\([^)]*\)/', ' ', $name);          // drop (P), (India) etc.
+        $name = preg_replace('/[^a-z0-9 ]+/', ' ', $name);        // keep alnum + spaces
+
+        $stop = ['pvt', 'private', 'ltd', 'limited', 'llp', 'inc', 'incorporated', 'llc', 'corp',
+                 'corporation', 'co', 'company', 'technologies', 'technology', 'tech', 'solutions',
+                 'solution', 'systems', 'system', 'software', 'softwares', 'labs', 'lab', 'services',
+                 'service', 'global', 'india', 'group', 'consulting', 'consultancy', 'infotech',
+                 'digital', 'the', 'and'];
+
+        $words = array_values(array_filter(
+            preg_split('/\s+/', trim($name)),
+            fn ($w) => $w !== '' && !in_array($w, $stop, true)
+        ));
+
+        if (empty($words)) {
+            return null;
+        }
+
+        $base = $words[0];
+        if (strlen($base) < 4 && isset($words[1])) {
+            $base .= $words[1];   // e.g. "ust" + "global" → but global is in stop-list, so stays "ust"
+        }
+        $base = preg_replace('/[^a-z0-9]/', '', $base);
+
+        return strlen($base) >= 3 ? $base : null;
     }
 
     /**

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, usePage, router } from '@inertiajs/react';
-import { ChipIcon, Icons } from './components';
+import { ChipIcon, Icons, NotificationBell } from './components';
 
 const NAV = [
     { href: '/admin', label: 'Dashboard', match: '/admin', exact: true, icon: 'briefcase' },
     { href: '/admin/users', label: 'Users', match: '/admin/users', icon: 'user' },
     { href: '/admin/plans', label: 'Plans', match: '/admin/plans', icon: 'tag' },
+    { href: '/admin/subscriptions', label: 'Subscriptions', match: '/admin/subscriptions', icon: 'card' },
     { href: '/admin/applications', label: 'Applications', match: '/admin/applications', icon: 'list' },
     { href: '/admin/resumes', label: 'Resumes', match: '/admin/resumes', icon: 'upload' },
     { href: '/admin/queue', label: 'Queue', match: '/admin/queue', icon: 'clock' },
@@ -250,6 +251,16 @@ export default function AdminLayout({ children }) {
                     <button className="icon-btn" onClick={toggleTheme} title="Toggle light / dark" aria-label="Toggle theme">
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </button>
+                    {user && (
+                        <NotificationBell
+                            unreadCount={props.unreadNotifications || 0}
+                            recentUrl="/admin/notifications/recent"
+                            markReadUrl={(id) => `/admin/notifications/${id}/read`}
+                            markAllReadUrl="/admin/notifications/mark-all-read"
+                            viewAllHref="/admin/notifications"
+                            getMessage={(n) => n.message}
+                        />
+                    )}
                     {user && (
                         <div
                             className="topbar-user"

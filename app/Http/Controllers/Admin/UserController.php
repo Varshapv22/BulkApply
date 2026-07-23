@@ -9,6 +9,7 @@ use App\Models\JobApplication;
 use App\Models\Plan;
 use App\Models\Profile;
 use App\Models\User;
+use App\Notifications\AccountStatusChanged;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -122,6 +123,7 @@ class UserController extends Controller
     {
         $user->forceFill(['is_active' => !$user->is_active])->save();
         AuditLog::record($user->is_active ? 'user.activate' : 'user.suspend', $user);
+        $user->notify(new AccountStatusChanged($user->is_active));
 
         return back()->with('status', $user->is_active ? 'User activated.' : 'User suspended.');
     }
