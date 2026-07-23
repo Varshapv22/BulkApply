@@ -167,7 +167,8 @@ a:hover { text-decoration: underline; }
     min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .topbar .spacer { flex: 1; min-width: 0; }
 .hamburger { display: none; background: none; border: none; color: var(--text); font-size: 22px; cursor: pointer; flex-shrink: 0; }
-.content { padding: 20px 24px; width: 100%; animation: fadeUp .35s ease both; }
+.content { padding: 20px 24px; width: 100%; animation: contentFadeIn .35s ease; }
+@keyframes contentFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- Topbar user (profile avatar + name, top-right) ---------- */
 .topbar-user { display: flex; align-items: center; gap: 10px; padding: 5px 14px 5px 5px; border-radius: 30px;
