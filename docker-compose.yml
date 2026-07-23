@@ -34,7 +34,7 @@ services:
   mysql:
     image: mysql:8.0
     container_name: bulkapply-mysql
-    restart: unless-stopped
+    restart: unless-
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-bulkapply}
       MYSQL_USER: ${DB_USERNAME:-bulkapply}
