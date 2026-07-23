@@ -75,6 +75,10 @@ export default function Register({ errors = {} }) {
                     <p style={{ textAlign: 'center', margin: '20px 0 0', fontSize: 14 }} className="muted">
                         Already have an account? <Link href="/login">Sign in</Link>
                     </p>
+
+                    <p style={{ textAlign: 'center', margin: '14px 0 0', fontSize: 12 }} className="muted">
+                        <Link href="/p/pricing">Pricing</Link> · <Link href="/p/faq">FAQ</Link> · <Link href="/p/privacy">Privacy</Link> · <Link href="/p/terms">Terms</Link> · <Link href="/p/contact">Contact</Link>
+                    </p>
                 </div>
             </div>
         </div>
