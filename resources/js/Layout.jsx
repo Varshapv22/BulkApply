@@ -278,6 +278,18 @@ function BlockingModal({ children }) {
 }
 
 function TrialExpiredModal({ plans }) {
+    const [requestingId, setRequestingId] = useState(null);
+    const [requestedId, setRequestedId] = useState(null);
+
+    const requestUpgrade = (plan) => {
+        setRequestingId(plan.id);
+        router.post('/billing/request-upgrade', { plan_id: plan.id }, {
+            preserveScroll: true,
+            onSuccess: () => setRequestedId(plan.id),
+            onFinish: () => setRequestingId(null),
+        });
+    };
+
     return (
         <BlockingModal>
             <div style={{ textAlign: 'center', padding: '8px 0 20px' }}>
@@ -310,14 +322,27 @@ function TrialExpiredModal({ plans }) {
                                 {plan.chrome_extension_access && <li>✓ Chrome extension</li>}
                                 {plan.ats_checker_access && <li>✓ ATS checker</li>}
                             </ul>
+                            <button
+                                type="button"
+                                className="btn btn-primary btn-block"
+                                disabled={requestingId === plan.id || requestedId === plan.id}
+                                onClick={() => requestUpgrade(plan)}
+                                style={{ marginTop: 'auto' }}
+                            >
+                                {requestedId === plan.id ? 'Request sent ✓' : requestingId === plan.id ? 'Sending…' : 'Request this plan'}
+                            </button>
                         </div>
                     ))}
                 </div>
             )}
 
             <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13, marginTop: 20 }}>
-                To upgrade your account, please contact your administrator.
+                {requestedId ? 'An admin will review your request and activate your plan shortly.' : 'Pick a plan above to send an upgrade request to your administrator.'}
             </p>
+
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <button type="button" className="btn btn-ghost" onClick={() => router.post('/logout')}>Log out</button>
+            </div>
         </BlockingModal>
     );
 }
