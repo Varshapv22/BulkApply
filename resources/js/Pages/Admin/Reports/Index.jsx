@@ -11,7 +11,7 @@ export default function AdminReportsIndex({ registrations, byCompany, byPipeline
             <PageHead title="Reports" subtitle="Exportable reports across users, applications, and emails." />
 
             <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="card-head-row">
                     <h2>User Registrations (last 30 days)</h2>
                     <a className="btn btn-ghost btn-sm" href="/admin/reports/export/registrations">Export CSV</a>
                 </div>
@@ -19,7 +19,7 @@ export default function AdminReportsIndex({ registrations, byCompany, byPipeline
             </div>
 
             <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="card-head-row">
                     <h2>Applications by Company (top 10)</h2>
                     <a className="btn btn-ghost btn-sm" href="/admin/reports/export/companies">Export CSV</a>
                 </div>
@@ -32,7 +32,7 @@ export default function AdminReportsIndex({ registrations, byCompany, byPipeline
             </div>
 
             <div className="card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="card-head-row">
                     <h2>Pipeline Report</h2>
                     <a className="btn btn-ghost btn-sm" href="/admin/reports/export/pipeline">Export CSV</a>
                 </div>
