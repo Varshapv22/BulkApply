@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useForm } from '@inertiajs/react';
 import { PageHead, IconField, Icons, ChipIcon } from '../components';
 
@@ -15,7 +16,7 @@ function truncate(text, n) {
 }
 
 function ModalShell({ title, onClose, children, small, footer }) {
-    return (
+    return createPortal(
         <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className={`modal${small ? ' modal-sm' : ''}`}>
                 <button type="button" className="modal-close" onClick={onClose} aria-label="Close">✕</button>
@@ -25,7 +26,8 @@ function ModalShell({ title, onClose, children, small, footer }) {
                     {footer || <button type="button" className="btn btn-primary" onClick={onClose}>Done</button>}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 

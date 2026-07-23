@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>BulkApply</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="header">
+        <h1>BulkApply</h1>
+    </div>
+
+    <!-- Login View -->
+    <div id="loginView" class="view">
+        <p class="hint">Login to sync jobs to your dashboard.</p>
+        <input type="email" id="email" placeholder="Email address" required>
+        <input type="password" id="password" placeholder="Password" required>
+        <button id="loginBtn">Login</button>
+        <div id="loginError" class="error"></div>
+    </div>
+
+    <!-- Main View -->
+    <div id="mainView" class="view hidden">
+        <div id="jobDetails">
+            <p class="hint">Current Job Details:</p>
+            <input type="text" id="jobCompany" placeholder="Company Name" required>
+            <input type="text" id="jobTitle" placeholder="Job Title">
+            <input type="text" id="jobLocation" placeholder="Location">
+            <button id="scrapeBtn" class="secondary-btn">Re-scrape Page</button>
+        </div>
+        
+        <button id="saveBtn">Save to Dashboard</button>
+        <div id="saveStatus" class="status"></div>
+
+        <button id="easyApplyBtn" class="secondary-btn hidden">Auto-fill Easy Apply</button>
+        <div id="easyApplyStatus" class="status"></div>
+
+        <button id="logoutBtn" class="link-btn">Logout</button>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>
