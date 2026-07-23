@@ -234,24 +234,7 @@ export default function AdminLayout({ children }) {
                     </Link>
                 </nav>
                 <div className="sidebar-footer">
-                    <div
-                        className="sidebar-user sidebar-user-btn"
-                        onClick={() => setProfileModalOpen(true)}
-                        title="Edit account"
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => e.key === 'Enter' && setProfileModalOpen(true)}
-                    >
-                        <span className="avatar">{initials}</span>
-                        <div className="user-info">
-                            <div className="name">{user?.name || 'Admin'}</div>
-                            <div className="email">{user?.email}</div>
-                        </div>
-                        <svg className="user-edit-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                    </div>
-                    <button type="button" className="nav-item" style={{ width: '100%', marginTop: 4 }} onClick={() => router.post('/logout')}>
+                    <button type="button" className="nav-item" style={{ width: '100%' }} onClick={() => router.post('/logout')}>
                         <ChipIcon icon={Icons.xCircle} /> <span className="nav-label">Logout</span>
                     </button>
                 </div>
@@ -267,6 +250,19 @@ export default function AdminLayout({ children }) {
                     <button className="icon-btn" onClick={toggleTheme} title="Toggle light / dark" aria-label="Toggle theme">
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </button>
+                    {user && (
+                        <div
+                            className="topbar-user"
+                            onClick={() => setProfileModalOpen(true)}
+                            title="Edit account"
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && setProfileModalOpen(true)}
+                        >
+                            <span className="avatar">{initials}</span>
+                            <span className="topbar-user-name">{user?.name || 'Admin'}</span>
+                        </div>
+                    )}
                     <ProgressBar />
                 </header>
 

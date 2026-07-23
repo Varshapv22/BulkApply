@@ -319,6 +319,27 @@ function TrialExpiredModal({ plans }) {
     );
 }
 
+function OnboardingModal({ onClose }) {
+    return (
+        <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="modal modal-sm">
+                <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+                <div style={{ textAlign: 'center', padding: '8px 0 4px' }}>
+                    <div style={{ fontSize: 38, marginBottom: 10 }}>👋</div>
+                    <h2 className="modal-title" style={{ fontSize: 20, marginBottom: 6 }}>Welcome to BulkApply!</h2>
+                    <p style={{ color: 'var(--muted)', fontSize: 14, lineHeight: 1.6 }}>
+                        Add your name, phone, location, and a resume so we can personalise and send applications on your behalf.
+                    </p>
+                </div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 20 }}>
+                    <button type="button" className="btn btn-ghost" onClick={onClose}>Maybe later</button>
+                    <button type="button" className="btn btn-primary" onClick={() => router.visit('/profile')}>Complete Profile</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function AccountSuspendedModal() {
     return (
         <BlockingModal>
@@ -339,6 +360,7 @@ export default function Layout({ children }) {
     const trial = props.trial;
     const plans = props.plans || [];
     const errors = props.errors || {};
+    const needsOnboarding = props.needsOnboarding;
     // Open the Gmail account we actually send FROM (not the browser default).
     const gmailSentUrl = props.mailFrom
         ? `https://mail.google.com/mail/u/?authuser=${encodeURIComponent(props.mailFrom)}#sent`
@@ -346,6 +368,7 @@ export default function Layout({ children }) {
     const [theme, toggleTheme] = useTheme();
     const [open, setOpen] = useState(false);
     const [profileModalOpen, setProfileModalOpen] = useState(false);
+    const [onboardingDismissed, setOnboardingDismissed] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
     const toggleCollapse = () => {
         const next = !isCollapsed;
@@ -405,27 +428,10 @@ export default function Layout({ children }) {
                     </a>
                 </nav>
                 <div className="sidebar-footer">
-                    <div
-                        className="sidebar-user sidebar-user-btn"
-                        onClick={() => setProfileModalOpen(true)}
-                        title="Edit account"
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => e.key === 'Enter' && setProfileModalOpen(true)}
-                    >
-                        <span className="avatar">{initials}</span>
-                        <div className="user-info">
-                            <div className="name">{user?.name || 'User'}</div>
-                            <div className="email">{user?.email}</div>
-                        </div>
-                        <svg className="user-edit-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="13" height="13">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                        </svg>
-                    </div>
                     <button
                         type="button"
                         className="nav-item"
-                        style={{ width: '100%', marginTop: 4 }}
+                        style={{ width: '100%' }}
                         onClick={() => router.post('/logout')}
                     >
                         <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -447,6 +453,19 @@ export default function Layout({ children }) {
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </button>
                     <ThemeMenu theme={theme} onToggleTheme={toggleTheme} />
+                    {user && (
+                        <div
+                            className="topbar-user"
+                            onClick={() => setProfileModalOpen(true)}
+                            title="Edit account"
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => e.key === 'Enter' && setProfileModalOpen(true)}
+                        >
+                            <span className="avatar">{initials}</span>
+                            <span className="topbar-user-name">{user?.name || 'User'}</span>
+                        </div>
+                    )}
                     <ProgressBar />
                 </header>
 
@@ -469,6 +488,9 @@ export default function Layout({ children }) {
             )}
             {user && user.is_active === false && <AccountSuspendedModal />}
             {trial?.expired && <TrialExpiredModal plans={plans} />}
+            {user && user.is_active !== false && !trial?.expired && needsOnboarding && !onboardingDismissed && !url.startsWith('/profile') && (
+                <OnboardingModal onClose={() => setOnboardingDismissed(true)} />
+            )}
         </div>
     );
 }

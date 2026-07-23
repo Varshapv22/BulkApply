@@ -69,6 +69,21 @@ class HandleInertiaRequests extends Middleware
                     'trial_ends_at' => $trialEndsAt->toDateString(),
                 ];
             },
+            // Whether the logged-in user still needs to fill in their core profile
+            // details (name, phone, location, resume) — drives the onboarding nudge.
+            'needsOnboarding' => function () use ($request) {
+                $user = $request->user();
+                if (! $user || $user->getRoleNames()->isNotEmpty()) {
+                    return false;
+                }
+
+                $profile = \App\Models\Profile::where('user_id', $user->id)->first();
+
+                return blank($profile?->full_name)
+                    || blank($profile?->phone)
+                    || blank($profile?->location)
+                    || ! $user->resumes()->exists();
+            },
             // Active plans — shared so the upgrade modal can list them without a separate request.
             'plans' => function () use ($request) {
                 $user = $request->user();

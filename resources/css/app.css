@@ -168,6 +168,16 @@ a:hover { text-decoration: underline; }
 .topbar .spacer { flex: 1; min-width: 0; }
 .hamburger { display: none; background: none; border: none; color: var(--text); font-size: 22px; cursor: pointer; flex-shrink: 0; }
 .content { padding: 20px 24px; width: 100%; animation: fadeUp .35s ease both; }
+
+/* ---------- Topbar user (profile avatar + name, top-right) ---------- */
+.topbar-user { display: flex; align-items: center; gap: 10px; padding: 5px 14px 5px 5px; border-radius: 30px;
+    cursor: pointer; flex-shrink: 0; transition: background .15s; border: 1px solid transparent; }
+.topbar-user:hover { background: var(--hover); border-color: var(--border); }
+.topbar-user .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--primary-grad); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0;
+    box-shadow: var(--shadow); }
+.topbar-user-name { font-size: 13.5px; font-weight: 600; color: var(--heading); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; max-width: 160px; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 .page-head { margin-bottom: 16px; }
@@ -180,7 +190,7 @@ a:hover { text-decoration: underline; }
 .card h2 { margin: 0 0 5px; font-size: 16.5px; font-weight: 700; color: var(--heading); letter-spacing: -.01em; }
 .card .hint { margin: 0 0 18px; color: var(--muted); font-size: 13px; line-height: 1.55; }
 .card-pad-sm { padding: 18px 22px; }
-.card-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
+.card-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 5px; flex-wrap: wrap; }
 .card-head-row h2 { margin: 0; }
 .modal-section + .modal-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
 .modal-section h4 { margin: 0 0 4px; font-size: 14px; font-weight: 700; color: var(--heading); }
@@ -687,6 +697,7 @@ tbody tr.selected:hover { background: var(--primary-soft); }
 
 .stat-bento-hero { background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent); }
 .stat-bento-hero h2, .stat-bento-hero .big-num { color: var(--heading); }
+.big-num { font-size: 64px; }
 .stat-bento-hero .sub { color: var(--muted); }
 
 .animate-enter { animation: bentoEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
@@ -737,3 +748,63 @@ tbody tr.selected:hover { background: var(--primary-soft); }
 .sidebar.collapsed .desktop-toggle { background: var(--hover); }
 .sidebar.collapsed .nav-item { justify-content: center; padding: 12px 0; gap: 0; }
 .sidebar.collapsed .sidebar-user { justify-content: center; padding: 10px 0; }
+
+/* ============================================================
+   SMALL-SCREEN POLISH — phones (≤ 560px) and very small phones (≤ 380px)
+   ============================================================ */
+@media (max-width: 640px) {
+    .row { gap: 12px; }
+    .grid { gap: 12px; }
+}
+
+@media (max-width: 560px) {
+    .topbar { padding: 0 12px; gap: 10px; }
+    .topbar .page-title { font-size: 14px; }
+    .topbar-user { padding: 4px; gap: 0; }
+    .topbar-user-name { display: none; }
+    .content { padding: 10px 10px 20px; }
+
+    .card { padding: 16px; border-radius: 14px; margin-bottom: 16px; }
+    .card-pad-sm { padding: 14px 16px; }
+    .page-head h1 { font-size: 19px; }
+    .page-head p { font-size: 12.5px; }
+
+    .stats { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .stat { padding: 16px; }
+    .stat .num { font-size: 24px; }
+    .stat-bento { padding: 18px; }
+    .stat-bento .num { font-size: 30px; }
+    .big-num { font-size: 40px; }
+
+    .bento-grid { gap: 14px; }
+
+    .modal-overlay { padding: 12px; }
+    .modal { padding: 18px; border-radius: 16px; max-height: 90vh; }
+    .modal-sm { max-width: 100%; }
+
+    .toolbar { gap: 8px; }
+    .btn-lg { padding: 11px 18px; font-size: 14px; }
+
+    th, td { padding: 10px 12px; font-size: 12.5px; }
+    thead th { font-size: 10px; }
+
+    .ats-head { gap: 18px; }
+    .score-ring { width: 116px; height: 116px; }
+    .score-ring .ring-num { font-size: 30px; }
+
+    .search-options-row { gap: 16px; padding: 12px 14px; }
+    .skills-bar { padding: 10px 14px; }
+
+    .auth-hero { padding: 40px 28px; }
+    .auth-form-side { padding: 28px 18px; }
+
+    .theme-pop { width: min(236px, calc(100vw - 24px)); right: -6px; }
+
+    .add-jobs-body { gap: 18px; }
+}
+
+@media (max-width: 380px) {
+    .stats { grid-template-columns: 1fr 1fr; }
+    .content { padding: 8px 8px 18px; }
+    .card { padding: 13px; }
+}

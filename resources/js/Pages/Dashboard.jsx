@@ -78,7 +78,7 @@ export default function Dashboard({
                     <h2>This Week</h2>
                     <p className="sub" style={{ fontSize: 13, marginBottom: 'auto' }}>Applications added since {weekStart}</p>
 
-                    <div className="big-num" style={{ fontSize: 64, fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, margin: '20px 0' }}>
+                    <div className="big-num" style={{ fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, margin: '20px 0' }}>
                         {thisWeek}
                     </div>
 
