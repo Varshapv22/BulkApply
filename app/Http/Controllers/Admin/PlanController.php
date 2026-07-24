@@ -13,7 +13,7 @@ class PlanController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Plans/Index', [
-            'plans' => Plan::withCount('subscriptions')->orderBy('price')->get(),
+            'plans' => Plan::withCount('subscriptions')->orderBy('duration_days')->get(),
         ]);
     }
 
@@ -57,20 +57,18 @@ class PlanController extends Controller
         return back()->with('status', 'Plan deleted.');
     }
 
+    // Plans differ only by name, price, and duration — every plan gives full, unlimited access.
     private function validated(Request $request): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
-            'billing_interval' => ['required', 'in:monthly,yearly'],
-            'email_limit' => ['nullable', 'integer', 'min:0'],
-            'resume_limit' => ['nullable', 'integer', 'min:0'],
-            'daily_application_limit' => ['nullable', 'integer', 'min:0'],
-            'queue_priority' => ['required', 'integer', 'min:0'],
-            'storage_limit_mb' => ['nullable', 'integer', 'min:0'],
-            'chrome_extension_access' => ['boolean'],
-            'ats_checker_access' => ['boolean'],
-            'api_access' => ['boolean'],
+            'duration_days' => ['required', 'integer', 'min:1'],
+        ]);
+
+        return array_merge($data, [
+            'email_limit' => null,
+            'resume_limit' => null,
         ]);
     }
 }

@@ -16,7 +16,7 @@ class SubscriptionController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Subscription::query()->with(['user:id,name,email', 'plan:id,name,price,billing_interval']);
+        $query = Subscription::query()->with(['user:id,name,email', 'plan:id,name,price,duration_days']);
 
         if ($status = $request->string('status')->toString()) {
             $query->where('status', $status);
@@ -42,17 +42,20 @@ class SubscriptionController extends Controller
             'plan_id' => ['required', 'exists:plans,id'],
         ]);
 
+        $plan = Plan::findOrFail($data['plan_id']);
+
         $user->subscriptions()->active()->update(['status' => Subscription::STATUS_CANCELLED]);
 
         Subscription::create([
             'user_id' => $user->id,
-            'plan_id' => $data['plan_id'],
+            'plan_id' => $plan->id,
             'status' => Subscription::STATUS_ACTIVE,
             'starts_at' => now(),
+            'ends_at' => now()->addDays($plan->duration_days),
         ]);
 
-        AuditLog::record('subscription.assign', $user, ['plan_id' => $data['plan_id']]);
-        $user->notify(new PlanUpgraded(Plan::findOrFail($data['plan_id'])));
+        AuditLog::record('subscription.assign', $user, ['plan_id' => $plan->id]);
+        $user->notify(new PlanUpgraded($plan));
 
         return back()->with('status', 'Plan assigned to ' . $user->name . '.');
     }

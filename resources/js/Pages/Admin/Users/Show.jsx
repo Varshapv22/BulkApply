@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Link, router } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { PageHead, Badge, Stat, Icons } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
 export default function AdminUserShow({ user, profile, resumes, applicationCounts, allRoles, currentPlan, plans }) {
+    const { props } = usePage();
+    const currencySymbol = props.currencySymbol || '₹';
     const [role, setRole] = useState(user.roles[0] || '');
     const [planId, setPlanId] = useState(currentPlan?.id || '');
     const [trialEndsAt, setTrialEndsAt] = useState(user.trial_ends_at || '');
@@ -54,7 +56,7 @@ export default function AdminUserShow({ user, profile, resumes, applicationCount
                                 <td>
                                     <select value={planId} onChange={(e) => changePlan(e.target.value)} style={{ width: 'auto' }}>
                                         <option value="">No plan (unlimited)</option>
-                                        {plans.map((p) => <option key={p.id} value={p.id}>{p.name} (${p.price})</option>)}
+                                        {plans.map((p) => <option key={p.id} value={p.id}>{p.name} ({currencySymbol}{p.price})</option>)}
                                     </select>
                                 </td>
                             </tr>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, usePage, router } from '@inertiajs/react';
-import { NotificationBell, PasswordInput } from './components';
+import { NotificationBell, PasswordInput, UpiPaymentModal, formatDuration } from './components';
 
 const ACCENTS = [
     { id: 'indigo',  label: 'Indigo',  c: ['#6366f1', '#a855f7'] },
@@ -277,18 +277,10 @@ function BlockingModal({ children }) {
     );
 }
 
-function TrialExpiredModal({ plans }) {
-    const [requestingId, setRequestingId] = useState(null);
-    const [requestedId, setRequestedId] = useState(null);
-
-    const requestUpgrade = (plan) => {
-        setRequestingId(plan.id);
-        router.post('/billing/request-upgrade', { plan_id: plan.id }, {
-            preserveScroll: true,
-            onSuccess: () => setRequestedId(plan.id),
-            onFinish: () => setRequestingId(null),
-        });
-    };
+function TrialExpiredModal({ plans, upiId, upiPayeeName, pendingPlanIds, currencySymbol }) {
+    const [payingPlan, setPayingPlan] = useState(null);
+    const [justSubmittedId, setJustSubmittedId] = useState(null);
+    const pending = new Set([...(pendingPlanIds || []), ...(justSubmittedId ? [justSubmittedId] : [])]);
 
     return (
         <BlockingModal>
@@ -310,26 +302,19 @@ function TrialExpiredModal({ plans }) {
                         <div key={plan.id} className="card card-pad-sm" style={{ border: '1.5px solid var(--border-strong)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--heading)' }}>{plan.name}</div>
                             <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)' }}>
-                                ${plan.price}
+                                {currencySymbol}{plan.price}
                                 <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}>
-                                    /{plan.billing_interval === 'monthly' ? 'mo' : 'yr'}
+                                    {' '}/ {formatDuration(plan.duration_days)}
                                 </span>
                             </div>
-                            <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 13, color: 'var(--muted)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                <li>✓ {plan.email_limit ? `${plan.email_limit} emails` : 'Unlimited emails'}</li>
-                                <li>✓ {plan.resume_limit ? `${plan.resume_limit} resumes` : 'Unlimited resumes'}</li>
-                                {plan.daily_application_limit && <li>✓ {plan.daily_application_limit} apps/day</li>}
-                                {plan.chrome_extension_access && <li>✓ Chrome extension</li>}
-                                {plan.ats_checker_access && <li>✓ ATS checker</li>}
-                            </ul>
                             <button
                                 type="button"
                                 className="btn btn-primary btn-block"
-                                disabled={requestingId === plan.id || requestedId === plan.id}
-                                onClick={() => requestUpgrade(plan)}
+                                disabled={pending.has(plan.id)}
+                                onClick={() => setPayingPlan(plan)}
                                 style={{ marginTop: 'auto' }}
                             >
-                                {requestedId === plan.id ? 'Request sent ✓' : requestingId === plan.id ? 'Sending…' : 'Request this plan'}
+                                {pending.has(plan.id) ? 'Pending verification' : 'Pay via UPI'}
                             </button>
                         </div>
                     ))}
@@ -337,12 +322,23 @@ function TrialExpiredModal({ plans }) {
             )}
 
             <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13, marginTop: 20 }}>
-                {requestedId ? 'An admin will review your request and activate your plan shortly.' : 'Pick a plan above to send an upgrade request to your administrator.'}
+                {pending.size > 0 ? 'An admin will verify your payment and activate your plan shortly.' : 'Pick a plan above and pay via UPI to request an upgrade.'}
             </p>
 
             <div style={{ textAlign: 'center', marginTop: 16 }}>
                 <button type="button" className="btn btn-ghost" onClick={() => router.post('/logout')}>Log out</button>
             </div>
+
+            {payingPlan && (
+                <UpiPaymentModal
+                    plan={payingPlan}
+                    upiId={upiId}
+                    upiPayeeName={upiPayeeName}
+                    currencySymbol={currencySymbol}
+                    onClose={() => setPayingPlan(null)}
+                    onSubmitted={() => setJustSubmittedId(payingPlan.id)}
+                />
+            )}
         </BlockingModal>
     );
 }
@@ -396,6 +392,8 @@ export default function Layout({ children }) {
     const [theme, toggleTheme] = useTheme();
     const [open, setOpen] = useState(false);
     const [profileModalOpen, setProfileModalOpen] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const userMenuRef = useRef(null);
     const [onboardingDismissed, setOnboardingDismissed] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => localStorage.getItem('sidebar_collapsed') === 'true');
     const toggleCollapse = () => {
@@ -406,6 +404,13 @@ export default function Layout({ children }) {
 
     // Close mobile sidebar on navigation.
     useEffect(() => { setOpen(false); }, [url]);
+
+    // Close the user menu on outside click.
+    useEffect(() => {
+        const onDoc = (e) => { if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false); };
+        document.addEventListener('mousedown', onDoc);
+        return () => document.removeEventListener('mousedown', onDoc);
+    }, []);
 
     const current = NAV.find((n) => url.startsWith(n.match));
     const errorList = Object.values(errors);
@@ -491,16 +496,45 @@ export default function Layout({ children }) {
                         />
                     )}
                     {user && (
-                        <div
-                            className="topbar-user"
-                            onClick={() => setProfileModalOpen(true)}
-                            title="Edit account"
-                            role="button"
-                            tabIndex={0}
-                            onKeyDown={(e) => e.key === 'Enter' && setProfileModalOpen(true)}
-                        >
-                            <span className="avatar">{initials}</span>
-                            <span className="topbar-user-name">{user?.name || 'User'}</span>
+                        <div className="topbar-user-wrap" ref={userMenuRef}>
+                            <div
+                                className="topbar-user"
+                                onClick={() => setUserMenuOpen((o) => !o)}
+                                title={user?.name || 'Account'}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => e.key === 'Enter' && setUserMenuOpen((o) => !o)}
+                            >
+                                <span className="avatar">{initials}</span>
+                                <span className="topbar-user-name">{user?.name || 'User'}</span>
+                            </div>
+                            {userMenuOpen && (
+                                <div className="user-pop">
+                                    <div className="user-pop-head">
+                                        <span className="avatar">{initials}</span>
+                                        <div className="user-pop-id">
+                                            <span className="user-pop-name">{user?.name || 'User'}</span>
+                                            <span className="user-pop-email">{user?.email}</span>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="user-pop-item"
+                                        onClick={() => { setUserMenuOpen(false); setProfileModalOpen(true); }}
+                                    >
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21v-1a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7v1" /></svg>
+                                        Account settings
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="user-pop-item user-pop-logout"
+                                        onClick={() => router.post('/logout')}
+                                    >
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                                        Log out
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     )}
                     <ProgressBar />
@@ -524,7 +558,15 @@ export default function Layout({ children }) {
                 <ProfileModal user={user} onClose={() => setProfileModalOpen(false)} />
             )}
             {user && user.is_active === false && <AccountSuspendedModal />}
-            {trial?.expired && <TrialExpiredModal plans={plans} />}
+            {trial?.expired && (
+                <TrialExpiredModal
+                    plans={plans}
+                    upiId={props.upiId}
+                    upiPayeeName={props.upiPayeeName}
+                    pendingPlanIds={props.pendingPlanIds}
+                    currencySymbol={props.currencySymbol}
+                />
+            )}
             {user && user.is_active !== false && !trial?.expired && needsOnboarding && !onboardingDismissed && !url.startsWith('/profile') && (
                 <OnboardingModal onClose={() => setOnboardingDismissed(true)} />
             )}

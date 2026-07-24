@@ -1,66 +1,51 @@
 import React, { useState } from 'react';
-import { router, usePage } from '@inertiajs/react';
-import { PageHead, ChipIcon, Icons } from '../components';
+import { usePage } from '@inertiajs/react';
+import { PageHead, ChipIcon, Icons, UpiPaymentModal, formatDuration } from '../components';
 
-function Feature({ children }) {
-    return <li><span className="tick">✓</span> {children}</li>;
-}
-
-function PlanCard({ plan, isCurrent, onRequest, requesting }) {
+function PlanCard({ plan, isCurrent, isPending, onPay, currencySymbol }) {
     return (
         <div className={`card plan-card${isCurrent ? ' plan-card-current' : ''}`}>
             {isCurrent && <span className="plan-card-badge">Current plan</span>}
             <div className="plan-card-name">{plan.name}</div>
             <div className="plan-card-price">
-                ${plan.price}
-                <span>/{plan.billing_interval === 'monthly' ? 'mo' : 'yr'}</span>
+                {currencySymbol}{plan.price}
+                <span> / {formatDuration(plan.duration_days)}</span>
             </div>
 
-            <ul className="plan-card-features">
-                <Feature>{plan.email_limit ? `${plan.email_limit} emails` : 'Unlimited emails'}</Feature>
-                <Feature>{plan.resume_limit ? `${plan.resume_limit} resumes` : 'Unlimited resumes'}</Feature>
-                <Feature>{plan.daily_application_limit ? `${plan.daily_application_limit} applications/day` : 'Unlimited applications/day'}</Feature>
-                {plan.chrome_extension_access && <Feature>Chrome extension</Feature>}
-                {plan.ats_checker_access && <Feature>ATS resume checker</Feature>}
-                {plan.api_access && <Feature>API access</Feature>}
-            </ul>
+            <p className="hint" style={{ margin: '4px 0 20px' }}>
+                Full access to every feature — unlimited emails, resumes, and applications.
+            </p>
 
             {isCurrent ? (
                 <button type="button" className="btn btn-ghost btn-block" disabled>You're on this plan</button>
+            ) : isPending ? (
+                <button type="button" className="btn btn-ghost btn-block" disabled>Payment pending verification</button>
             ) : (
-                <button
-                    type="button"
-                    className="btn btn-primary btn-block"
-                    disabled={requesting}
-                    onClick={() => onRequest(plan)}
-                >
-                    {requesting ? 'Sending request…' : 'Request this plan'}
+                <button type="button" className="btn btn-primary btn-block" onClick={() => onPay(plan)}>
+                    Pay via UPI
                 </button>
             )}
         </div>
     );
 }
 
-export default function Billing({ plans, currentPlanId, subscription }) {
+export default function Billing({ plans, currentPlanId, subscription, upiId, upiPayeeName, pendingPlanIds }) {
     const { props } = usePage();
     const trial = props.trial;
     const flash = props.flash || {};
-    const [requestingId, setRequestingId] = useState(null);
-
-    const requestUpgrade = (plan) => {
-        setRequestingId(plan.id);
-        router.post('/billing/request-upgrade', { plan_id: plan.id }, {
-            preserveScroll: true,
-            onFinish: () => setRequestingId(null),
-        });
-    };
+    const currencySymbol = props.currencySymbol || '₹';
+    const [payingPlan, setPayingPlan] = useState(null);
+    const pending = new Set(pendingPlanIds || []);
 
     return (
         <>
-            <PageHead title="Billing & Plans" subtitle="See your current plan and request an upgrade." />
+            <PageHead title="Billing & Plans" subtitle="See your current plan and pay for an upgrade via UPI." />
 
             {flash.status && (
                 <div className="alert alert-success"><div className="alert-body">{flash.status}</div></div>
+            )}
+            {flash.error && (
+                <div className="alert alert-error"><div className="alert-body">{flash.error}</div></div>
             )}
 
             <div className="card hero-card">
@@ -79,11 +64,11 @@ export default function Billing({ plans, currentPlanId, subscription }) {
                 ) : trial && !trial.expired ? (
                     <p className="hint" style={{ marginBottom: 0 }}>
                         You're on the free trial — <strong>{trial.days_left} day{trial.days_left === 1 ? '' : 's'} left</strong>.
-                        Pick a plan below and request an upgrade any time.
+                        Pick a plan below and pay via UPI any time.
                     </p>
                 ) : (
                     <p className="hint" style={{ marginBottom: 0 }}>
-                        You don't have an active plan yet. Pick one below and request an upgrade — an admin will activate it for you.
+                        You don't have an active plan yet. Pick one below and pay via UPI — an admin will verify and activate it for you.
                     </p>
                 )}
             </div>
@@ -94,8 +79,9 @@ export default function Billing({ plans, currentPlanId, subscription }) {
                         key={plan.id}
                         plan={plan}
                         isCurrent={plan.id === currentPlanId}
-                        requesting={requestingId === plan.id}
-                        onRequest={requestUpgrade}
+                        isPending={pending.has(plan.id)}
+                        onPay={setPayingPlan}
+                        currencySymbol={currencySymbol}
                     />
                 ))}
             </div>
@@ -105,6 +91,16 @@ export default function Billing({ plans, currentPlanId, subscription }) {
                     <div className="empty-title">No plans available yet</div>
                     <div className="empty-sub">Check back soon, or contact support if you need an account upgrade.</div>
                 </div>
+            )}
+
+            {payingPlan && (
+                <UpiPaymentModal
+                    plan={payingPlan}
+                    upiId={upiId}
+                    upiPayeeName={upiPayeeName}
+                    currencySymbol={currencySymbol}
+                    onClose={() => setPayingPlan(null)}
+                />
             )}
         </>
     );

@@ -8,6 +8,7 @@ const NAV = [
     { href: '/admin/users', label: 'Users', match: '/admin/users', icon: 'user' },
     { href: '/admin/plans', label: 'Plans', match: '/admin/plans', icon: 'tag' },
     { href: '/admin/subscriptions', label: 'Subscriptions', match: '/admin/subscriptions', icon: 'card' },
+    { href: '/admin/payment-requests', label: 'Payment Requests', match: '/admin/payment-requests', icon: 'card' },
     { href: '/admin/applications', label: 'Applications', match: '/admin/applications', icon: 'list' },
     { href: '/admin/resumes', label: 'Resumes', match: '/admin/resumes', icon: 'upload' },
     { href: '/admin/queue', label: 'Queue', match: '/admin/queue', icon: 'clock' },

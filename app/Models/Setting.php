@@ -43,4 +43,13 @@ class Setting extends Model
 
         return ['file', "mimes:{$types}", "max:{$maxKb}"];
     }
+
+    /** The symbol shown next to every price in the app, driven by Admin > Settings > General > Currency. */
+    public static function currencySymbol(): string
+    {
+        return match (strtoupper((string) self::get('currency', 'INR'))) {
+            'USD', 'DOLLAR', '$' => '$',
+            default => '₹',
+        };
+    }
 }
