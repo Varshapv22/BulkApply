@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\JobApplication;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -10,12 +11,14 @@ class DashboardController extends Controller
 {
     public function index()
     {
+        $userId = Auth::id();
+
         $counts = [
-            'total'   => JobApplication::count(),
-            'pending' => JobApplication::where('status', JobApplication::STATUS_PENDING)->count(),
-            'queued'  => JobApplication::where('status', JobApplication::STATUS_QUEUED)->count(),
-            'sent'    => JobApplication::where('status', JobApplication::STATUS_SENT)->count(),
-            'failed'  => JobApplication::where('status', JobApplication::STATUS_FAILED)->count(),
+            'total'   => JobApplication::where('user_id', $userId)->count(),
+            'pending' => JobApplication::where('user_id', $userId)->where('status', JobApplication::STATUS_PENDING)->count(),
+            'queued'  => JobApplication::where('user_id', $userId)->where('status', JobApplication::STATUS_QUEUED)->count(),
+            'sent'    => JobApplication::where('user_id', $userId)->where('status', JobApplication::STATUS_SENT)->count(),
+            'failed'  => JobApplication::where('user_id', $userId)->where('status', JobApplication::STATUS_FAILED)->count(),
         ];
 
         $sentRate = $counts['total'] > 0
@@ -28,6 +31,7 @@ class DashboardController extends Controller
                 DB::raw('COUNT(*) as total'),
                 DB::raw("SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent")
             )
+            ->where('user_id', $userId)
             ->where('created_at', '>=', now()->subDays(29)->startOfDay())
             ->groupBy(DB::raw('DATE(created_at)'))
             ->orderBy('date')
@@ -47,21 +51,23 @@ class DashboardController extends Controller
         }
 
         // This week vs last week
-        $thisWeek = JobApplication::where('created_at', '>=', now()->startOfWeek())->count();
-        $lastWeek = JobApplication::whereBetween('created_at', [
+        $thisWeek = JobApplication::where('user_id', $userId)->where('created_at', '>=', now()->startOfWeek())->count();
+        $lastWeek = JobApplication::where('user_id', $userId)->whereBetween('created_at', [
             now()->subWeek()->startOfWeek(),
             now()->startOfWeek(),
         ])->count();
 
         // Top 5 companies
         $topCompanies = JobApplication::select('company', DB::raw('COUNT(*) as count'))
+            ->where('user_id', $userId)
             ->groupBy('company')
             ->orderByDesc('count')
             ->limit(5)
             ->get();
 
         // Recent activity (last 10 sent or failed)
-        $recentActivity = JobApplication::whereIn('status', [
+        $recentActivity = JobApplication::where('user_id', $userId)
+            ->whereIn('status', [
                 JobApplication::STATUS_SENT,
                 JobApplication::STATUS_FAILED,
             ])
@@ -80,8 +86,8 @@ class DashboardController extends Controller
 
         // Email tracking stats
         $tracking = [
-            'opened'  => JobApplication::whereNotNull('opened_at')->count(),
-            'clicked' => JobApplication::whereNotNull('clicked_at')->count(),
+            'opened'  => JobApplication::where('user_id', $userId)->whereNotNull('opened_at')->count(),
+            'clicked' => JobApplication::where('user_id', $userId)->whereNotNull('clicked_at')->count(),
         ];
         $tracking['open_rate'] = $counts['sent'] > 0
             ? round(($tracking['opened'] / $counts['sent']) * 100)
@@ -89,6 +95,7 @@ class DashboardController extends Controller
 
         // Pipeline breakdown
         $pipelineStats = JobApplication::select('pipeline_status', DB::raw('COUNT(*) as count'))
+            ->where('user_id', $userId)
             ->groupBy('pipeline_status')
             ->pluck('count', 'pipeline_status')
             ->all();

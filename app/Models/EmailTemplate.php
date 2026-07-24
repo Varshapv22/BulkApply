@@ -17,8 +17,8 @@ class EmailTemplate extends Model
         return $this->belongsTo(User::class);
     }
 
-    public static function defaultTemplate(): ?self
+    public static function defaultTemplate(?int $userId = null): ?self
     {
-        return static::where('is_default', true)->first();
+        return static::where('user_id', $userId)->where('is_default', true)->first();
     }
 }
