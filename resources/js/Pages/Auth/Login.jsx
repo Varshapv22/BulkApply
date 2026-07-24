@@ -1,5 +1,6 @@
 import React from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { PasswordInput } from '../../components';
 
 function Tick() {
     return (
@@ -49,7 +50,7 @@ export default function Login({ errors = {} }) {
                             onChange={(e) => setData('email', e.target.value)} placeholder="you@example.com" required />
 
                         <label htmlFor="password">Password</label>
-                        <input id="password" type="password" value={data.password}
+                        <PasswordInput id="password" value={data.password}
                             onChange={(e) => setData('password', e.target.value)} placeholder="••••••••" required />
 
                         <label className="inline" style={{ margin: '16px 0' }}>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useForm } from '@inertiajs/react';
-import { PageHead, IconField, Icons, ChipIcon } from '../components';
+import { PageHead, IconField, Icons, ChipIcon, PasswordInput } from '../components';
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -15,7 +16,7 @@ function truncate(text, n) {
 }
 
 function ModalShell({ title, onClose, children, small, footer }) {
-    return (
+    return createPortal(
         <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className={`modal${small ? ' modal-sm' : ''}`}>
                 <button type="button" className="modal-close" onClick={onClose} aria-label="Close">✕</button>
@@ -25,7 +26,8 @@ function ModalShell({ title, onClose, children, small, footer }) {
                     {footer || <button type="button" className="btn btn-primary" onClick={onClose}>Done</button>}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -179,7 +181,7 @@ function EmailModal({ data, setData, profile, onClose }) {
                     <div className="row" style={{ marginTop: 14 }}>
                         <IconField icon={Icons.mail} type="email" placeholder="yourname@gmail.com"
                             value={data.mail_username} onChange={(e) => setData('mail_username', e.target.value)} />
-                        <IconField icon={Icons.tag} type="password" autoComplete="new-password"
+                        <PasswordInput icon={Icons.tag} autoComplete="new-password"
                             placeholder="16-character App Password"
                             value={data.mail_password} onChange={(e) => setData('mail_password', e.target.value)} />
                     </div>
