@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\FeatureFlag;
 use App\Models\Profile;
 use App\Services\ResumeAtsAnalyzer;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -21,14 +22,28 @@ class ResumeCheckController extends Controller
 
         $profile = Profile::current();
 
+        $resumePath = $profile->resume_path;
+        $resumeName = $profile->resume_name;
+
+        // Fall back to the default resume in the user's resume library if the
+        // legacy single-resume profile field was never filled in.
+        if (!$resumePath) {
+            $resume = Auth::user()->resumes()->where('is_default', true)->first()
+                ?? Auth::user()->resumes()->latest()->first();
+            if ($resume) {
+                $resumePath = $resume->file_path;
+                $resumeName = $resume->name;
+            }
+        }
+
         $report = null;
         $error = null;
 
-        if ($profile->resume_path && Storage::exists($profile->resume_path)) {
+        if ($resumePath && Storage::exists($resumePath)) {
             try {
                 $report = $analyzer->analyze(
-                    Storage::path($profile->resume_path),
-                    $profile->resume_name ?: basename($profile->resume_path),
+                    Storage::path($resumePath),
+                    $resumeName ?: basename($resumePath),
                     $profile->preferred_role ?? ''
                 );
             } catch (\Throwable $e) {
@@ -37,8 +52,8 @@ class ResumeCheckController extends Controller
         }
 
         return Inertia::render('ResumeCheck', [
-            'hasResume'  => (bool) $profile->resume_path,
-            'resumeName' => $profile->resume_name,
+            'hasResume'  => (bool) $resumePath,
+            'resumeName' => $resumeName,
             'targetRole' => $profile->preferred_role,
             'report'     => $report,
             'error'      => $error,
