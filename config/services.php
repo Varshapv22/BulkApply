@@ -45,4 +45,11 @@ return [
         'country' => env('ADZUNA_COUNTRY', 'in'),
     ],
 
+    // Default UPI payment details for the Billing "Pay via UPI" flow. Used only
+    // when no override is set in Admin > Settings > Billing (that DB value always wins).
+    'upi' => [
+        'id' => env('UPI_ID', ''),
+        'payee_name' => env('UPI_PAYEE_NAME', 'BulkApply'),
+    ],
+
 ];

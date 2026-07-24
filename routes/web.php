@@ -55,7 +55,7 @@ Route::middleware('auth')->group(function () {
 
     // Billing
     Route::get('/billing', [BillingController::class, 'index'])->name('billing.index');
-    Route::post('/billing/request-upgrade', [BillingController::class, 'requestUpgrade'])->name('billing.requestUpgrade');
+    Route::post('/billing/payment-requests', [BillingController::class, 'submitPayment'])->name('billing.submitPayment');
 
     // Account (name / email / password)
     Route::put('/account', [AuthController::class, 'updateAccount'])->name('account.update');

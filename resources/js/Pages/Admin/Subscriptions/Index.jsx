@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Link, router } from '@inertiajs/react';
-import { PageHead, Badge, IconField, Icons } from '../../../components';
+import { Link, router, usePage } from '@inertiajs/react';
+import { PageHead, Badge, IconField, Icons, formatDuration } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
 export default function AdminSubscriptionsIndex({ subscriptions, filters }) {
+    const { props } = usePage();
+    const currencySymbol = props.currencySymbol || '₹';
     const [f, setF] = useState({
         search: filters.search || '',
         status: filters.status || '',
@@ -58,7 +60,7 @@ export default function AdminSubscriptionsIndex({ subscriptions, filters }) {
                                         {s.user ? <Link href={`/admin/users/${s.user.id}`}>{s.user.name}</Link> : '—'}
                                         <div className="muted" style={{ fontSize: 12 }}>{s.user?.email}</div>
                                     </td>
-                                    <td>{s.plan ? `${s.plan.name} ($${s.plan.price}/${s.plan.billing_interval === 'monthly' ? 'mo' : 'yr'})` : '—'}</td>
+                                    <td>{s.plan ? `${s.plan.name} (${currencySymbol}${s.plan.price} / ${formatDuration(s.plan.duration_days)})` : '—'}</td>
                                     <td>
                                         <Badge status={s.status === 'active' ? 'sent' : s.status === 'cancelled' ? 'failed' : 'neutral'}>
                                             {s.status}

@@ -46,6 +46,8 @@ class HandleInertiaRequests extends Middleware
             // The address applications are sent FROM — used to open the correct
             // Gmail account (via ?authuser=) regardless of the browser's default.
             'mailFrom' => config('mail.from.address'),
+            // Every price in the app renders with this symbol — set in Admin > Settings > General > Currency.
+            'currencySymbol' => fn () => \App\Models\Setting::currencySymbol(),
             // Free trial status — null for admins and subscribed users.
             'trial' => function () use ($request) {
                 $user = $request->user();
@@ -104,9 +106,21 @@ class HandleInertiaRequests extends Middleware
                 }
 
                 return \App\Models\Plan::where('is_active', true)
-                    ->orderBy('price')
-                    ->get(['id', 'name', 'price', 'billing_interval', 'email_limit', 'resume_limit', 'daily_application_limit', 'chrome_extension_access', 'ats_checker_access'])
+                    ->orderBy('duration_days')
+                    ->get(['id', 'name', 'price', 'duration_days'])
                     ->toArray();
+            },
+            // UPI payment details for the trial-expired paywall's pay-and-verify flow.
+            // Admin > Settings > Billing overrides the UPI_ID / UPI_PAYEE_NAME env defaults.
+            'upiId' => fn () => \App\Models\Setting::get('upi_id') ?: config('services.upi.id', ''),
+            'upiPayeeName' => fn () => \App\Models\Setting::get('upi_payee_name') ?: config('services.upi.payee_name', 'BulkApply'),
+            'pendingPlanIds' => function () use ($request) {
+                $user = $request->user();
+                if (! $user || $user->getRoleNames()->isNotEmpty()) {
+                    return [];
+                }
+
+                return $user->planPaymentRequests()->pending()->pluck('plan_id');
             },
         ]);
     }

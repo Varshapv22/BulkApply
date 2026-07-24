@@ -3,7 +3,7 @@ import { router } from '@inertiajs/react';
 import { PageHead } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
-const GROUP_LABELS = { general: 'General', auth: 'Authentication', uploads: 'Uploads' };
+const GROUP_LABELS = { general: 'General', auth: 'Authentication', uploads: 'Uploads', billing: 'Billing' };
 
 function SettingField({ setting }) {
     const [value, setValue] = useState(setting.value ?? '');
@@ -19,6 +19,24 @@ function SettingField({ setting }) {
                     <div>{setting.label}</div>
                 </div>
             </label>
+        );
+    }
+
+    if (setting.key === 'currency') {
+        return (
+            <div style={{ padding: '10px 0' }}>
+                <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600 }}>{setting.label}</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <select value={value} onChange={(e) => setValue(e.target.value)} style={{ maxWidth: 320 }}>
+                        <option value="INR">₹ Rupee (INR)</option>
+                        <option value="USD">$ Dollar (USD)</option>
+                    </select>
+                    <button className="btn btn-primary btn-sm" onClick={() => save(value)}>Save</button>
+                </div>
+                <p className="hint" style={{ marginTop: 6 }}>
+                    Changes the ₹/$ symbol shown on every price across the app. UPI payments always settle in INR regardless of this setting.
+                </p>
+            </div>
         );
     }
 

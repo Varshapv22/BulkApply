@@ -13,44 +13,10 @@ class TrialTestSeeder extends Seeder
     public function run(): void
     {
         // --- Plans ---
-        $basic = Plan::firstOrCreate(['name' => 'Basic'], [
-            'price'                    => 9.99,
-            'billing_interval'         => 'monthly',
-            'email_limit'              => 100,
-            'resume_limit'             => 3,
-            'daily_application_limit'  => 20,
-            'queue_priority'           => 1,
-            'chrome_extension_access'  => true,
-            'ats_checker_access'       => false,
-            'api_access'               => false,
-            'is_active'                => true,
-        ]);
-
-        $pro = Plan::firstOrCreate(['name' => 'Pro'], [
-            'price'                    => 24.99,
-            'billing_interval'         => 'monthly',
-            'email_limit'              => 500,
-            'resume_limit'             => 10,
-            'daily_application_limit'  => 100,
-            'queue_priority'           => 5,
-            'chrome_extension_access'  => true,
-            'ats_checker_access'       => true,
-            'api_access'               => true,
-            'is_active'                => true,
-        ]);
-
-        Plan::firstOrCreate(['name' => 'Enterprise'], [
-            'price'                    => 79.99,
-            'billing_interval'         => 'monthly',
-            'email_limit'              => null,
-            'resume_limit'             => null,
-            'daily_application_limit'  => null,
-            'queue_priority'           => 10,
-            'chrome_extension_access'  => true,
-            'ats_checker_access'       => true,
-            'api_access'               => true,
-            'is_active'                => true,
-        ]);
+        Plan::firstOrCreate(['name' => 'Free'], ['price' => 0, 'duration_days' => 7, 'is_active' => true]);
+        Plan::firstOrCreate(['name' => '1 Month'], ['price' => 9.99, 'duration_days' => 30, 'is_active' => true]);
+        $threeMonth = Plan::firstOrCreate(['name' => '3 Month'], ['price' => 24.99, 'duration_days' => 90, 'is_active' => true]);
+        Plan::firstOrCreate(['name' => '9 Month'], ['price' => 69.99, 'duration_days' => 270, 'is_active' => true]);
 
         // --- Users ---
 
@@ -80,9 +46,10 @@ class TrialTestSeeder extends Seeder
         if (! $subscribedUser->activeSubscription()) {
             Subscription::create([
                 'user_id'    => $subscribedUser->id,
-                'plan_id'    => $pro->id,
+                'plan_id'    => $threeMonth->id,
                 'status'     => Subscription::STATUS_ACTIVE,
                 'starts_at'  => now()->subDays(5),
+                'ends_at'    => now()->subDays(5)->addDays($threeMonth->duration_days),
             ]);
         }
 
@@ -100,7 +67,7 @@ class TrialTestSeeder extends Seeder
             [
                 ['trial-active@test.com',   'password', 'Trial active (3 days left) — normal access'],
                 ['trial-expired@test.com',  'password', 'Trial expired — upgrade modal shown'],
-                ['subscribed@test.com',     'password', 'Has Pro plan — no modal'],
+                ['subscribed@test.com',     'password', 'Has 3 Month plan — no modal'],
                 ['suspended@test.com',      'password', 'Suspended account — suspended modal shown'],
             ]
         );

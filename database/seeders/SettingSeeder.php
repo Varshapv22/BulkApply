@@ -13,13 +13,15 @@ class SettingSeeder extends Seeder
         ['site_name', 'general', 'Site Name', 'BulkApply', 'string'],
         ['timezone', 'general', 'Timezone', 'UTC', 'string'],
         ['date_format', 'general', 'Date Format', 'Y-m-d', 'string'],
-        ['currency', 'general', 'Currency', 'USD', 'string'],
+        ['currency', 'general', 'Currency', 'INR', 'string'],
         ['registration_enabled', 'auth', 'Allow New Registrations', '1', 'boolean'],
         ['email_verification_required', 'auth', 'Require Email Verification', '0', 'boolean'],
         ['password_min_length', 'auth', 'Minimum Password Length', '8', 'integer'],
         ['session_timeout_minutes', 'auth', 'Session Timeout (minutes)', '120', 'integer'],
         ['max_resume_size_mb', 'uploads', 'Max Resume/Cover Letter Size (MB)', '10', 'integer'],
         ['allowed_resume_types', 'uploads', 'Allowed File Types (comma-separated)', 'pdf,doc,docx', 'string'],
+        ['upi_id', 'billing', 'UPI ID for Payments', '', 'string'],
+        ['upi_payee_name', 'billing', 'UPI Payee Name', 'BulkApply', 'string'],
     ];
 
     /**

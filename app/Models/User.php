@@ -70,6 +70,11 @@ class User extends Authenticatable
         return $this->hasMany(Subscription::class);
     }
 
+    public function planPaymentRequests()
+    {
+        return $this->hasMany(PlanPaymentRequest::class);
+    }
+
     public function activeSubscription(): ?Subscription
     {
         return $this->subscriptions()->active()->latest('starts_at')->first();

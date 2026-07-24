@@ -1,6 +1,33 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
+import QRCode from 'qrcode';
+
+// The default preset tiers offered in the admin plan form — plans differ by duration/price
+// alone, nothing else. Admins can still enter a custom duration outside this list.
+export const PLAN_DURATIONS = [
+    { days: 7, label: 'Free Trial — 7 days' },
+    { days: 30, label: '1 Month' },
+    { days: 90, label: '3 Months' },
+    { days: 270, label: '9 Months' },
+];
+
+export function formatDuration(days) {
+    const preset = PLAN_DURATIONS.find((d) => d.days === days);
+    if (preset) return preset.label.replace(' — 7 days', '');
+    if (days % 30 === 0) return `${days / 30} Months`;
+    return `${days} days`;
+}
+
+/** Darkens a "#rrggbb" hex colour toward black by scaling each channel — used to keep the
+ *  UPI QR's accent-tinted modules high-contrast without depending on CSS color-mix() support. */
+function blendTowardBlack(hex, ratio) {
+    const m = /^#([0-9a-f]{6})$/i.exec(hex || '');
+    if (!m) return '#000000';
+    const num = parseInt(m[1], 16);
+    const channel = (shift) => Math.round(((num >> shift) & 255) * ratio).toString(16).padStart(2, '0');
+    return `#${channel(16)}${channel(8)}${channel(0)}`;
+}
 
 export function PageHead({ title, subtitle }) {
     return (
@@ -247,4 +274,129 @@ export function NotificationBell({ unreadCount = 0, recentUrl, markReadUrl, mark
             )}
         </div>
     );
+}
+
+/** UPI "pay & submit reference" flow used on the Billing page and trial-expired paywall. */
+export function UpiPaymentModal({ plan, upiId, upiPayeeName, currencySymbol = '₹', onClose, onSubmitted }) {
+    const [qrDataUrl, setQrDataUrl] = useState(null);
+    const [txnRef, setTxnRef] = useState('');
+    const [screenshot, setScreenshot] = useState(null);
+    const [busy, setBusy] = useState(false);
+    const [errors, setErrors] = useState({});
+    const [copied, setCopied] = useState(false);
+
+    const upiLink = `upi://pay?pa=${encodeURIComponent(upiId || '')}&pn=${encodeURIComponent(upiPayeeName || 'BulkApply')}&am=${encodeURIComponent(plan.price)}&cu=INR&tn=${encodeURIComponent(`BulkApply ${plan.name} plan`)}`;
+
+    // QR modules use a deep, mostly-black shade of the active accent (never the bright
+    // accent itself) — reads as "branded but standard", and stays high-contrast for scanning.
+    // Redraws live if the user switches theme/accent while the modal is open.
+    useEffect(() => {
+        if (!upiId) return;
+
+        const draw = () => {
+            const accentHex = getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim();
+            const dark = blendTowardBlack(accentHex, 0.55);
+            QRCode.toDataURL(upiLink, { width: 200, margin: 1, color: { dark, light: '#ffffff' } })
+                .then(setQrDataUrl)
+                .catch(() => {
+                    // Fall back to a plain black/white QR if the accent colour couldn't be used.
+                    QRCode.toDataURL(upiLink, { width: 200, margin: 1 }).then(setQrDataUrl).catch(() => {});
+                });
+        };
+
+        draw();
+        const observer = new MutationObserver(draw);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-accent'] });
+        return () => observer.disconnect();
+    }, [upiLink, upiId]);
+
+    const copyUpiId = () => {
+        navigator.clipboard?.writeText(upiId);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    };
+
+    const submit = (e) => {
+        e.preventDefault();
+        setBusy(true);
+        setErrors({});
+        const fd = new FormData();
+        fd.append('plan_id', plan.id);
+        fd.append('transaction_ref', txnRef);
+        if (screenshot) fd.append('screenshot', screenshot);
+        router.post('/billing/payment-requests', fd, {
+            forceFormData: true,
+            preserveScroll: true,
+            onError: (errs) => { setErrors(errs); setBusy(false); },
+            onSuccess: () => { setBusy(false); onSubmitted?.(); onClose(); },
+        });
+    };
+
+    const modal = (
+        <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="modal modal-sm">
+                <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+                <h3 className="modal-title">Pay via UPI</h3>
+                <p className="hint" style={{ marginTop: 6 }}>
+                    Scan the QR or pay to the UPI ID below using GPay, PhonePe, Paytm, or any UPI app — then submit your transaction reference.
+                </p>
+
+                {upiId ? (
+                    <>
+                        <div className="upi-qr-frame">
+                            {qrDataUrl ? (
+                                <img src={qrDataUrl} alt="UPI QR code" width={200} height={200} />
+                            ) : (
+                                <div className="upi-qr-frame-loading" style={{ width: 200, height: 200 }} />
+                            )}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                            <strong>{upiId}</strong>
+                            <button type="button" className="btn btn-ghost btn-sm" onClick={copyUpiId}>{copied ? 'Copied ✓' : 'Copy'}</button>
+                        </div>
+                        <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13, margin: '4px 0 16px' }}>
+                            Amount: {currencySymbol}{plan.price} · {plan.name} plan
+                        </p>
+
+                        <a href={upiLink} className="btn btn-primary btn-block" style={{ marginBottom: 20 }}>
+                            Open UPI app to pay
+                        </a>
+                    </>
+                ) : (
+                    <p className="field-error" style={{ marginTop: 12 }}>
+                        No UPI ID has been configured yet — contact support to complete this payment.
+                    </p>
+                )}
+
+                <form onSubmit={submit}>
+                    <div style={{ marginBottom: 14 }}>
+                        <label>UPI Transaction ID / UTR Number</label>
+                        <input
+                            type="text"
+                            autoFocus
+                            required
+                            value={txnRef}
+                            onChange={(e) => setTxnRef(e.target.value)}
+                            placeholder="e.g. 234567891234"
+                        />
+                        {errors.transaction_ref && <p className="field-error">{errors.transaction_ref}</p>}
+                    </div>
+                    <div style={{ marginBottom: 20 }}>
+                        <label>Payment screenshot (optional)</label>
+                        <input type="file" accept="image/*,.pdf" onChange={(e) => setScreenshot(e.target.files[0])} />
+                        {errors.screenshot && <p className="field-error">{errors.screenshot}</p>}
+                    </div>
+                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                        <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+                        <button type="submit" className="btn btn-primary" disabled={busy || !txnRef}>
+                            {busy ? 'Submitting…' : "I've paid — submit for verification"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+
+    return createPortal(modal, document.body);
 }

@@ -22,8 +22,8 @@ function PageForm({ page, onDone }) {
     return (
         <form onSubmit={submit} className="card card-pad-sm" style={{ marginBottom: 16 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10 }}>
-                <input placeholder="Slug (e.g. about)" value={form.data.slug} onChange={(e) => form.setData('slug', e.target.value)} disabled={!isNew} required />
-                <input placeholder="Title" value={form.data.title} onChange={(e) => form.setData('title', e.target.value)} required />
+                <input type="text" placeholder="Slug (e.g. about)" value={form.data.slug} onChange={(e) => form.setData('slug', e.target.value)} disabled={!isNew} required />
+                <input type="text" placeholder="Title" value={form.data.title} onChange={(e) => form.setData('title', e.target.value)} required />
                 <select value={form.data.status} onChange={(e) => form.setData('status', e.target.value)}>
                     <option value="draft">Draft</option>
                     <option value="published">Published</option>

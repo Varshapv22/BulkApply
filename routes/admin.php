@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\LogController;
 use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PlanController;
+use App\Http\Controllers\Admin\PlanPaymentRequestController;
 use App\Http\Controllers\Admin\QueueController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ResumeController;
@@ -48,6 +49,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
     Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+
+    Route::get('/payment-requests', [PlanPaymentRequestController::class, 'index'])->name('paymentRequests.index');
+    Route::get('/payment-requests/{paymentRequest}/screenshot', [PlanPaymentRequestController::class, 'screenshot'])->name('paymentRequests.screenshot');
+    Route::post('/payment-requests/{paymentRequest}/approve', [PlanPaymentRequestController::class, 'approve'])->name('paymentRequests.approve');
+    Route::post('/payment-requests/{paymentRequest}/reject', [PlanPaymentRequestController::class, 'reject'])->name('paymentRequests.reject');
 
     Route::get('/plans', [PlanController::class, 'index'])->name('plans.index');
     Route::post('/plans', [PlanController::class, 'store'])->name('plans.store');
