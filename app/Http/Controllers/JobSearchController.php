@@ -195,8 +195,9 @@ class JobSearchController extends Controller
 
             if (!$company) continue;
 
-            // Skip duplicates
-            $exists = JobApplication::where('company', $company)
+            // Skip duplicates (for this user only)
+            $exists = JobApplication::where('user_id', $profile->user_id)
+                ->where('company', $company)
                 ->where('job_title', $jobData['job_title'] ?? '')
                 ->exists();
             if ($exists) continue;

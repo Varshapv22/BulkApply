@@ -84,8 +84,8 @@ class SendJobApplication implements ShouldQueue
         $customBody = null;
 
         $template = $job->email_template_id
-            ? EmailTemplate::find($job->email_template_id)
-            : EmailTemplate::defaultTemplate();
+            ? EmailTemplate::where('user_id', $job->user_id)->find($job->email_template_id)
+            : EmailTemplate::defaultTemplate($job->user_id);
 
         if ($template) {
             $customSubject = $template->subject;

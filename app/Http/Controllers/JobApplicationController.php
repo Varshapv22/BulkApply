@@ -19,6 +19,7 @@ class JobApplicationController extends Controller
     public function index(Request $request)
     {
         $query = JobApplication::query()
+            ->where('user_id', Auth::id())
             ->search($request->input('search'))
             ->filterStatus($request->input('status'))
             ->filterPipeline($request->input('pipeline'));
@@ -64,7 +65,8 @@ class JobApplicationController extends Controller
                     // $batch->failedJobs only counts jobs whose exception escaped
                     // to the queue; SendJobApplication catches send errors itself
                     // and marks the row failed, so count that directly instead.
-                    'failed'    => JobApplication::where('send_batch_id', $batch->id)
+                    'failed'    => JobApplication::where('user_id', Auth::id())
+                        ->where('send_batch_id', $batch->id)
                         ->where('status', JobApplication::STATUS_FAILED)->count(),
                     'pending'   => $batch->pendingJobs,
                     'cancelled' => $batch->cancelled(),
@@ -77,14 +79,14 @@ class JobApplicationController extends Controller
         return Inertia::render('Jobs', [
             'jobs'            => $jobs,
             'hasDocuments'    => $profile->hasDocuments(),
-            'templates'      => EmailTemplate::all(['id', 'name', 'is_default']),
+            'templates'      => EmailTemplate::where('user_id', Auth::id())->get(['id', 'name', 'is_default']),
             'pipelineLabels'  => JobApplication::PIPELINE_STATUSES,
             'activeBatch'     => $activeBatch,
             'counts'    => [
-                'total'   => JobApplication::count(),
-                'pending' => JobApplication::whereIn('status', [JobApplication::STATUS_PENDING, JobApplication::STATUS_FAILED])->count(),
-                'sent'    => JobApplication::where('status', JobApplication::STATUS_SENT)->count(),
-                'failed'  => JobApplication::where('status', JobApplication::STATUS_FAILED)->count(),
+                'total'   => JobApplication::where('user_id', Auth::id())->count(),
+                'pending' => JobApplication::where('user_id', Auth::id())->whereIn('status', [JobApplication::STATUS_PENDING, JobApplication::STATUS_FAILED])->count(),
+                'sent'    => JobApplication::where('user_id', Auth::id())->where('status', JobApplication::STATUS_SENT)->count(),
+                'failed'  => JobApplication::where('user_id', Auth::id())->where('status', JobApplication::STATUS_FAILED)->count(),
             ],
             'filters' => [
                 'search'   => $request->input('search'),
@@ -163,8 +165,9 @@ class JobApplicationController extends Controller
                 continue;
             }
 
-            // Duplicate detection: same email + same company
-            $isDuplicate = JobApplication::where('recruiter_email', $email)
+            // Duplicate detection: same email + same company, for this user only
+            $isDuplicate = JobApplication::where('user_id', Auth::id())
+                ->where('recruiter_email', $email)
                 ->where('company', $company)
                 ->exists();
 
@@ -211,7 +214,7 @@ class JobApplicationController extends Controller
             return back()->with('error', 'Connect your email sender in Settings before sending.');
         }
 
-        $jobs = JobApplication::sendable()->get();
+        $jobs = JobApplication::where('user_id', Auth::id())->sendable()->get();
 
         if ($jobs->isEmpty()) {
             return back()->with('error', 'No pending jobs to send.');
@@ -230,6 +233,9 @@ class JobApplicationController extends Controller
         }
 
         $templateId = $request->input('email_template_id');
+        if ($templateId && ! EmailTemplate::where('user_id', Auth::id())->where('id', $templateId)->exists()) {
+            $templateId = null;
+        }
 
         $batch = Bus::batch(
             $jobs->pluck('id')->map(fn ($id) => new SendJobApplication($id))->all()
@@ -267,7 +273,8 @@ class JobApplicationController extends Controller
         if ($profile->current_send_batch_id) {
             Bus::findBatch($profile->current_send_batch_id)?->cancel();
 
-            JobApplication::where('send_batch_id', $profile->current_send_batch_id)
+            JobApplication::where('user_id', Auth::id())
+                ->where('send_batch_id', $profile->current_send_batch_id)
                 ->where('status', JobApplication::STATUS_QUEUED)
                 ->update(['status' => JobApplication::STATUS_PENDING]);
 
@@ -279,6 +286,8 @@ class JobApplicationController extends Controller
 
     public function sendOne(JobApplication $job)
     {
+        abort_if($job->user_id !== Auth::id(), 404);
+
         $profile = Profile::current();
 
         if (! $profile->hasDocuments()) {
@@ -304,6 +313,8 @@ class JobApplicationController extends Controller
      */
     public function updatePipeline(Request $request, JobApplication $job)
     {
+        abort_if($job->user_id !== Auth::id(), 404);
+
         $data = $request->validate([
             'pipeline_status' => ['required', 'in:' . implode(',', array_keys(JobApplication::PIPELINE_STATUSES))],
         ]);
@@ -320,14 +331,14 @@ class JobApplicationController extends Controller
     {
         $profile = Profile::current();
 
-        $job = JobApplication::find($request->input('job_id'));
+        $job = JobApplication::where('user_id', Auth::id())->find($request->input('job_id'));
         if (!$job) {
             return response()->json(['error' => 'Job not found'], 404);
         }
 
         $templateId = $request->input('email_template_id');
         if ($templateId) {
-            $template = EmailTemplate::find($templateId);
+            $template = EmailTemplate::where('user_id', Auth::id())->find($templateId);
             $subject = $template ? $template->subject : $profile->email_subject;
             $body = $template ? $template->body : $profile->email_body;
         } else {
@@ -344,6 +355,8 @@ class JobApplicationController extends Controller
 
     public function destroy(JobApplication $job)
     {
+        abort_if($job->user_id !== Auth::id(), 404);
+
         $job->delete();
 
         return back()->with('status', 'Job removed.');
@@ -351,7 +364,7 @@ class JobApplicationController extends Controller
 
     public function clear()
     {
-        JobApplication::query()->delete();
+        JobApplication::where('user_id', Auth::id())->delete();
 
         return back()->with('status', 'All jobs cleared.');
     }
@@ -367,11 +380,14 @@ class JobApplicationController extends Controller
             'sent_at', 'opened_at', 'clicked_at', 'followup_count', 'created_at',
         ];
 
-        return response()->streamDownload(function () use ($columns) {
+        $userId = Auth::id();
+
+        return response()->streamDownload(function () use ($columns, $userId) {
             $out = fopen('php://output', 'w');
             fputcsv($out, $columns);
 
-            JobApplication::orderBy('created_at', 'desc')
+            JobApplication::where('user_id', $userId)
+                ->orderBy('created_at', 'desc')
                 ->chunk(200, function ($jobs) use ($out, $columns) {
                     foreach ($jobs as $job) {
                         $row = [];
