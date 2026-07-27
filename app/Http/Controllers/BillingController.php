@@ -63,4 +63,5 @@ class BillingController extends Controller
 
         return back()->with('status', "Payment submitted — an admin will verify it and activate {$plan->name} shortly.");
     }
+    
 }

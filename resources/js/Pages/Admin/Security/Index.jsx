@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import { PageHead, Stat, Badge, Icons } from '../../../components';
+import { PageHead, Stat, Badge, Icons, useConfirm } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
 function TwoFactorSetup({ enabled }) {
@@ -11,12 +11,28 @@ function TwoFactorSetup({ enabled }) {
     const uri = props.twoFactorUri;
     const recoveryCodes = props.recoveryCodes;
 
+    const { confirm, dialog } = useConfirm();
+
     const startSetup = () => router.post('/admin/security/2fa/enable', {}, { preserveScroll: true, onSuccess: () => setStep('setup') });
-    const confirm = (e) => {
+
+    // Named submitCode, not confirm — a local `confirm` here shadows the hook's
+    // (and window's), which is how the disable button ended up calling this
+    // handler with a string instead of an event.
+    const submitCode = (e) => {
         e.preventDefault();
         router.post('/admin/security/2fa/confirm', { code }, { preserveScroll: true, onSuccess: () => setStep('done') });
     };
-    const disable = () => { if (confirm('Disable two-factor authentication?')) router.post('/admin/security/2fa/disable', {}, { preserveScroll: true }); };
+
+    const disable = async () => {
+        const ok = await confirm({
+            title: 'Disable two-factor authentication?',
+            message: 'Your admin account will fall back to password-only sign-in, and your recovery codes will be discarded. You can set it up again at any time.',
+            confirmLabel: 'Disable 2FA',
+            danger: true,
+        });
+        if (!ok) return;
+        router.post('/admin/security/2fa/disable', {}, { preserveScroll: true, onSuccess: () => setStep('idle') });
+    };
 
     if (enabled && step !== 'done') {
         return (
@@ -24,6 +40,7 @@ function TwoFactorSetup({ enabled }) {
                 <h2>Two-Factor Authentication</h2>
                 <p><Badge status="sent">Enabled</Badge> Your account is protected with an authenticator app.</p>
                 <button className="btn btn-danger btn-sm" onClick={disable}>Disable 2FA</button>
+                {dialog}
             </div>
         );
     }
@@ -42,8 +59,9 @@ function TwoFactorSetup({ enabled }) {
                     <p>Add this key to your authenticator app (manual entry — no QR image), then enter the 6-digit code it generates:</p>
                     <code style={{ display: 'block', padding: 10, background: 'var(--hover)', borderRadius: 8, marginBottom: 10, wordBreak: 'break-all' }}>{secret}</code>
                     <p className="muted" style={{ fontSize: 12 }}>otpauth URI: {uri}</p>
-                    <form onSubmit={confirm} style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-                        <input type="text" placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} style={{ maxWidth: 160 }} />
+                    <form onSubmit={submitCode} style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+                        <input type="text" inputMode="numeric" autoComplete="one-time-code" placeholder="123456"
+                            value={code} onChange={(e) => setCode(e.target.value)} style={{ maxWidth: 160 }} required />
                         <button type="submit" className="btn btn-primary btn-sm">Confirm</button>
                     </form>
                 </div>

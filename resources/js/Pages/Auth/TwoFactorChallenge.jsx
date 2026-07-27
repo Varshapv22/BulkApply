@@ -30,7 +30,10 @@ export default function TwoFactorChallenge({ errors = {} }) {
                     {errors.code && <div className="alert alert-error">{errors.code}</div>}
                     <form onSubmit={submit}>
                         <label htmlFor="code">Authentication code</label>
-                        <input id="code" type="text" autoFocus value={data.code}
+                        {/* one-time-code lets iOS/Android offer the SMS/authenticator
+                            code straight from the keyboard suggestion bar. */}
+                        <input id="code" type="text" inputMode="numeric" autoComplete="one-time-code"
+                            autoFocus value={data.code}
                             onChange={(e) => setData('code', e.target.value)} placeholder="123456" required />
 
                         <button type="submit" className="btn btn-primary btn-block" style={{ marginTop: 16 }} disabled={processing}>
