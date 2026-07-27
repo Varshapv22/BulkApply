@@ -42,7 +42,7 @@ function TwoFactorSetup({ enabled }) {
                     <p>Add this key to your authenticator app (manual entry — no QR image), then enter the 6-digit code it generates:</p>
                     <code style={{ display: 'block', padding: 10, background: 'var(--hover)', borderRadius: 8, marginBottom: 10, wordBreak: 'break-all' }}>{secret}</code>
                     <p className="muted" style={{ fontSize: 12 }}>otpauth URI: {uri}</p>
-                    <form onSubmit={confirm} style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <form onSubmit={confirm} style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                         <input type="text" placeholder="123456" value={code} onChange={(e) => setCode(e.target.value)} style={{ maxWidth: 160 }} />
                         <button type="submit" className="btn btn-primary btn-sm">Confirm</button>
                     </form>
@@ -52,7 +52,7 @@ function TwoFactorSetup({ enabled }) {
                 <div>
                     <p><Badge status="sent">Enabled</Badge></p>
                     <p className="muted">Save these recovery codes somewhere safe — each works once if you lose access to your authenticator:</p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6, fontFamily: 'monospace', background: 'var(--hover)', padding: 12, borderRadius: 8 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(140px, 100%), 1fr))', gap: 6, fontFamily: 'monospace', background: 'var(--hover)', padding: 12, borderRadius: 8 }}>
                         {recoveryCodes.map((c) => <span key={c}>{c}</span>)}
                     </div>
                 </div>
@@ -120,7 +120,7 @@ export default function AdminSecurityIndex({ twoFactorEnabled, loginHistory, fai
 
             <div className="card">
                 <h2>Login History</h2>
-                <div style={{ overflowX: 'auto' }}>
+                <div className="table-wrap">
                     <table>
                         <thead><tr><th>Email</th><th>Result</th><th>IP</th><th>When</th></tr></thead>
                         <tbody>

@@ -53,7 +53,7 @@ export default function AdminUsersIndex({ users, roles, filters }) {
             </div>
 
             <div className="card">
-                <div style={{ overflowX: 'auto' }}>
+                <div className="table-wrap">
                     <table>
                         <thead>
                             <tr>

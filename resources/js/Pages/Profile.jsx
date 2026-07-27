@@ -22,7 +22,7 @@ function ModalShell({ title, onClose, children, small, footer }) {
                 <button type="button" className="modal-close" onClick={onClose} aria-label="Close">✕</button>
                 <h3 className="modal-title">{title}</h3>
                 {children}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 22 }}>
+                <div className="modal-actions" style={{ marginTop: 22 }}>
                     {footer || <button type="button" className="btn btn-primary" onClick={onClose}>Done</button>}
                 </div>
             </div>

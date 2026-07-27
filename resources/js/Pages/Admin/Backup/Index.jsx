@@ -29,7 +29,7 @@ export default function AdminBackupIndex({ backups }) {
                                         <td>{b.name}</td>
                                         <td>{(b.size_kb / 1024).toFixed(1)} MB</td>
                                         <td>{b.created_at}</td>
-                                        <td style={{ display: 'flex', gap: 6 }}>
+                                        <td className="cell-actions">
                                             <a className="btn btn-ghost btn-sm" href={`/admin/backup/${b.name}/download`}>Download</a>
                                             <button className="btn btn-danger btn-sm" onClick={() => destroy(b.name)}>Delete</button>
                                         </td>

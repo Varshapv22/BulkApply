@@ -26,7 +26,7 @@ export default function AdminWebhooksIndex({ logs }) {
                                                 {l.response_code && <span className="muted" style={{ marginLeft: 6, fontSize: 12 }}>HTTP {l.response_code}</span>}
                                             </td>
                                             <td>{new Date(l.created_at).toLocaleString()}</td>
-                                            <td style={{ display: 'flex', gap: 6 }}>
+                                            <td className="cell-actions">
                                                 <button className="btn btn-ghost btn-sm" onClick={() => setExpanded(expanded === l.id ? null : l.id)}>
                                                     {expanded === l.id ? 'Hide' : 'View'} payload
                                                 </button>

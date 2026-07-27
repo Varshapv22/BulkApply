@@ -20,8 +20,8 @@ function ConfigRow({ config }) {
             <td>{config.has_value ? <Badge status="sent">Set</Badge> : <Badge status="pending">Not set</Badge>}</td>
             <td>
                 {editing ? (
-                    <div style={{ display: 'flex', gap: 6 }}>
-                        <PasswordInput placeholder="New value" value={value} onChange={(e) => setValue(e.target.value)} style={{ width: 220 }} />
+                    <div className="cell-actions">
+                        <PasswordInput placeholder="New value" value={value} onChange={(e) => setValue(e.target.value)} style={{ flex: '1 1 180px', minWidth: 160 }} />
                         <button className="btn btn-primary btn-sm" onClick={save}>Save</button>
                         <button className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>Cancel</button>
                     </div>
@@ -57,7 +57,7 @@ export default function AdminApiIndex({ configs, stats, recentRequests }) {
             <div className="card">
                 <h2>Recent API Requests</h2>
                 {recentRequests.length === 0 ? <p className="muted">No API requests logged yet.</p> : (
-                    <div style={{ overflowX: 'auto' }}>
+                    <div className="table-wrap">
                         <table>
                             <thead><tr><th>Method</th><th>Endpoint</th><th>Status</th><th>Duration</th><th>When</th></tr></thead>
                             <tbody>

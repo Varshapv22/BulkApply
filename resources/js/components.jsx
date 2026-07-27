@@ -170,7 +170,7 @@ export function useConfirm() {
             <div className="modal modal-sm">
                 <h3 className="modal-title">{state.title || 'Are you sure?'}</h3>
                 <p className="hint" style={{ margin: '0 0 22px' }}>{state.message}</p>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <div className="modal-actions">
                     <button type="button" className="btn btn-ghost" onClick={() => close(false)}>Cancel</button>
                     <button type="button" autoFocus
                         className={state.danger ? 'btn btn-danger-solid' : 'btn btn-primary'}
@@ -333,7 +333,9 @@ export function UpiPaymentModal({ plan, upiId, upiPayeeName, currencySymbol = 'â
     };
 
     const modal = (
-        <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+        // zIndex sits above the blocking trial-expired overlay (9999), which also
+        // portals to <body> and would otherwise paint over this modal.
+        <div className="modal-overlay" style={{ zIndex: 10000 }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="modal modal-sm">
                 <button className="modal-close" onClick={onClose} aria-label="Close">âœ•</button>
                 <h3 className="modal-title">Pay via UPI</h3>
@@ -351,8 +353,8 @@ export function UpiPaymentModal({ plan, upiId, upiPayeeName, currencySymbol = 'â
                             )}
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                            <strong>{upiId}</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <strong style={{ minWidth: 0, wordBreak: 'break-all' }}>{upiId}</strong>
                             <button type="button" className="btn btn-ghost btn-sm" onClick={copyUpiId}>{copied ? 'Copied âœ“' : 'Copy'}</button>
                         </div>
                         <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13, margin: '4px 0 16px' }}>
@@ -387,7 +389,7 @@ export function UpiPaymentModal({ plan, upiId, upiPayeeName, currencySymbol = 'â
                         <input type="file" accept="image/*,.pdf" onChange={(e) => setScreenshot(e.target.files[0])} />
                         {errors.screenshot && <p className="field-error">{errors.screenshot}</p>}
                     </div>
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    <div className="modal-actions">
                         <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
                         <button type="submit" className="btn btn-primary" disabled={busy || !txnRef}>
                             {busy ? 'Submittingâ€¦' : "I've paid â€” submit for verification"}

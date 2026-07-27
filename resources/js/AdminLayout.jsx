@@ -123,12 +123,12 @@ function ProfileModal({ user, onClose }) {
 
     const modal = (
         <div
-            style={{ position: 'fixed', inset: 0, background: 'rgba(8,10,20,.6)', backdropFilter: 'blur(4px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+            className="modal-overlay"
             onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
-            <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 20, maxWidth: 460, width: '100%', maxHeight: '85vh', overflowY: 'auto', padding: 28, position: 'relative', boxShadow: 'var(--shadow-lg)' }}>
+            <div className="modal modal-sm" style={{ maxWidth: 460 }}>
                 <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
-                <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, color: 'var(--heading)' }}>Account Settings</h3>
+                <h3 className="modal-title">Account Settings</h3>
 
                 <div className="acct-tabs">
                     <button type="button" className={`acct-tab${tab === 'profile' ? ' active' : ''}`} onClick={() => setTab('profile')}>
@@ -151,7 +151,7 @@ function ProfileModal({ user, onClose }) {
                             <input type="email" value={profileData.email} onChange={(e) => setProfileData(d => ({ ...d, email: e.target.value }))} />
                             {profileErrors.email && <p className="field-error">{profileErrors.email}</p>}
                         </div>
-                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                        <div className="modal-actions">
                             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
                             <button type="submit" className="btn btn-primary" disabled={profileBusy}>
                                 {profileBusy ? 'Saving…' : 'Save Changes'}
@@ -174,7 +174,7 @@ function ProfileModal({ user, onClose }) {
                             <label>Confirm New Password</label>
                             <PasswordInput autoComplete="new-password" value={passData.password_confirmation} onChange={(e) => setPassData(d => ({ ...d, password_confirmation: e.target.value }))} />
                         </div>
-                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                        <div className="modal-actions">
                             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
                             <button type="submit" className="btn btn-primary" disabled={passBusy}>
                                 {passBusy ? 'Updating…' : 'Update Password'}

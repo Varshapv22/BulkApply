@@ -13,7 +13,7 @@ export default function Contact() {
     };
 
     return (
-        <div style={{ maxWidth: 560, margin: '60px auto', padding: '0 20px' }}>
+        <div className="standalone-page" style={{ maxWidth: 560, margin: '60px auto', padding: '0 20px' }}>
             <Head title="Contact — BulkApply" />
             <Link href="/" style={{ fontWeight: 700, fontSize: 20 }}>BulkApply</Link>
             <div className="card" style={{ marginTop: 24 }}>

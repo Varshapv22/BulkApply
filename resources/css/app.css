@@ -85,7 +85,10 @@ body {
     color: var(--text);
     -webkit-font-smoothing: antialiased;
     letter-spacing: -0.01em;
+    /* Long emails / URLs / UTR refs must never push the layout sideways on a phone. */
+    overflow-wrap: break-word;
 }
+img, svg, video, canvas { max-width: 100%; }
 a { color: var(--primary); text-decoration: none; }
 a:hover { text-decoration: underline; }
 ::selection { background: var(--ring); }
@@ -95,18 +98,24 @@ a:hover { text-decoration: underline; }
 *::-webkit-scrollbar { width: 9px; height: 9px; }
 *::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 20px; }
 
-/* ---------- App shell ---------- */
-.app-shell { display: flex; min-height: 100vh; }
-.app-shell.has-impersonation-banner { padding-top: 40px; }
+/* ---------- App shell ----------
+   --topbar-h / --banner-h are read by the viewport-anchored topbar popovers
+   (notifications, theme, account) so they sit right under the bar on phones. */
+.app-shell { display: flex; min-height: 100vh; --topbar-h: 66px; --banner-h: 0px; }
+.app-shell.has-impersonation-banner { padding-top: var(--banner-h); --banner-h: 40px; }
 
 .impersonation-banner {
     position: fixed; top: 0; left: 0; right: 0; z-index: 300; height: 40px;
     display: flex; align-items: center; justify-content: center; gap: 8px;
     background: var(--amber); color: #1a1200; font-size: 13px; font-weight: 600;
+    padding: 0 12px;
+}
+.impersonation-banner-text {
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .impersonation-banner button {
     background: rgba(0,0,0,.15); border: none; color: inherit; font-weight: 700;
-    padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12.5px;
+    padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 12.5px; flex-shrink: 0;
 }
 .impersonation-banner button:hover { background: rgba(0,0,0,.25); }
 
@@ -304,7 +313,9 @@ input[type=file] { padding: 9px 12px; cursor: pointer; }
 .batch-progress-fill { height: 100%; border-radius: 4px; background: var(--primary); transition: width .4s ease; }
 
 /* ---------- Table ---------- */
-.table-wrap { overflow-x: auto; border-radius: 14px; border: 1px solid var(--border); }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 14px; border: 1px solid var(--border); }
+/* Row-action buttons living inside a <td> — wrap instead of widening the row. */
+.cell-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 13px 16px; font-size: 13.5px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 thead th { background: var(--card-2); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; position: sticky; top: 0; }
@@ -351,6 +362,8 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
 .modal-close { position: absolute; top: 18px; right: 18px; background: var(--hover); border: none; font-size: 16px;
     cursor: pointer; color: var(--muted); line-height: 1; width: 32px; height: 32px; border-radius: 9px; }
 .modal-close:hover { background: var(--hover-strong); }
+/* Footer button row shared by every modal — wraps, then stacks full-width on phones. */
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
 .acct-tabs { display: flex; gap: 4px; background: var(--hover); border-radius: 10px; padding: 4px; }
 .acct-tab { flex: 1; padding: 7px 12px; border: none; border-radius: 8px; font-size: 13px; font-weight: 500;
     cursor: pointer; background: transparent; color: var(--muted); transition: all .15s; }
@@ -891,3 +904,143 @@ tbody tr.selected:hover { background: var(--primary-soft); }
     .content { padding: 8px 8px 18px; }
     .card { padding: 13px; }
 }
+
+/* ============================================================
+   RESPONSIVE PASS — user + admin, phones & tablets
+   Everything below is additive and intentionally last so it wins
+   over the earlier desktop-first rules.
+   ============================================================ */
+
+/* ---- Sticky topbar must sit below the fixed impersonation banner, not under it ---- */
+.topbar { top: var(--banner-h, 0px); }
+
+/* ---- Never let a control be wider than its container ---- */
+input, select, textarea, .btn { max-width: 100%; }
+select { text-overflow: ellipsis; }
+
+/* ---- Topbar popovers: anchored to the viewport on small screens ----
+   On a phone the bell / theme / avatar triggers sit near the right edge but
+   are NOT the last element, so an absolutely-positioned panel anchored to the
+   trigger overflowed the viewport. Pin them to the viewport instead. */
+@media (max-width: 640px) {
+    .notif-pop, .theme-pop, .user-pop {
+        position: fixed;
+        top: calc(var(--banner-h, 0px) + var(--topbar-h, 66px) + 6px);
+        right: 10px; left: auto;
+        width: min(360px, calc(100vw - 20px)); max-width: none;
+    }
+    .notif-pop-list { max-height: min(340px, 55vh); }
+    .notif-pop-head { padding: 12px 14px; }
+    .notif-item { padding: 11px 14px; }
+    .pipe-menu { max-width: calc(100vw - 28px); }
+}
+
+/* ---- Modals: fit the visible viewport, stack actions ---- */
+@media (max-width: 640px) {
+    .modal-overlay { padding: 12px 10px; }
+    /* dvh keeps the modal inside the *visible* area when mobile browser chrome
+       or the on-screen keyboard is showing. */
+    .modal { max-height: calc(100dvh - 24px); }
+    .modal-title { font-size: 17px; margin-bottom: 16px; padding-right: 40px; }
+    .modal-close { top: 14px; right: 14px; }
+}
+@media (max-width: 480px) {
+    /* Long labels ("I've paid — submit for verification") can't sit side by side. */
+    .modal-actions { flex-direction: column-reverse; align-items: stretch; gap: 8px; }
+    .modal-actions .btn { width: 100%; white-space: normal; }
+    .acct-tab { font-size: 12.5px; padding: 8px 6px; }
+    .upi-qr-frame { width: min(220px, 100%); }
+    .upi-qr-frame img, .upi-qr-frame-loading { width: 100% !important; height: auto !important; aspect-ratio: 1; }
+}
+
+/* ---- Forms: 16px inputs stop iOS Safari auto-zooming on focus ---- */
+@media (max-width: 640px) {
+    input[type=text], input[type=email], input[type=url], input[type=tel], input[type=password],
+    input[type=number], input[type=date], input[type=file], textarea, select { font-size: 16px; }
+    label { margin-top: 12px; }
+}
+@media (max-width: 560px) {
+    /* One field per line on a phone — .row's 200px min-width still allowed two
+       cramped columns at ~500px. */
+    .row > div { min-width: 100%; }
+    .row { gap: 10px; }
+}
+
+/* ---- Tables: let cells wrap and keep the row-action buttons usable ---- */
+@media (max-width: 640px) {
+    .cell-actions { gap: 5px; }
+    .cell-actions .btn { padding: 6px 9px; font-size: 12px; }
+    .cell-chip { max-width: 130px; }
+    .skill-chips { max-width: 140px; }
+}
+
+/* ---- Topbar: keep every control reachable on a narrow phone ---- */
+@media (max-width: 640px) {
+    .topbar { gap: 8px; }
+    .icon-btn { width: 36px; height: 36px; font-size: 15px; }
+    .topbar-user .avatar { width: 32px; height: 32px; }
+}
+@media (max-width: 420px) {
+    /* The theme menu already offers Light/Dark, so the standalone toggle is
+       redundant once space gets tight. */
+    .topbar-theme-toggle { display: none; }
+    .topbar { gap: 6px; }
+    .icon-btn { width: 34px; height: 34px; }
+}
+
+/* ---- Sidebar drawer ---- */
+@media (max-width: 900px) {
+    .sidebar { width: min(280px, 84vw); }
+    /* The collapse toggle is desktop-only; the drawer is always full-width on mobile. */
+    .sidebar.collapsed { width: min(280px, 84vw); }
+    .sidebar.collapsed .brand-text, .sidebar.collapsed .nav-label { display: inline; }
+    .sidebar.collapsed .sidebar-section { opacity: 1; height: auto; padding: 18px 12px 7px; }
+    .sidebar.collapsed .sidebar-brand { flex-direction: row; padding: 22px 22px 20px; }
+    .sidebar.collapsed .nav-item { justify-content: flex-start; padding: 10px 13px; gap: 12px; }
+    .main.collapsed { margin-left: 0; }
+}
+
+/* ---- Cards, heads and misc rows ---- */
+@media (max-width: 640px) {
+    .hero-card-head { gap: 12px; }
+    .hero-card-ico { width: 40px; height: 40px; border-radius: 12px; }
+    .hero-card-ico svg { width: 19px; height: 19px; }
+    .card-head-row { align-items: flex-start; }
+    .list-row { flex-wrap: wrap; }
+    .chart { height: 140px; }
+    /* The ring SVG carries fixed 150x150 attributes — scale both axes together
+       so the shrunken .score-ring doesn't distort or clip it. */
+    .score-ring svg { width: 100%; height: 100%; }
+    .empty { padding: 32px 14px; }
+    .plan-card { max-width: 100%; flex-basis: 100%; }
+    .plan-grid { gap: 14px; }
+    .toolbar > .spacer { flex-basis: 100%; height: 0; }
+    .add-jobs-panel { min-width: 100%; }
+    .searching-box { padding: 14px 0 4px; }
+    .template-card-head { flex-wrap: wrap; }
+    .add-jobs-card summary { gap: 10px; }
+    .add-jobs-summary-title { font-size: 13.5px; }
+    .search-options-row { flex-direction: column; align-items: stretch; gap: 12px; }
+    .search-options-row > div { min-width: 0 !important; }
+    .quick-picks { gap: 6px; }
+    .quick-pick { padding: 6px 11px; font-size: 12px; }
+    .mail-status { padding: 10px 12px; font-size: 13px; }
+    .mail-status .btn-link { margin-left: 0 !important; }
+    .skills-bar .btn-link, .skills-bar .btn { margin-left: 0 !important; }
+    .ph-chips { gap: 6px; }
+}
+
+/* ---- Auth screens ---- */
+.auth-wrap { min-height: 100dvh; }
+@media (max-width: 560px) {
+    .auth-form-side { padding: 24px 16px; align-items: flex-start; }
+    .auth-card .title { font-size: 21px; }
+}
+
+/* ---- Public / standalone pages (CMS page, contact form) ---- */
+@media (max-width: 640px) {
+    .standalone-page { margin: 28px auto !important; padding: 0 14px !important; }
+}
+
+/* ---- Toasts sit above modals ---- */
+.toast-host { z-index: 10050; }

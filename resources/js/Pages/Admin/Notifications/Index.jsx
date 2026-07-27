@@ -34,7 +34,7 @@ export default function AdminNotificationsIndex({ notifications, unreadCount }) 
                                         <td><Badge status={n.read_at ? 'neutral' : 'failed'}>{TYPE_LABELS[n.type] || n.type}</Badge></td>
                                         <td>{n.message}</td>
                                         <td>{new Date(n.created_at).toLocaleString()}</td>
-                                        <td style={{ display: 'flex', gap: 6 }}>
+                                        <td className="cell-actions">
                                             {n.payload?.user_id && (
                                                 <Link href={`/admin/users/${n.payload.user_id}`} className="btn btn-ghost btn-sm">View user</Link>
                                             )}

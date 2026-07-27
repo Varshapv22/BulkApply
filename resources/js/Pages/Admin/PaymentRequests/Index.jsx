@@ -86,7 +86,7 @@ export default function AdminPaymentRequestsIndex({ requests, filters }) {
                                     <td>{new Date(r.created_at).toLocaleString()}</td>
                                     <td>
                                         {r.status === 'pending' && (
-                                            <div style={{ display: 'flex', gap: 6 }}>
+                                            <div className="cell-actions">
                                                 <button className="btn btn-primary btn-sm" disabled={busyId === r.id} onClick={() => approve(r)}>Approve</button>
                                                 <button className="btn btn-danger btn-sm" disabled={busyId === r.id} onClick={() => reject(r)}>Reject</button>
                                             </div>

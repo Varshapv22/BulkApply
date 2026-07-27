@@ -156,7 +156,7 @@ export default function Dashboard({
         <>
             <PageHead title="Dashboard" subtitle="Overview of your job application activity." />
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '20px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '20px', marginBottom: '20px' }}>
                 <StatBento label="Total Jobs" value={counts.total} accent="primary" icon={Icons.briefcase} className="animate-delay-1" />
                 <StatBento label="Sent" value={counts.sent} accent="green" icon={Icons.send} className="animate-delay-1" />
                 <StatBento label="Success Rate" value={`${sentRate}%`} accent="violet" icon={Icons.target} className="animate-delay-1" />

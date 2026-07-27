@@ -26,7 +26,7 @@ function SettingField({ setting }) {
         return (
             <div style={{ padding: '10px 0' }}>
                 <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600 }}>{setting.label}</label>
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                     <select value={value} onChange={(e) => setValue(e.target.value)} style={{ maxWidth: 320 }}>
                         <option value="INR">₹ Rupee (INR)</option>
                         <option value="USD">$ Dollar (USD)</option>
@@ -43,7 +43,7 @@ function SettingField({ setting }) {
     return (
         <div style={{ padding: '10px 0' }}>
             <label style={{ display: 'block', marginBottom: 6, fontSize: 13, fontWeight: 600 }}>{setting.label}</label>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <input
                     type={setting.type === 'integer' ? 'number' : 'text'}
                     value={value}

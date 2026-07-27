@@ -69,7 +69,7 @@ function PlanFormModal({ plan, onClose }) {
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                    <div className="modal-actions">
                         <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
                         <button type="submit" className="btn btn-primary" disabled={form.processing}>
                             {form.processing ? 'Saving…' : plan ? 'Save changes' : 'Create plan'}
@@ -116,7 +116,7 @@ export default function AdminPlansIndex({ plans }) {
                                     <td>{formatDuration(p.duration_days)}</td>
                                     <td>{p.subscriptions_count}</td>
                                     <td><Badge status={p.is_active ? 'sent' : 'failed'}>{p.is_active ? 'Active' : 'Disabled'}</Badge></td>
-                                    <td style={{ display: 'flex', gap: 6 }}>
+                                    <td className="cell-actions">
                                         <button className="btn btn-ghost btn-sm" onClick={() => setEditing(p)}>Edit</button>
                                         <button className="btn btn-ghost btn-sm" onClick={() => toggleActive(p)}>{p.is_active ? 'Disable' : 'Enable'}</button>
                                         <button className="btn btn-danger btn-sm" onClick={() => destroy(p)}>Delete</button>

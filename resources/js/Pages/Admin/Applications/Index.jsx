@@ -41,7 +41,7 @@ export default function AdminApplicationsIndex({ jobs, filters, stats }) {
             </div>
 
             <div className="card">
-                <div style={{ overflowX: 'auto' }}>
+                <div className="table-wrap">
                     <table>
                         <thead>
                             <tr><th>Company</th><th>Title</th><th>User</th><th>Status</th><th>Sent</th><th></th></tr>
@@ -54,7 +54,7 @@ export default function AdminApplicationsIndex({ jobs, filters, stats }) {
                                     <td>{j.user ? <Link href={`/admin/users/${j.user.id}`}>{j.user.name}</Link> : '—'}</td>
                                     <td><Badge status={j.status}>{j.status}</Badge>{j.error_short && <div className="muted" style={{ fontSize: 12 }}>{j.error_short}</div>}</td>
                                     <td>{j.sent_at || '—'}</td>
-                                    <td style={{ display: 'flex', gap: 6 }}>
+                                    <td className="cell-actions">
                                         {(j.status === 'failed' || j.status === 'pending') && (
                                             <button className="btn btn-ghost btn-sm" onClick={() => retry(j.id)}>Retry</button>
                                         )}

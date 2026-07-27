@@ -70,7 +70,7 @@ export default function AdminCmsIndex({ pages }) {
                                     <td>{p.title}</td>
                                     <td><Badge status={p.status === 'published' ? 'sent' : 'pending'}>{p.status}</Badge></td>
                                     <td>{new Date(p.updated_at).toLocaleDateString()}</td>
-                                    <td style={{ display: 'flex', gap: 6 }}>
+                                    <td className="cell-actions">
                                         {p.status === 'published' && <a className="btn btn-ghost btn-sm" href={`/p/${p.slug}`} target="_blank" rel="noopener">View</a>}
                                         <button className="btn btn-ghost btn-sm" onClick={() => setEditing(p)}>Edit</button>
                                         <button className="btn btn-danger btn-sm" onClick={() => destroy(p)}>Delete</button>

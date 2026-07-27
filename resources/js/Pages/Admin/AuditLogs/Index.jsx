@@ -21,7 +21,7 @@ export default function AdminAuditLogsIndex({ logs, filters }) {
             </div>
 
             <div className="card">
-                <div style={{ overflowX: 'auto' }}>
+                <div className="table-wrap">
                     <table>
                         <thead><tr><th>Admin</th><th>Action</th><th>Subject</th><th>Details</th><th>IP</th><th>When</th></tr></thead>
                         <tbody>

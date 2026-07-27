@@ -215,7 +215,9 @@ function PreviewModal({ jobId, onClose }) {
                 <p className="hint">This is how the email will look with placeholders filled in.</p>
                 <div style={{ marginBottom: 8 }}><span className="muted" style={{ fontSize: 12 }}>TO: </span><strong>{state.loading ? 'Loading…' : state.to}</strong></div>
                 <div style={{ marginBottom: 12 }}><span className="muted" style={{ fontSize: 12 }}>SUBJECT: </span><strong>{state.subject}</strong></div>
-                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, fontSize: 14, lineHeight: 1.7 }}
+                {/* Rendered email HTML is arbitrary — scroll it inside the modal rather
+                    than letting a wide table push the whole page sideways. */}
+                <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, fontSize: 14, lineHeight: 1.7, overflowX: 'auto' }}
                     dangerouslySetInnerHTML={{ __html: state.body }} />
             </div>
         </div>

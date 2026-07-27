@@ -124,12 +124,12 @@ function TemplateCard({ template }) {
                 <div className="template-card-head">
                     <span className="co-avatar">{(template.name || '?')[0].toUpperCase()}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                             <strong style={{ fontSize: 15 }}>{template.name}</strong>
                             {template.is_default && <Badge status="sent">Default</Badge>}
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                         <button type="submit" className="btn btn-ghost btn-sm" disabled={processing}>
                             <ChipIcon icon={Icons.save} /> Save
                         </button>

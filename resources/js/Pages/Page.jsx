@@ -3,7 +3,7 @@ import { Head, Link } from '@inertiajs/react';
 
 export default function Page({ title, content }) {
     return (
-        <div style={{ maxWidth: 720, margin: '60px auto', padding: '0 20px' }}>
+        <div className="standalone-page" style={{ maxWidth: 720, margin: '60px auto', padding: '0 20px' }}>
             <Head title={`${title} — BulkApply`} />
             <Link href="/" style={{ fontWeight: 700, fontSize: 20 }}>BulkApply</Link>
             <div className="card" style={{ marginTop: 24 }}>

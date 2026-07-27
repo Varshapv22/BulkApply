@@ -214,7 +214,7 @@ function ProfileModal({ user, onClose }) {
                             <input type="email" value={profileData.email} onChange={(e) => setProfileData(d => ({ ...d, email: e.target.value }))} />
                             {profileErrors.email && <p className="field-error">{profileErrors.email}</p>}
                         </div>
-                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                        <div className="modal-actions">
                             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
                             <button type="submit" className="btn btn-primary" disabled={profileBusy}>
                                 {profileBusy ? 'Saving…' : 'Save Changes'}
@@ -237,7 +237,7 @@ function ProfileModal({ user, onClose }) {
                             <label>Confirm New Password</label>
                             <PasswordInput autoComplete="new-password" value={passData.password_confirmation} onChange={(e) => setPassData(d => ({ ...d, password_confirmation: e.target.value }))} />
                         </div>
-                        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                        <div className="modal-actions">
                             <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
                             <button type="submit" className="btn btn-primary" disabled={passBusy}>
                                 {passBusy ? 'Updating…' : 'Update Password'}
@@ -297,7 +297,7 @@ function TrialExpiredModal({ plans, upiId, upiPayeeName, pendingPlanIds, currenc
                     No plans are available right now. Please contact support.
                 </p>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 14, marginTop: 8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 14, marginTop: 8 }}>
                     {plans.map((plan) => (
                         <div key={plan.id} className="card card-pad-sm" style={{ border: '1.5px solid var(--border-strong)', display: 'flex', flexDirection: 'column', gap: 8 }}>
                             <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--heading)' }}>{plan.name}</div>
@@ -355,7 +355,7 @@ function OnboardingModal({ onClose }) {
                         Add your name, phone, location, and a resume so we can personalise and send applications on your behalf.
                     </p>
                 </div>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 20 }}>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 20, flexWrap: 'wrap' }}>
                     <button type="button" className="btn btn-ghost" onClick={onClose}>Maybe later</button>
                     <button type="button" className="btn btn-primary" onClick={() => router.visit('/profile')}>Complete Profile</button>
                 </div>
@@ -422,7 +422,7 @@ export default function Layout({ children }) {
         <div className={`app-shell${props.impersonating ? ' has-impersonation-banner' : ''}`}>
             {props.impersonating && (
                 <div className="impersonation-banner">
-                    Viewing as {user?.name} ({user?.email}) —
+                    <span className="impersonation-banner-text">Viewing as {user?.name} ({user?.email})</span>
                     <button type="button" onClick={() => router.post('/admin/impersonate/return')}>Return to admin</button>
                 </div>
             )}
@@ -482,7 +482,7 @@ export default function Layout({ children }) {
                     <button className="hamburger" onClick={() => setOpen(true)} aria-label="Open menu">☰</button>
                     <span className="page-title">{current?.label || 'BulkApply'}</span>
                     <div className="spacer" />
-                    <button className="icon-btn" onClick={toggleTheme} title="Toggle light / dark" aria-label="Toggle theme">
+                    <button className="icon-btn topbar-theme-toggle" onClick={toggleTheme} title="Toggle light / dark" aria-label="Toggle theme">
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </button>
                     <ThemeMenu theme={theme} onToggleTheme={toggleTheme} />

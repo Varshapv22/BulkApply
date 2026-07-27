@@ -28,7 +28,7 @@ export default function AdminResumesIndex({ resumes, totalStorageKb }) {
                                         <td>{r.is_default ? <Badge status="sent">Default</Badge> : '—'}</td>
                                         <td>{r.size_kb !== null ? `${r.size_kb} KB` : 'missing'}</td>
                                         <td>{new Date(r.created_at).toLocaleDateString()}</td>
-                                        <td style={{ display: 'flex', gap: 6 }}>
+                                        <td className="cell-actions">
                                             <a className="btn btn-ghost btn-sm" href={`/admin/resumes/${r.id}/download`}>Download</a>
                                             <button className="btn btn-danger btn-sm" onClick={() => destroy(r.id)}>Delete</button>
                                         </td>
