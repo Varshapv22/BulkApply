@@ -151,7 +151,7 @@ class JobSearchService
         }
         $website = $this->websiteFromEmail($email);
 
-        $applyLink = $item['redirect_url'] ?? '';
+        $applyLink = $this->sanitizeApplyUrl($item['redirect_url'] ?? '');
         $company   = $item['company']['display_name'] ?? 'Unknown';
         $location  = $item['location']['display_name'] ?? '';
 
@@ -171,6 +171,33 @@ class JobSearchService
             'posted'          => $item['created'] ?? null,
             'employer_logo'   => null,
         ];
+    }
+
+    /**
+     * Sanitize an Adzuna redirect_url into the best available direct link.
+     * Indeed /jobs?…&vjk=ID  →  /viewjob?jk=ID  (direct listing page).
+     */
+    private function sanitizeApplyUrl(string $url): string
+    {
+        if ($url === '') {
+            return $url;
+        }
+
+        $parsed = parse_url($url);
+        $host   = strtolower($parsed['host'] ?? '');
+        $path   = $parsed['path'] ?? '';
+
+        // Indeed: /jobs?q=…&vjk=ID  →  direct viewjob URL
+        if (str_contains($host, 'indeed.com') && str_starts_with($path, '/jobs')) {
+            parse_str($parsed['query'] ?? '', $qs);
+            $vjk = $qs['vjk'] ?? '';
+            if ($vjk !== '') {
+                $scheme = str_starts_with($host, 'in.') ? 'https://in.indeed.com' : 'https://www.indeed.com';
+                return "{$scheme}/viewjob?jk={$vjk}";
+            }
+        }
+
+        return $url;
     }
 
     /** Derive a company website from an email domain (skips free-mail providers). */

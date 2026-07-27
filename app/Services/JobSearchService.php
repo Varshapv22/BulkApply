@@ -204,7 +204,7 @@ class JobSearchService
         }
         $website = $this->websiteFromEmail($email);
 
-        $applyLink = $item['redirect_url'] ?? '';
+        $applyLink = $this->sanitizeApplyUrl($item['redirect_url'] ?? '');
         $company   = $item['company']['display_name'] ?? 'Unknown';
         $location  = $item['location']['display_name'] ?? '';
 
@@ -227,6 +227,42 @@ class JobSearchService
             'posted'          => $item['created'] ?? null,
             'employer_logo'   => null,
         ];
+    }
+
+    /**
+     * Sanitize an Adzuna redirect_url into the best available direct link.
+     *
+     * Adzuna sometimes returns the original platform's search-page URL as
+     * redirect_url (e.g. an Indeed /jobs?q=…&vjk= URL or a Google Jobs
+     * /search?ibp=htl;jobs URL) instead of a direct job listing URL.
+     * Clicking those lands the user on a search/listing page, not the job ad.
+     *
+     * - Indeed:  /jobs?…&vjk=ID  →  /viewjob?jk=ID  (direct listing page)
+     * - Google Jobs: strip back to google.com/search?ibp=htl;jobs (usable but
+     *   still shows the Google Jobs panel — keep as-is, nothing better exists)
+     * - Everything else: return unchanged.
+     */
+    private function sanitizeApplyUrl(string $url): string
+    {
+        if ($url === '') {
+            return $url;
+        }
+
+        $parsed = parse_url($url);
+        $host   = strtolower($parsed['host'] ?? '');
+        $path   = $parsed['path'] ?? '';
+
+        // Indeed: /jobs?q=…&vjk=ID  →  direct viewjob URL
+        if (str_contains($host, 'indeed.com') && str_starts_with($path, '/jobs')) {
+            parse_str($parsed['query'] ?? '', $qs);
+            $vjk = $qs['vjk'] ?? '';
+            if ($vjk !== '') {
+                $scheme = str_starts_with($host, 'in.') ? 'https://in.indeed.com' : 'https://www.indeed.com';
+                return "{$scheme}/viewjob?jk={$vjk}";
+            }
+        }
+
+        return $url;
     }
 
     /** Shorten descriptions to display length. Run only after all filtering is done. */

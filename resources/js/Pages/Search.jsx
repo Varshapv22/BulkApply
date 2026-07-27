@@ -315,7 +315,11 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                                                 <td>
                                                     {job.apply_type === 'email'
                                                         ? <Badge status="sent"><span title={job.recruiter_email}>Email</span></Badge>
-                                                        : <a href={job.apply_url} target="_blank" rel="noopener" className="badge pending" style={{ textDecoration: 'none' }}>Portal</a>}
+                                                        : job.apply_url
+                                                            ? <a href={job.apply_url} target="_blank" rel="noopener" className="badge pending" style={{ textDecoration: 'none' }}>
+                                                                {/google\.com/i.test(job.apply_url) ? 'Google Jobs' : 'Portal'}
+                                                              </a>
+                                                            : <span className="muted">—</span>}
                                                 </td>
                                             </tr>
                                         ))}

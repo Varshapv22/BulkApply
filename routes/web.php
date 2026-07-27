@@ -5,6 +5,7 @@ use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailTemplateController;
+use App\Http\Controllers\GmailController;
 use App\Http\Controllers\JobApplicationController;
 use App\Http\Controllers\JobSearchController;
 use App\Http\Controllers\NotificationController;
@@ -98,6 +99,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/extension', function () {
         return \Inertia\Inertia::render('Extension');
     })->name('extension');
+
+    // Gmail inbox sync (company replies)
+    Route::post('/gmail/sync', [GmailController::class, 'sync'])->name('gmail.sync');
+    Route::post('/gmail/replies/{reply}/read', [GmailController::class, 'markRead'])->name('gmail.markRead');
 });
 
 require __DIR__.'/admin.php';

@@ -35,8 +35,10 @@ class HandleInertiaRequests extends Middleware
                     : null,
             ],
             'flash' => [
-                'status' => fn () => $request->session()->get('status'),
-                'error'  => fn () => $request->session()->get('error'),
+                'status'       => fn () => $request->session()->get('status'),
+                'error'        => fn () => $request->session()->get('error'),
+                'gmail_status' => fn () => $request->session()->get('gmail_status'),
+                'gmail_error'  => fn () => $request->session()->get('gmail_error'),
             ],
             // One-shot secrets shown once right after generation (2FA setup) — never persisted to the page beyond this single request.
             'twoFactorSecret' => fn () => $request->session()->get('twoFactorSecret'),

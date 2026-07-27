@@ -1,12 +1,13 @@
-FROM php:8.2-fpm
+FROM php:8.2-fpm-bookworm
 
 # Install System Dependencies & Node.js
 RUN apt-get update && apt-get install -y \
-    git unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libonig-dev nginx \
+    git unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libonig-dev libc-client2007e-dev libkrb5-dev nginx \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo_mysql mbstring zip bcmath gd \
+    && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
+    && docker-php-ext-install -j"$(nproc)" pdo_mysql mbstring zip bcmath gd imap \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Composer
