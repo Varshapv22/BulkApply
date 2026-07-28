@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
-import { PageHead, Stat, Badge, Icons, EmptyState, IconField, ChipIcon, Spinner, useConfirm } from '../components';
+import { PageHead, Stat, Badge, Icons, EmptyState, IconField, ChipIcon, Spinner, useConfirm, CompanyInsightButton } from '../components';
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -386,14 +386,17 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                                         <td>
                                             <div className="co-cell">
                                                 <span className="co-avatar">{(job.company || '?')[0].toUpperCase()}</span>
-                                                <div style={{ minWidth: 0 }}>
-                                                    <strong>{job.company}</strong><br />
-                                                    <span className="muted">{job.job_title || '—'}</span>
-                                                    {job.job_url && <> · <a href={job.job_url} target="_blank" rel="noopener">link</a></>}
-                                                    {(job.apply_type === 'link' || job.apply_type === 'easy_apply') && job.apply_url &&
-                                                        <> · <a href={job.apply_url} target="_blank" rel="noopener" style={{ color: 'var(--amber)' }}>
-                                                            {job.apply_type === 'easy_apply' ? 'Apply on LinkedIn' : 'Apply on portal'}
-                                                        </a></>}
+                                                <div className="co-info">
+                                                    <div style={{ minWidth: 0 }}>
+                                                        <strong>{job.company}</strong><br />
+                                                        <span className="muted">{job.job_title || '—'}</span>
+                                                        {job.job_url && <> · <a href={job.job_url} target="_blank" rel="noopener">link</a></>}
+                                                        {(job.apply_type === 'link' || job.apply_type === 'easy_apply') && job.apply_url &&
+                                                            <> · <a href={job.apply_url} target="_blank" rel="noopener" style={{ color: 'var(--amber)' }}>
+                                                                {job.apply_type === 'easy_apply' ? 'Apply on LinkedIn' : 'Apply on portal'}
+                                                            </a></>}
+                                                    </div>
+                                                    <CompanyInsightButton company={job.company} role={job.job_title} />
                                                 </div>
                                             </div>
                                         </td>

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BillingController;
+use App\Http\Controllers\CompanyInsightController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmailTemplateController;
@@ -81,6 +82,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/search', [JobSearchController::class, 'search'])->name('search.search');
     Route::post('/search/apply', [JobSearchController::class, 'autoApply'])->name('search.autoApply');
 
+    // Company insights (employee LinkedIn profiles + culture links).
+    // Throttled: each miss crawls the company's website.
+    Route::get('/company-insights', [CompanyInsightController::class, 'show'])
+        ->middleware(['feature:feature.company_insights', 'throttle:30,1'])
+        ->name('company.insights');
+
     // Jobs
     Route::get('/jobs', [JobApplicationController::class, 'index'])->name('jobs.index');
     Route::post('/jobs', [JobApplicationController::class, 'store'])->name('jobs.store');
@@ -100,9 +107,11 @@ Route::middleware('auth')->group(function () {
         return \Inertia\Inertia::render('Extension');
     })->name('extension');
 
-    // Gmail inbox sync (company replies)
+    // Company replies (Gmail inbox)
+    Route::get('/replies', [GmailController::class, 'index'])->name('replies.index');
     Route::post('/gmail/sync', [GmailController::class, 'sync'])->name('gmail.sync');
     Route::post('/gmail/replies/{reply}/read', [GmailController::class, 'markRead'])->name('gmail.markRead');
+    Route::post('/gmail/replies/mark-all-read', [GmailController::class, 'markAllRead'])->name('gmail.markAllRead');
 });
 
 require __DIR__.'/admin.php';

@@ -120,6 +120,29 @@ class CompanyContactFinder
     }
 
     /**
+     * Resolve a single company name to its verified own website, or null.
+     * Same domain-guess + homepage-verification path as enrich(), exposed for
+     * callers that need the site rather than an email (e.g. company insights).
+     */
+    public function websiteFor(string $company): ?string
+    {
+        $base = $this->baseDomainName(trim($company));
+        if (!$base) {
+            return null;
+        }
+
+        $domain = $this->resolveLiveDomains([0 => $base])[0] ?? null;
+        if (!$domain) {
+            return null;
+        }
+
+        $resp = $this->pool([$domain => "https://{$domain}"])[$domain] ?? null;
+        $html = ($resp && !($resp instanceof \Throwable) && $resp->ok()) ? $resp->body() : '';
+
+        return ($html !== '' && $this->verifyCompany($html, $domain)) ? 'https://' . $domain : null;
+    }
+
+    /**
      * Confirm a guessed domain belongs to the company by checking its root
      * label (e.g. "fingent" from fingent.com) appears on the fetched homepage.
      */

@@ -544,6 +544,67 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
 tbody tr.selected { background: var(--primary-soft); }
 tbody tr.selected:hover { background: var(--primary-soft); }
 
+/* ---------- Company replies inbox ---------- */
+.reply-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.reply-item { display: flex; align-items: flex-start; gap: 14px; padding: 13px 15px; border-radius: 14px;
+    border: 1px solid var(--border); background: var(--card-2); transition: border-color .13s, background .13s; }
+.reply-item.unread { background: var(--primary-soft); border-color: color-mix(in srgb, var(--primary) 35%, transparent); cursor: pointer; }
+.reply-item.unread:hover { border-color: var(--primary); }
+.reply-body { flex: 1; min-width: 0; }
+.reply-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.reply-from { font-weight: 700; font-size: 14px; color: var(--heading); }
+.reply-role { font-size: 12px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reply-new { background: var(--primary); color: #fff; font-size: 10px; font-weight: 700; border-radius: 99px; padding: 1px 7px; letter-spacing: .03em; }
+.reply-time { margin-left: auto; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.reply-subject { font-size: 13px; font-weight: 600; color: var(--text); margin-top: 3px; }
+.reply-snippet { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.reply-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 7px; font-size: 11.5px; }
+.reply-meta a { font-weight: 600; }
+
+/* Unread count on the sidebar's Replies item. */
+.nav-badge { margin-left: auto; min-width: 20px; height: 18px; padding: 0 6px; border-radius: 99px;
+    background: var(--primary); color: #fff; font-size: 10.5px; font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sidebar.collapsed .nav-badge { display: none; }
+
+/* ---------- Company insights (employees on LinkedIn, culture links) ---------- */
+/* Company name stacked over its insights trigger, so the two never collide. */
+.co-info { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
+.co-name { font-weight: 500; color: var(--heading); line-height: 1.35; }
+
+/* Quiet by default — one per row would shout otherwise — and lifts into a
+   real chip when the row is hovered or the control itself is focused. */
+.insight-btn { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px 3px 7px; border-radius: 20px;
+    background: transparent; border: 1px solid transparent; cursor: pointer; font-size: 11px; font-weight: 600;
+    letter-spacing: .01em; color: var(--muted); white-space: nowrap; transition: color .13s, background .13s, border-color .13s; }
+tbody tr:hover .insight-btn { color: var(--primary); background: var(--primary-soft);
+    border-color: color-mix(in srgb, var(--primary) 18%, transparent); }
+.insight-btn:hover, .insight-btn:focus-visible { color: var(--primary); background: var(--primary-soft);
+    border-color: color-mix(in srgb, var(--primary) 35%, transparent); outline: none; }
+.insight-btn svg { width: 12px; height: 12px; flex-shrink: 0; opacity: .8; }
+/* No hover on touch — show the chip in its active state so it still reads as tappable. */
+@media (hover: none) {
+    .insight-btn { color: var(--primary); background: var(--primary-soft);
+        border-color: color-mix(in srgb, var(--primary) 18%, transparent); }
+}
+.insight-modal { max-width: 660px; max-height: 86vh; overflow-y: auto; }
+.insight-head { display: flex; align-items: center; gap: 12px; padding-right: 40px; }
+.insight-note { margin: 16px 0 0; font-size: 12.5px; color: var(--muted); background: var(--hover);
+    border-radius: 10px; padding: 9px 12px; }
+.insight-people { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; margin-top: 12px; }
+.insight-person, .insight-link { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 12px;
+    border: 1px solid var(--border); background: var(--card-2); text-decoration: none; color: var(--text); transition: all .13s; }
+.insight-person:hover, .insight-link:hover { border-color: var(--primary); background: var(--primary-soft); text-decoration: none; }
+.insight-person-txt, .insight-link-txt { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.insight-person-txt strong, .insight-link-txt strong { font-size: 13px; font-weight: 600; color: var(--heading);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.insight-person-txt .muted, .insight-link-txt .muted { font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.insight-link-ico { width: 15px; height: 15px; flex-shrink: 0; opacity: .55; }
+.insight-links { display: grid; gap: 8px; margin-top: 12px; }
+.insight-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.insight-chips .cell-chip { max-width: 100%; }
+
 /* ---------- Spinner & skeleton loading ---------- */
 .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.35);
     border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
@@ -972,6 +1033,7 @@ select { text-overflow: ellipsis; }
     .cell-actions .btn { padding: 6px 9px; font-size: 12px; }
     .cell-chip { max-width: 130px; }
     .skill-chips { max-width: 140px; }
+    .insight-people { grid-template-columns: 1fr; }
 }
 
 /* ---- Topbar: keep every control reachable on a narrow phone ---- */

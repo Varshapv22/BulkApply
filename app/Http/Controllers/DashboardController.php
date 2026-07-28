@@ -2,9 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\GmailReply;
 use App\Models\JobApplication;
-use App\Models\Profile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
@@ -102,28 +100,7 @@ class DashboardController extends Controller
             ->pluck('count', 'pipeline_status')
             ->all();
 
-        // Gmail company replies
-        $profile        = Profile::where('user_id', $userId)->first();
-        $gmailConnected = $profile?->hasMailCredentials() ?? false;
-
-        $gmailReplies = $gmailConnected
-            ? GmailReply::where('user_id', $userId)
-                ->with('jobApplication:id,company')
-                ->latest('received_at')
-                ->limit(10)
-                ->get()
-                ->map(fn ($r) => [
-                    'id'          => $r->id,
-                    'from_name'   => $r->from_name,
-                    'from_email'  => $r->from_email,
-                    'subject'     => $r->subject,
-                    'snippet'     => $r->snippet,
-                    'received_at' => $r->received_at?->diffForHumans(),
-                    'is_read'     => $r->is_read,
-                    'company'     => $r->jobApplication?->company,
-                ])
-            : collect();
-
+        // Company replies live on their own page (sidebar → Replies).
         return Inertia::render('Dashboard', [
             'counts'         => $counts,
             'sentRate'       => $sentRate,
@@ -136,8 +113,6 @@ class DashboardController extends Controller
             'tracking'       => $tracking,
             'pipelineStats'  => $pipelineStats,
             'pipelineLabels' => JobApplication::PIPELINE_STATUSES,
-            'gmailConnected' => $gmailConnected,
-            'gmailReplies'   => $gmailReplies->values(),
         ]);
     }
 }

@@ -30,5 +30,16 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        //
+        // On a validation failure Laravel flashes the old input into the session
+        // (SESSION_DRIVER=database, SESSION_ENCRYPT=false — i.e. plain text in the
+        // sessions table). Merged on top of the framework defaults
+        // (password / current_password / password_confirmation):
+        //   mail_password — the user's Gmail App Password, encrypted everywhere
+        //                   else; flashing it would defeat that entirely.
+        //   code          — the 2FA field, which also accepts long-lived
+        //                   recovery codes, not just a 30-second TOTP.
+        $exceptions->dontFlash([
+            'mail_password',
+            'code',
+        ]);
     })->create();

@@ -16,6 +16,7 @@ const NAV = [
     { href: '/dashboard',    label: 'Dashboard', match: '/dashboard', icon: 'grid' },
     { href: '/search',       label: 'Find Jobs', match: '/search',    icon: 'search' },
     { href: '/jobs',         label: 'Applications', match: '/jobs',   icon: 'list' },
+    { href: '/replies',      label: 'Replies',   match: '/replies',   icon: 'inbox', badge: 'unreadReplies' },
     { href: '/resume-check', label: 'Resume Check', match: '/resume-check', icon: 'doc' },
     { href: '/templates',    label: 'Templates', match: '/templates', icon: 'mail' },
     { href: '/billing',      label: 'Billing',   match: '/billing',   icon: 'card' },
@@ -31,6 +32,7 @@ function Icon({ name }) {
         doc: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><path d="m9 15 2 2 4-4" /></>,
         cog: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>,
         card: <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></>,
+        inbox: <><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></>,
     };
     return (
         <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -437,16 +439,20 @@ export default function Layout({ children }) {
                 </div>
                 <nav className="sidebar-nav">
                     <div className="sidebar-section">Menu</div>
-                    {NAV.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`nav-item${url.startsWith(item.match) ? ' active' : ''}`}
-                            title={isCollapsed ? item.label : undefined}
-                        >
-                            <Icon name={item.icon} /> <span className="nav-label">{item.label}</span>
-                        </Link>
-                    ))}
+                    {NAV.map((item) => {
+                        const count = item.badge ? props[item.badge] : 0;
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                className={`nav-item${url.startsWith(item.match) ? ' active' : ''}`}
+                                title={isCollapsed ? item.label : undefined}
+                            >
+                                <Icon name={item.icon} /> <span className="nav-label">{item.label}</span>
+                                {count > 0 && <span className="nav-badge">{count > 99 ? '99+' : count}</span>}
+                            </Link>
+                        );
+                    })}
                     <div className="sidebar-section">Tools</div>
                     <Link href="/extension" className={`nav-item${url.startsWith('/extension') ? ' active' : ''}`} title={isCollapsed ? 'Browser Extension' : undefined}>
                         <Icon name="cog" /> <span className="nav-label">Browser Extension</span>

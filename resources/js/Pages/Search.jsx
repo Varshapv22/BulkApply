@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
-import { PageHead, Badge, Icons, Spinner, EmptyState, ChipIcon, IconField } from '../components';
+import { PageHead, Badge, Icons, Spinner, EmptyState, ChipIcon, IconField, CompanyInsightButton } from '../components';
 
 const MAX_SKILL_CHIPS = 4;
 
@@ -290,7 +290,11 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                                                 <td>
                                                     <div className="co-cell">
                                                         <span className="co-avatar">{(job.company || '?')[0].toUpperCase()}</span>
-                                                        <span style={{ fontWeight: 500 }}>{job.company}</span>
+                                                        <div className="co-info">
+                                                            <span className="co-name">{job.company}</span>
+                                                            <CompanyInsightButton company={job.company} role={job.job_title}
+                                                                website={job.company_website} />
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td>{job.location || '—'}</td>

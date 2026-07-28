@@ -71,6 +71,10 @@ export const Icons = {
     trash: <>{P('M3 6h18')}{P('M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6')}{P('M10 11v6')}{P('M14 11v6')}{P('M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2')}</>,
     card: <><rect x="2" y="5" width="20" height="14" rx="2" />{P('M2 10h20')}</>,
     bell: <>{P('M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9')}{P('M13.73 21a2 2 0 0 1-3.46 0')}</>,
+    users: <>{P('M17 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2')}<circle cx="9.5" cy="7" r="4" />{P('M22 21v-2a4 4 0 0 0-3-3.87')}{P('M16 3.13a4 4 0 0 1 0 7.75')}</>,
+    linkedin: <><rect x="3" y="3" width="18" height="18" rx="3" />{P('M8 10.5v6')}{P('M8 7.5v.01')}{P('M12 16.5v-6')}{P('M12 13a2.5 2.5 0 0 1 5 0v3.5')}</>,
+    star: <>{P('M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z')}</>,
+    external: <>{P('M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6')}{P('M15 3h6v6')}{P('M10 14 21 3')}</>,
 };
 
 export const ChipIcon = ({ icon }) => (
@@ -273,6 +277,170 @@ export function NotificationBell({ unreadCount = 0, recentUrl, markReadUrl, mark
                 </div>
             )}
         </div>
+    );
+}
+
+/**
+ * "What's it like to work here?" panel for a company on a job listing.
+ * Shows the employee LinkedIn profiles the company publishes on its own site,
+ * plus prefilled LinkedIn / review-site searches the user opens themselves.
+ */
+export function CompanyInsightModal({ company, role, website, onClose }) {
+    const [state, setState] = useState({ loading: true, data: null, error: null });
+
+    useEffect(() => {
+        const params = new URLSearchParams({ company });
+        if (role) params.set('role', role);
+        if (website) params.set('website', website);
+
+        let cancelled = false;
+        fetch(`/company-insights?${params}`, { headers: { Accept: 'application/json' } })
+            .then((r) => (r.ok ? r.json() : Promise.reject(new Error(r.status === 403
+                ? 'Company insights are currently disabled by the administrator.'
+                : r.status === 429
+                    ? 'Too many lookups in a row — wait a minute and try again.'
+                    : 'Could not load company insights.'))))
+            .then((data) => { if (!cancelled) setState({ loading: false, data, error: null }); })
+            .catch((e) => { if (!cancelled) setState({ loading: false, data: null, error: e.message }); });
+
+        return () => { cancelled = true; };
+    }, [company, role, website]);
+
+    const { loading, data, error } = state;
+
+    const linkList = (items) => (
+        <div className="insight-links">
+            {items.map((l) => (
+                <a key={l.url} className="insight-link" href={l.url} target="_blank" rel="noopener noreferrer">
+                    <span className="insight-link-txt">
+                        <strong>{l.label}</strong>
+                        {l.hint && <span className="muted">{l.hint}</span>}
+                    </span>
+                    <svg className="insight-link-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        {Icons.external}
+                    </svg>
+                </a>
+            ))}
+        </div>
+    );
+
+    const modal = (
+        <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+            <div className="modal insight-modal">
+                <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+
+                <div className="insight-head">
+                    <span className="co-avatar">{(company || '?')[0].toUpperCase()}</span>
+                    <div style={{ minWidth: 0 }}>
+                        <h3 className="modal-title" style={{ margin: 0 }}>Inside {company}</h3>
+                        <p className="hint" style={{ margin: '3px 0 0' }}>
+                            {role ? <>People, culture and work details for <strong>{role}</strong></> : 'People, culture and work details'}
+                        </p>
+                    </div>
+                </div>
+
+                {loading && (
+                    <div className="searching-box" style={{ marginTop: 18 }}>
+                        <Spinner dark size={22} />
+                        <div className="txt">
+                            <div className="t1">Looking up {company}…</div>
+                            <div className="t2">Reading the company's own site for employee profiles — this can take a few seconds.</div>
+                        </div>
+                    </div>
+                )}
+
+                {error && <div className="alert alert-error" style={{ marginTop: 18 }}><div className="alert-body">{error}</div></div>}
+
+                {data && (
+                    <>
+                        {data.note && <p className="insight-note">{data.note}</p>}
+
+                        {data.employees.length > 0 && (
+                            <div className="modal-section">
+                                <h4><ChipIcon icon={Icons.users} /> Employees on LinkedIn</h4>
+                                <p className="hint" style={{ marginTop: 2 }}>
+                                    Message them to ask about the team, the workload and the day-to-day atmosphere.
+                                </p>
+                                <div className="insight-people">
+                                    {data.employees.map((p) => (
+                                        <a key={p.profile_url} className="insight-person" href={p.profile_url} target="_blank" rel="noopener noreferrer">
+                                            <span className="co-avatar">{p.name[0].toUpperCase()}</span>
+                                            <span className="insight-person-txt">
+                                                <strong>{p.name}</strong>
+                                                <span className="muted">{p.title || 'View LinkedIn profile'}</span>
+                                            </span>
+                                            <svg className="insight-link-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                {Icons.linkedin}
+                                            </svg>
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="modal-section">
+                            <h4><ChipIcon icon={Icons.linkedin} /> Find people on LinkedIn</h4>
+                            <p className="hint" style={{ marginTop: 2 }}>
+                                Opens LinkedIn with the search already filled in — sign in there to see full profiles.
+                            </p>
+                            {linkList(data.people_links)}
+                        </div>
+
+                        <div className="modal-section">
+                            <h4><ChipIcon icon={Icons.star} /> Work culture & reviews</h4>
+                            <p className="hint" style={{ marginTop: 2 }}>
+                                What current and former employees say about management, pay and work-life balance.
+                            </p>
+                            {linkList(data.culture_links)}
+                        </div>
+
+                        {(data.website || data.careers_url || data.linkedin_company_url) && (
+                            <div className="modal-section">
+                                <h4><ChipIcon icon={Icons.globe} /> Company links</h4>
+                                <div className="insight-chips">
+                                    {data.website && (
+                                        <a className="cell-chip" href={data.website} target="_blank" rel="noopener noreferrer">
+                                            <ChipIcon icon={Icons.globe} />{data.website.replace(/^https?:\/\/(www\.)?/, '')}
+                                        </a>
+                                    )}
+                                    {data.careers_url && (
+                                        <a className="cell-chip" href={data.careers_url} target="_blank" rel="noopener noreferrer">
+                                            <ChipIcon icon={Icons.briefcase} />Careers page
+                                        </a>
+                                    )}
+                                    {data.linkedin_company_url && (
+                                        <a className="cell-chip" href={data.linkedin_company_url} target="_blank" rel="noopener noreferrer">
+                                            <ChipIcon icon={Icons.linkedin} />LinkedIn page
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
+        </div>
+    );
+
+    return createPortal(modal, document.body);
+}
+
+/** Row-level trigger for CompanyInsightModal — owns its own open state. */
+export function CompanyInsightButton({ company, role, website, label = 'Who works here?', className = 'insight-btn' }) {
+    const [open, setOpen] = useState(false);
+
+    if (!company) return null;
+
+    return (
+        <>
+            <button type="button" className={className} title={`See employees and work culture at ${company}`}
+                onClick={(e) => { e.stopPropagation(); setOpen(true); }}>
+                <ChipIcon icon={Icons.users} />{label}
+            </button>
+            {open && (
+                <CompanyInsightModal company={company} role={role} website={website} onClose={() => setOpen(false)} />
+            )}
+        </>
     );
 }
 

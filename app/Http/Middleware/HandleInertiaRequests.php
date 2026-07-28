@@ -45,6 +45,10 @@ class HandleInertiaRequests extends Middleware
             'twoFactorUri' => fn () => $request->session()->get('twoFactorUri'),
             'recoveryCodes' => fn () => $request->session()->get('recoveryCodes'),
             'impersonating' => $request->session()->has('impersonator_id'),
+            // Unread recruiter replies — drives the count badge on the sidebar's Replies item.
+            'unreadReplies' => fn () => $request->user()
+                ? \App\Models\GmailReply::where('user_id', $request->user()->id)->where('is_read', false)->count()
+                : 0,
             // The address applications are sent FROM — used to open the correct
             // Gmail account (via ?authuser=) regardless of the browser's default.
             'mailFrom' => config('mail.from.address'),

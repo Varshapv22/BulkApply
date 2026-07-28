@@ -24,6 +24,7 @@ class FeatureFlagSeeder extends Seeder
     private const FEATURES = [
         'feature.ats_checker' => 'Resume ATS Checker',
         'feature.job_search' => 'Job Search page',
+        'feature.company_insights' => 'Company insights (employee LinkedIn profiles & reviews)',
         'feature.chrome_extension' => 'Chrome Extension API',
         'feature.resume_parser' => 'Resume auto-parse on upload',
         'feature.email_tracking' => 'Email open/click tracking',

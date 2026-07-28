@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { router, usePage } from '@inertiajs/react';
+import React from 'react';
 import { PageHead, Badge, Icons } from '../components';
 
 const PIPELINE_COLORS = {
@@ -23,131 +22,9 @@ function StatBento({ label, value, accent, icon, className = "" }) {
     );
 }
 
-function GmailRepliesCard({ gmailConnected, gmailReplies }) {
-    const { props } = usePage();
-    const flash = props.flash || {};
-    const [syncing, setSyncing] = useState(false);
-    const [readIds, setReadIds] = useState([]);
-
-    const sync = () => {
-        setSyncing(true);
-        router.post('/gmail/sync', {}, {
-            preserveScroll: true,
-            onFinish: () => setSyncing(false),
-        });
-    };
-
-    const markRead = (id) => {
-        if (readIds.includes(id)) return;
-        setReadIds((prev) => [...prev, id]);
-        router.post(`/gmail/replies/${id}/read`, {}, { preserveScroll: true });
-    };
-
-    const visible = gmailReplies.filter((r) => !readIds.includes(r.id));
-
-    return (
-        <div className="card bento-col-12 animate-delay-4">
-            <div className="card-head-row">
-                <div>
-                    <h2>Company Replies</h2>
-                    <p className="hint" style={{ margin: '2px 0 0' }}>
-                        Emails received from recruiters you applied to.
-                    </p>
-                </div>
-                {gmailConnected && (
-                    <button
-                        type="button"
-                        className="btn btn-ghost btn-sm"
-                        onClick={sync}
-                        disabled={syncing}
-                    >
-                        {syncing ? 'Syncing…' : '↻ Sync Gmail'}
-                    </button>
-                )}
-            </div>
-
-            {flash.gmail_status && (
-                <div style={{ margin: '8px 0', padding: '8px 12px', background: 'var(--green-soft, #d1fae5)', color: 'var(--green)', borderRadius: 8, fontSize: 13 }}>
-                    {flash.gmail_status}
-                </div>
-            )}
-            {flash.gmail_error && (
-                <div style={{ margin: '8px 0', padding: '8px 12px', background: 'var(--red-soft, #fee2e2)', color: 'var(--red)', borderRadius: 8, fontSize: 13 }}>
-                    {flash.gmail_error}
-                </div>
-            )}
-
-            {!gmailConnected ? (
-                <div className="empty" style={{ padding: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ width: 36, height: 36, color: 'var(--muted)' }}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0l-9.75 6.75L2.25 6.75" />
-                    </svg>
-                    <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                        Connect your Gmail in <a href="/profile" className="btn-link">Profile → Email Sending</a> to see company replies here.
-                    </p>
-                </div>
-            ) : visible.length === 0 ? (
-                <div className="empty" style={{ padding: '20px 0', textAlign: 'center' }}>
-                    <p className="muted" style={{ margin: 0, fontSize: 13 }}>
-                        No replies yet. Click <strong>↻ Sync Gmail</strong> to check your inbox.
-                    </p>
-                </div>
-            ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 12 }}>
-                    {visible.map((r) => (
-                        <div
-                            key={r.id}
-                            onClick={() => markRead(r.id)}
-                            style={{
-                                display: 'flex', alignItems: 'flex-start', gap: 14,
-                                padding: '12px 14px',
-                                background: r.is_read ? 'var(--card-2)' : 'var(--primary-soft)',
-                                borderRadius: 14,
-                                border: `1px solid ${r.is_read ? 'var(--border)' : 'var(--primary)'}`,
-                                cursor: 'pointer',
-                                transition: 'background 0.2s',
-                            }}
-                        >
-                            <div style={{
-                                width: 40, height: 40, borderRadius: 10, flexShrink: 0,
-                                background: 'var(--primary-soft)', color: 'var(--primary)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 15, fontWeight: 800,
-                            }}>
-                                {(r.company || r.from_email)[0].toUpperCase()}
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                                    <span style={{ fontWeight: 700, color: 'var(--heading)', fontSize: 14 }}>
-                                        {r.company || r.from_name || r.from_email}
-                                    </span>
-                                    {!r.is_read && (
-                                        <span style={{ background: 'var(--primary)', color: '#fff', fontSize: 10, fontWeight: 700, borderRadius: 99, padding: '1px 7px' }}>NEW</span>
-                                    )}
-                                    <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--muted)', whiteSpace: 'nowrap' }}>{r.received_at}</span>
-                                </div>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {r.subject}
-                                </div>
-                                {r.snippet && (
-                                    <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {r.snippet}
-                                    </div>
-                                )}
-                                <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 3 }}>{r.from_email}</div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
-
 export default function Dashboard({
     counts, sentRate, chartData, thisWeek, lastWeek, weekStart,
     topCompanies, recentActivity, tracking, pipelineStats, pipelineLabels,
-    gmailConnected, gmailReplies,
 }) {
     const diff = thisWeek - lastWeek;
     const maxVal = Math.max(...chartData.map((d) => d.total), 1);
@@ -250,12 +127,6 @@ export default function Dashboard({
                 </div>
 
             </div>
-
-            {/* Company Replies from Gmail */}
-            <div className="bento-grid" style={{ marginTop: 0 }}>
-                <GmailRepliesCard gmailConnected={gmailConnected} gmailReplies={gmailReplies} />
-            </div>
-
         </>
     );
 }
