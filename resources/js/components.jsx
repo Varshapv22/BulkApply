@@ -75,6 +75,8 @@ export const Icons = {
     linkedin: <><rect x="3" y="3" width="18" height="18" rx="3" />{P('M8 10.5v6')}{P('M8 7.5v.01')}{P('M12 16.5v-6')}{P('M12 13a2.5 2.5 0 0 1 5 0v3.5')}</>,
     star: <>{P('M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z')}</>,
     external: <>{P('M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6')}{P('M15 3h6v6')}{P('M10 14 21 3')}</>,
+    copy: <><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></>,
+    x: <>{P('M18 6 6 18')}{P('m6 6 12 12')}</>,
 };
 
 export const ChipIcon = ({ icon }) => (
@@ -244,7 +246,7 @@ export function NotificationBell({ unreadCount = 0, recentUrl, markReadUrl, mark
 
     return (
         <div className="notif-bell-wrap" ref={ref}>
-            <button className="icon-btn notif-bell-btn" onClick={toggle} aria-label="Notifications" title="Notifications">
+            <button className={`icon-btn notif-bell-btn${open ? ' active' : ''}`} onClick={toggle} aria-label="Notifications" title="Notifications">
                 <ChipIcon icon={Icons.bell} />
                 {count > 0 && <span className="notif-badge">{count > 9 ? '9+' : count}</span>}
             </button>
@@ -444,6 +446,58 @@ export function CompanyInsightButton({ company, role, website, label = 'Who work
     );
 }
 
+/** Drag-and-drop file picker — used for the UPI payment screenshot upload. */
+function FileDropzone({ value, onChange, accept }) {
+    const [dragOver, setDragOver] = useState(false);
+    const inputRef = useRef(null);
+
+    const pick = (file) => { if (file) onChange(file); };
+
+    return (
+        <div
+            className={`dropzone${dragOver ? ' drag-over' : ''}${value ? ' has-file' : ''}`}
+            onClick={() => !value && inputRef.current?.click()}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => { e.preventDefault(); setDragOver(false); pick(e.dataTransfer.files?.[0]); }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (!value && (e.key === 'Enter' || e.key === ' ')) inputRef.current?.click(); }}
+        >
+            <input
+                ref={inputRef}
+                type="file"
+                accept={accept}
+                onChange={(e) => pick(e.target.files?.[0])}
+                style={{ display: 'none' }}
+            />
+            {value ? (
+                <div className="dropzone-file">
+                    <span className="dropzone-file-ico"><ChipIcon icon={Icons.upload} /></span>
+                    <div className="dropzone-file-info">
+                        <span className="dropzone-file-name">{value.name}</span>
+                        <span className="dropzone-file-size">{(value.size / 1024).toFixed(0)} KB</span>
+                    </div>
+                    <button
+                        type="button"
+                        className="dropzone-remove"
+                        onClick={(e) => { e.stopPropagation(); onChange(null); if (inputRef.current) inputRef.current.value = ''; }}
+                        aria-label="Remove file"
+                    >
+                        <ChipIcon icon={Icons.x} />
+                    </button>
+                </div>
+            ) : (
+                <>
+                    <span className="dropzone-ico"><ChipIcon icon={Icons.upload} /></span>
+                    <span className="dropzone-text"><strong>Click to upload</strong> or drag and drop</span>
+                    <span className="dropzone-hint">PNG, JPG or PDF</span>
+                </>
+            )}
+        </div>
+    );
+}
+
 /** UPI "pay & submit reference" flow used on the Billing page and trial-expired paywall. */
 export function UpiPaymentModal({ plan, upiId, upiPayeeName, currencySymbol = '₹', onClose, onSubmitted }) {
     const [qrDataUrl, setQrDataUrl] = useState(null);
@@ -505,9 +559,9 @@ export function UpiPaymentModal({ plan, upiId, upiPayeeName, currencySymbol = '�
         // portals to <body> and would otherwise paint over this modal.
         <div className="modal-overlay" style={{ zIndex: 10000 }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
             <div className="modal modal-sm">
-                <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+                <button className="modal-close" onClick={onClose} aria-label="Close"><ChipIcon icon={Icons.x} /></button>
                 <h3 className="modal-title">Pay via UPI</h3>
-                <p className="hint" style={{ marginTop: 6 }}>
+                <p className="hint" style={{ marginTop: -8 }}>
                     Scan the QR or pay to the UPI ID below using GPay, PhonePe, Paytm, or any UPI app — then submit your transaction reference.
                 </p>
 
@@ -521,15 +575,18 @@ export function UpiPaymentModal({ plan, upiId, upiPayeeName, currencySymbol = '�
                             )}
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <strong style={{ minWidth: 0, wordBreak: 'break-all' }}>{upiId}</strong>
-                            <button type="button" className="btn btn-ghost btn-sm" onClick={copyUpiId}>{copied ? 'Copied ✓' : 'Copy'}</button>
+                        <div className="upi-id-field">
+                            <span className="upi-id-text">{upiId}</span>
+                            <button type="button" className={`upi-id-copy${copied ? ' copied' : ''}`} onClick={copyUpiId}>
+                                <ChipIcon icon={copied ? Icons.check : Icons.copy} />
+                                {copied ? 'Copied' : 'Copy'}
+                            </button>
                         </div>
-                        <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13, margin: '4px 0 16px' }}>
-                            Amount: {currencySymbol}{plan.price} · {plan.name} plan
+                        <p className="upi-amount-line">
+                            Amount: <strong>{currencySymbol}{plan.price}</strong> · {plan.name} plan
                         </p>
 
-                        <a href={upiLink} className="btn btn-primary btn-block" style={{ marginBottom: 20 }}>
+                        <a href={upiLink} className="btn btn-primary btn-block">
                             Open UPI app to pay
                         </a>
                     </>
@@ -538,6 +595,8 @@ export function UpiPaymentModal({ plan, upiId, upiPayeeName, currencySymbol = '�
                         No UPI ID has been configured yet — contact support to complete this payment.
                     </p>
                 )}
+
+                <div className="or-divider"><span>then submit for verification</span></div>
 
                 <form onSubmit={submit}>
                     <div style={{ marginBottom: 14 }}>
@@ -553,8 +612,8 @@ export function UpiPaymentModal({ plan, upiId, upiPayeeName, currencySymbol = '�
                         {errors.transaction_ref && <p className="field-error">{errors.transaction_ref}</p>}
                     </div>
                     <div style={{ marginBottom: 20 }}>
-                        <label>Payment screenshot (optional)</label>
-                        <input type="file" accept="image/*,.pdf" onChange={(e) => setScreenshot(e.target.files[0])} />
+                        <label>Payment screenshot <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                        <FileDropzone value={screenshot} onChange={setScreenshot} accept="image/*,.pdf" />
                         {errors.screenshot && <p className="field-error">{errors.screenshot}</p>}
                     </div>
                     <div className="modal-actions">

@@ -5,19 +5,52 @@ const PIPELINE_COLORS = {
     applied: 'primary', replied: 'blue', interview: 'amber', rejected: 'red', offer: 'green',
 };
 
-// A specialized stat component for the Bento box
-function StatBento({ label, value, accent, icon, className = "" }) {
+// Week-over-week movement pill. `null` renders nothing — a delta of 0 still
+// renders, because "no change" is itself a reading.
+function Delta({ value, suffix = '' }) {
+    if (value === null || value === undefined) return null;
+    const dir = value > 0 ? 'up' : value < 0 ? 'down' : 'flat';
     return (
-        <div className={`stat-bento accent-${accent} ${className}`}>
-            <div className="stat-icon">
+        <span className={`stat-delta ${dir}`} title={`${value > 0 ? '+' : ''}${value} vs last week`}>
+            {dir !== 'flat' && (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    {dir === 'up'
+                        ? <><path d="M12 19V5" /><path d="m5 12 7-7 7 7" /></>
+                        : <><path d="M12 5v14" /><path d="m19 12-7 7-7-7" /></>}
+                </svg>
+            )}
+            {value > 0 ? '+' : ''}{value}{suffix}
+        </span>
+    );
+}
+
+// KPI card: label → figure (+ movement) → meter / supporting line.
+function StatBento({ label, value, accent = 'primary', icon, delta, meter, foot, className = '' }) {
+    return (
+        <div className={`stat-bento sb-${accent} ${className}`}>
+            <div className="stat-head">
+                <span className="lbl">{label}</span>
                 {icon && (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        {icon}
-                    </svg>
+                    <span className="stat-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            {icon}
+                        </svg>
+                    </span>
                 )}
             </div>
-            <div className="num">{value}</div>
-            <div className="lbl">{label}</div>
+
+            <div className="stat-value-row">
+                <span className="num">{value}</span>
+                <Delta value={delta} />
+            </div>
+
+            {meter !== undefined && meter !== null && (
+                <div className="stat-meter">
+                    <i style={{ width: `${Math.max(0, Math.min(100, meter))}%` }} />
+                </div>
+            )}
+
+            {foot && <div className="stat-foot">{foot}</div>}
         </div>
     );
 }
@@ -33,11 +66,32 @@ export default function Dashboard({
         <>
             <PageHead title="Dashboard" subtitle="Overview of your job application activity." />
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(220px, 100%), 1fr))', gap: '20px', marginBottom: '20px' }}>
-                <StatBento label="Total Jobs" value={counts.total} accent="primary" icon={Icons.briefcase} className="animate-delay-1" />
-                <StatBento label="Sent" value={counts.sent} accent="green" icon={Icons.send} className="animate-delay-1" />
-                <StatBento label="Success Rate" value={`${sentRate}%`} accent="violet" icon={Icons.target} className="animate-delay-1" />
-                <StatBento label="Open Rate" value={`${tracking.open_rate}%`} accent="sky" icon={Icons.eye} className="animate-delay-1" />
+            <div className="stat-grid">
+                <StatBento
+                    label="Total Jobs" value={counts.total} accent="primary" icon={Icons.briefcase}
+                    delta={diff}
+                    foot={<><b>{thisWeek}</b> added this week</>}
+                    className="animate-delay-1"
+                />
+                <StatBento
+                    label="Sent" value={counts.sent} accent="green" icon={Icons.send}
+                    foot={counts.queued > 0
+                        ? <><b>{counts.queued}</b> queued to go out</>
+                        : <><b>{counts.pending}</b> waiting to be sent</>}
+                    className="animate-delay-1"
+                />
+                <StatBento
+                    label="Success Rate" value={`${sentRate}%`} accent="violet" icon={Icons.target}
+                    meter={sentRate}
+                    foot={<><b>{counts.sent}</b> of {counts.total} delivered{counts.failed > 0 ? <> · <b>{counts.failed}</b> failed</> : null}</>}
+                    className="animate-delay-1"
+                />
+                <StatBento
+                    label="Open Rate" value={`${tracking.open_rate}%`} accent="sky" icon={Icons.eye}
+                    meter={tracking.open_rate}
+                    foot={<><b>{tracking.opened}</b> opened · <b>{tracking.clicked}</b> clicked</>}
+                    className="animate-delay-1"
+                />
             </div>
 
             {/* BENTO GRID */}
@@ -74,17 +128,24 @@ export default function Dashboard({
                     </div>
                 </div>
 
-                <div className="card bento-col-4 animate-delay-2 stat-bento-hero">
-                    <h2>This Week</h2>
-                    <p className="sub" style={{ fontSize: 13, marginBottom: 'auto' }}>Applications added since {weekStart}</p>
-
-                    <div className="big-num" style={{ fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1, margin: '20px 0' }}>
-                        {thisWeek}
+                <div className="card bento-col-4 animate-delay-2 stat-hero">
+                    <div className="stat-head">
+                        <span className="lbl">This Week</span>
+                        <span className="stat-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                {Icons.calendar}
+                            </svg>
+                        </span>
                     </div>
+                    <p className="stat-hero-sub">Applications added since {weekStart}</p>
 
-                    {diff > 0 && <span style={{ color: 'var(--green)', fontSize: 14, fontWeight: 600 }}>↑ +{diff} vs last week</span>}
-                    {diff < 0 && <span style={{ color: 'var(--red)', fontSize: 14, fontWeight: 600 }}>↓ {diff} vs last week</span>}
-                    {diff === 0 && <span className="sub" style={{ fontSize: 14 }}>Same as last week</span>}
+                    <div className="stat-value-row" style={{ marginTop: 'auto' }}>
+                        <span className="num">{thisWeek}</span>
+                    </div>
+                    <div className="stat-foot stat-hero-foot">
+                        <Delta value={diff} />
+                        <span>vs last week</span>
+                    </div>
                 </div>
 
                 {/* Lower Row */}
@@ -107,17 +168,15 @@ export default function Dashboard({
                     <h2>Recent Activity</h2>
                     <p className="hint">Latest applications tracked.</p>
                     {recentActivity.length === 0 ? (
-                        <div className="empty" style={{ padding: '20px' }}>No sent or failed applications yet.</div>
+                        <div className="empty">No sent or failed applications yet.</div>
                     ) : (
-                        <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div className="activity-list" style={{ marginTop: 'auto' }}>
                             {recentActivity.slice(0, 5).map((job) => (
-                                <div key={job.id} style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px', background: 'var(--card-2)', borderRadius: '14px', border: '1px solid var(--border)' }}>
-                                    <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--primary-soft)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800 }}>
-                                        {job.company.charAt(0)}
-                                    </div>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 700, color: 'var(--heading)' }}>{job.company}</div>
-                                        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 2 }}>{job.job_title || 'Application'}</div>
+                                <div key={job.id} className="activity-row">
+                                    <span className="activity-avatar">{job.company.charAt(0)}</span>
+                                    <div className="activity-info">
+                                        <div className="activity-company">{job.company}</div>
+                                        <div className="activity-title">{job.job_title || 'Application'}</div>
                                     </div>
                                     <Badge status={job.status} />
                                 </div>

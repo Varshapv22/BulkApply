@@ -23,7 +23,7 @@ const NAV = [
     { href: '/profile',      label: 'Settings',  match: '/profile',   icon: 'cog' },
 ];
 
-function Icon({ name }) {
+function Icon({ name, className = 'h-[18px] w-[18px] shrink-0' }) {
     const paths = {
         grid: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
         search: <><circle cx="11" cy="11" r="7" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></>,
@@ -33,10 +33,22 @@ function Icon({ name }) {
         cog: <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></>,
         card: <><rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" /></>,
         inbox: <><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></>,
+        puzzle: <><path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-3.408 0l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568a2.404 2.404 0 0 1 0-3.408l1.611-1.611c.24-.24.581-.353.917-.312.492.06.844.484 1.02.951a2.5 2.5 0 1 0 3.259-3.259c-.467-.176-.891-.528-.951-1.02-.041-.336.072-.677.312-.917l1.611-1.611a2.404 2.404 0 0 1 3.408 0l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02z" /></>,
+        shield: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></>,
     };
     return (
-        <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             {paths[name]}
+        </svg>
+    );
+}
+
+function ThemeIcon({ icon }) {
+    return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {icon === 'sun'
+                ? <><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" /></>
+                : <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z" />}
         </svg>
     );
 }
@@ -75,29 +87,53 @@ function ThemeMenu({ theme, onToggleTheme }) {
     };
     const setMode = (mode) => { if ((theme === 'dark') !== (mode === 'dark')) onToggleTheme(); };
 
+    const popClass = 'absolute right-0 top-12 z-[60] w-[236px] animate-[fadeUp_.16s_ease_both] rounded-2xl border border-border bg-card p-3.5 shadow-app-lg '
+        + 'max-sm:fixed max-sm:left-auto max-sm:right-2.5 max-sm:top-[calc(var(--banner-h,0px)+var(--topbar-h,66px)+6px)] max-sm:w-[min(360px,calc(100vw-20px))]';
+    const modeBtnClass = (active) => `flex flex-1 items-center justify-center gap-1.5 rounded-[11px] border px-2 py-2.5 text-[12.5px] font-semibold [&_svg]:h-3.5 [&_svg]:w-3.5 [&_svg]:shrink-0 ${
+        active ? 'border-primary bg-primary-soft text-primary-dark' : 'border-border bg-card-2 text-text'
+    }`;
+
     return (
-        <div className="theme-menu-wrap" ref={ref}>
-            <button className="icon-btn" onClick={() => setOpenMenu((o) => !o)} title="Theme &amp; colours" aria-label="Theme and colours">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="relative" ref={ref}>
+            <button
+                className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-95 ${
+                    openMenu ? 'bg-primary-soft text-primary' : 'text-muted hover:bg-hover hover:text-heading'
+                }`}
+                onClick={() => setOpenMenu((o) => !o)}
+                title="Theme &amp; colours"
+                aria-label="Theme and colours"
+            >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <circle cx="13.5" cy="6.5" r="1.5" fill="currentColor" stroke="none" /><circle cx="17.5" cy="10.5" r="1.5" fill="currentColor" stroke="none" />
                     <circle cx="8.5" cy="7.5" r="1.5" fill="currentColor" stroke="none" /><circle cx="6.5" cy="12.5" r="1.5" fill="currentColor" stroke="none" />
                     <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c1.7 0 2.5-1.3 2.5-2.5 0-.6-.2-1.1-.6-1.5-.4-.4-.6-.9-.6-1.5 0-1.2.8-2 2-2H17c2.8 0 5-2.2 5-5 0-4.4-4.5-7.5-10-7.5z" />
                 </svg>
             </button>
             {openMenu && (
-                <div className="theme-pop">
-                    <div className="pop-label">Accent theme</div>
-                    <div className="swatches">
+                <div className={popClass}>
+                    <div className="mx-0.5 mb-2.5 text-[11px] font-bold uppercase tracking-wider text-muted">Accent theme</div>
+                    <div className="grid grid-cols-3 gap-2.5">
                         {ACCENTS.map((a) => (
-                            <button key={a.id} type="button" className={`swatch${accent === a.id ? ' active' : ''}`} onClick={() => pick(a.id)}>
-                                <span className="dot" style={{ background: `linear-gradient(135deg, ${a.c[0]}, ${a.c[1]})` }} />
+                            <button
+                                key={a.id}
+                                type="button"
+                                onClick={() => pick(a.id)}
+                                className={`flex flex-col items-center gap-1.5 rounded-xl border bg-card-2 px-1 py-2 text-[11px] font-semibold transition-[border-color,transform] hover:-translate-y-0.5 hover:border-border-strong ${
+                                    accent === a.id ? 'border-primary text-heading shadow-[0_0_0_3px_var(--ring)]' : 'border-border text-muted'
+                                }`}
+                            >
+                                <span className="h-[30px] w-[30px] rounded-full" style={{ background: `linear-gradient(135deg, ${a.c[0]}, ${a.c[1]})` }} />
                                 {a.label}
                             </button>
                         ))}
                     </div>
-                    <div className="mode-row">
-                        <button type="button" className={`mode-btn${theme !== 'dark' ? ' active' : ''}`} onClick={() => setMode('light')}>☀️ Light</button>
-                        <button type="button" className={`mode-btn${theme === 'dark' ? ' active' : ''}`} onClick={() => setMode('dark')}>🌙 Dark</button>
+                    <div className="mt-3.5 flex gap-2">
+                        <button type="button" className={modeBtnClass(theme !== 'dark')} onClick={() => setMode('light')}>
+                            <ThemeIcon icon="sun" /> Light
+                        </button>
+                        <button type="button" className={modeBtnClass(theme === 'dark')} onClick={() => setMode('dark')}>
+                            <ThemeIcon icon="moon" /> Dark
+                        </button>
                     </div>
                 </div>
             )}
@@ -265,7 +301,32 @@ function ProgressBar() {
     }, []);
 
     if (!active) return null;
-    return <div className="topbar-progress"><div className="topbar-progress-bar" /></div>;
+    return (
+        <div
+            className="pointer-events-none fixed inset-x-0 top-[var(--banner-h,0px)] z-[100] h-2.5 overflow-hidden"
+            style={{
+                WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+                maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
+            }}
+        >
+            <svg
+                className="absolute left-0 top-0 h-full w-[200%] animate-[ecgScroll_1.3s_linear_infinite] text-primary"
+                viewBox="0 0 220 20"
+                preserveAspectRatio="none"
+                fill="none"
+                style={{ filter: 'drop-shadow(0 0 2px var(--primary))' }}
+            >
+                <path
+                    d="M0,10 L35,10 L42,3 L50,17 L57,10 L110,10 L145,10 L152,3 L160,17 L167,10 L220,10"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    vectorEffect="non-scaling-stroke"
+                />
+            </svg>
+        </div>
+    );
 }
 
 function BlockingModal({ children }) {
@@ -420,76 +481,117 @@ export default function Layout({ children }) {
     const initials = (user?.name || 'U')
         .split(' ').map((w) => w[0]).slice(0, 2).join('').toUpperCase();
 
+    // Sidebar/topbar style helpers — collapse (icon-only) only ever applies at
+    // lg+; below that the sidebar is always a full-width mobile drawer.
+    const navItemClass = (active) => `group relative flex items-center gap-3 rounded-[11px] px-3.5 py-2.5 text-[13.5px] font-medium no-underline transition-colors ${
+        active
+            ? 'bg-gradient-to-br from-primary to-primary-2 font-semibold text-white shadow-[0_4px_14px_-4px_color-mix(in_srgb,var(--primary)_55%,transparent)]'
+            : 'text-sidebar-text hover:bg-white/[0.06] hover:text-white'
+    } ${isCollapsed ? 'lg:justify-center lg:px-0 lg:py-3' : ''}`;
+    const navIconClass = (active) => `h-[18px] w-[18px] shrink-0 transition-opacity ${active ? 'opacity-100' : 'opacity-70 group-hover:opacity-100'}`;
+    const navLabelClass = `truncate ${isCollapsed ? 'lg:hidden' : ''}`;
+    const navBadgeClass = (active) => `ml-auto flex h-[18px] min-w-[20px] shrink-0 items-center justify-center rounded-full px-1.5 text-[10.5px] font-bold ${
+        active ? 'bg-white/30 text-white' : 'bg-primary text-white'
+    } ${isCollapsed ? 'lg:hidden' : ''}`;
+    const sectionLabelClass = `px-3 pb-1.5 pt-4 text-[10.5px] font-bold uppercase tracking-wider text-sidebar-text-muted first:pt-2 transition-all duration-300 ${
+        isCollapsed ? 'lg:h-0 lg:overflow-hidden lg:py-0 lg:opacity-0' : ''
+    }`;
+    const userPopClass = 'absolute right-0 top-12 z-[60] w-60 animate-[fadeUp_.16s_ease_both] rounded-2xl border border-border bg-card p-2 shadow-app-lg '
+        + 'max-sm:fixed max-sm:left-auto max-sm:right-2.5 max-sm:top-[calc(var(--banner-h,0px)+var(--topbar-h,66px)+6px)] max-sm:w-[min(360px,calc(100vw-20px))]';
+
     return (
         <div className={`app-shell${props.impersonating ? ' has-impersonation-banner' : ''}`}>
+            <ProgressBar />
             {props.impersonating && (
                 <div className="impersonation-banner">
                     <span className="impersonation-banner-text">Viewing as {user?.name} ({user?.email})</span>
                     <button type="button" onClick={() => router.post('/admin/impersonate/return')}>Return to admin</button>
                 </div>
             )}
-            <aside className={`sidebar${open ? ' open' : ''}${isCollapsed ? ' collapsed' : ''}`}>
-                <div className="sidebar-brand">
-                    <div className="brand-inner">
-                        <span className="dot">B</span> <span className="brand-text">Bulk<span>Apply</span></span>
+            <aside
+                className={`fixed inset-y-0 left-0 z-50 flex w-[min(280px,84vw)] flex-col overflow-hidden whitespace-nowrap bg-sidebar-bg text-sidebar-text shadow-[4px_0_24px_rgba(0,0,0,.08)] transition-[width,transform] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] lg:w-64 ${
+                    open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+                } ${isCollapsed ? 'lg:w-[88px]' : ''}`}
+            >
+                <div className={`flex items-center gap-3 border-b border-white/[0.07] px-5 py-5 transition-all duration-300 ${isCollapsed ? 'lg:flex-col lg:justify-center lg:gap-4 lg:px-0 lg:pt-5' : 'justify-between pr-3'}`}>
+                    <div className="flex items-center gap-2">
+                        <span className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-primary to-primary-2 text-base font-extrabold text-white shadow-[0_3px_10px_-2px_color-mix(in_srgb,var(--primary)_60%,transparent)]">B</span>
+                        <span className={`bg-gradient-to-br from-primary to-primary-2 bg-clip-text text-xl font-extrabold tracking-tight text-transparent ${isCollapsed ? 'lg:hidden' : ''}`}>Bulk<span>Apply</span></span>
                     </div>
-                    <button className="icon-btn desktop-toggle" onClick={toggleCollapse} aria-label="Toggle Sidebar" title={isCollapsed ? 'Expand menu' : 'Collapse menu'}>
+                    <button
+                        className={`hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted transition-colors hover:bg-hover lg:inline-flex ${isCollapsed ? 'lg:bg-hover' : ''}`}
+                        onClick={toggleCollapse}
+                        aria-label="Toggle Sidebar"
+                        title={isCollapsed ? 'Expand menu' : 'Collapse menu'}
+                    >
                         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
                     </button>
                 </div>
-                <nav className="sidebar-nav">
-                    <div className="sidebar-section">Menu</div>
+                <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3.5 pb-1.5 pt-2">
+                    <div className={sectionLabelClass}>Menu</div>
                     {NAV.map((item) => {
+                        const isActive = url.startsWith(item.match);
                         const count = item.badge ? props[item.badge] : 0;
                         return (
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`nav-item${url.startsWith(item.match) ? ' active' : ''}`}
+                                className={navItemClass(isActive)}
                                 title={isCollapsed ? item.label : undefined}
                             >
-                                <Icon name={item.icon} /> <span className="nav-label">{item.label}</span>
-                                {count > 0 && <span className="nav-badge">{count > 99 ? '99+' : count}</span>}
+                                <Icon name={item.icon} className={navIconClass(isActive)} />
+                                <span className={navLabelClass}>{item.label}</span>
+                                {count > 0 && <span className={navBadgeClass(isActive)}>{count > 99 ? '99+' : count}</span>}
                             </Link>
                         );
                     })}
-                    <div className="sidebar-section">Tools</div>
-                    <Link href="/extension" className={`nav-item${url.startsWith('/extension') ? ' active' : ''}`} title={isCollapsed ? 'Browser Extension' : undefined}>
-                        <Icon name="cog" /> <span className="nav-label">Browser Extension</span>
+                    <div className={sectionLabelClass}>Tools</div>
+                    <Link href="/extension" className={navItemClass(url.startsWith('/extension'))} title={isCollapsed ? 'Browser Extension' : undefined}>
+                        <Icon name="puzzle" className={navIconClass(url.startsWith('/extension'))} />
+                        <span className={navLabelClass}>Browser Extension</span>
                     </Link>
                     {user?.isAdmin && (
-                        <Link href="/admin" className="nav-item" title={isCollapsed ? 'Admin Panel' : undefined}>
-                            <Icon name="cog" /> <span className="nav-label">Admin Panel</span>
+                        <Link href="/admin" className={navItemClass(url.startsWith('/admin'))} title={isCollapsed ? 'Admin Panel' : undefined}>
+                            <Icon name="shield" className={navIconClass(url.startsWith('/admin'))} />
+                            <span className={navLabelClass}>Admin Panel</span>
                         </Link>
                     )}
-                    <a className="nav-item" href={gmailSentUrl} target="_blank" rel="noopener" title={isCollapsed ? 'Gmail — Sent' : undefined}>
-                        <Icon name="mail" /> <span className="nav-label">Gmail — Sent ↗</span>
+                    <a className={navItemClass(false)} href={gmailSentUrl} target="_blank" rel="noopener" title={isCollapsed ? 'Gmail — Sent' : undefined}>
+                        <Icon name="mail" className={navIconClass(false)} />
+                        <span className={navLabelClass}>Gmail — Sent ↗</span>
                     </a>
                 </nav>
-                <div className="sidebar-footer">
-                    <button
-                        type="button"
-                        className="nav-item"
-                        style={{ width: '100%' }}
-                        onClick={() => router.post('/logout')}
-                    >
-                        <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
-                        </svg>
-                        <span className="nav-label">Logout</span>
-                    </button>
+                <div className="border-t border-white/[0.07] p-3">
+                    <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.03] p-[7px] transition-colors hover:bg-white/[0.06]" title={isCollapsed ? (user?.name || 'Account') : undefined}>
+                        <span className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-[10px] bg-gradient-to-br from-primary to-primary-2 text-[13px] font-bold text-white">{initials}</span>
+                        <div className={`flex min-w-0 flex-1 flex-col gap-px ${isCollapsed ? 'lg:hidden' : ''}`}>
+                            <span className="truncate text-[13px] font-semibold text-white">{user?.name || 'User'}</span>
+                            <span className="truncate text-[11px] text-sidebar-text-muted">{user?.email}</span>
+                        </div>
+                        <button
+                            type="button"
+                            className={`inline-flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-[9px] text-sidebar-text-muted transition-colors hover:bg-white/[0.08] hover:text-white ${isCollapsed ? 'lg:hidden' : ''}`}
+                            onClick={() => router.post('/logout')}
+                            title="Log out"
+                            aria-label="Log out"
+                        >
+                            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </aside>
 
-            {open && <div className="sidebar-backdrop" onClick={() => setOpen(false)} />}
+            {open && <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-[2px] lg:hidden" onClick={() => setOpen(false)} />}
 
-            <div className={`main${isCollapsed ? ' collapsed' : ''}`}>
-                <header className="topbar">
-                    <button className="hamburger" onClick={() => setOpen(true)} aria-label="Open menu">☰</button>
-                    <span className="page-title">{current?.label || 'BulkApply'}</span>
-                    <div className="spacer" />
-                    <button className="icon-btn topbar-theme-toggle" onClick={toggleTheme} title="Toggle light / dark" aria-label="Toggle theme">
-                        {theme === 'dark' ? '☀️' : '🌙'}
+            <div className={`flex min-w-0 flex-1 flex-col transition-[margin-left] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] lg:ml-64 ${isCollapsed ? 'lg:ml-[88px]' : ''}`}>
+                <header className="sticky top-[var(--banner-h,0px)] z-40 flex h-[66px] items-center gap-4 border-b border-border bg-card/90 px-6 backdrop-blur-md max-sm:gap-2.5 max-sm:px-3 max-[420px]:gap-1.5">
+                    <button className="hidden h-9 w-9 shrink-0 items-center justify-center text-2xl text-text max-lg:flex" onClick={() => setOpen(true)} aria-label="Open menu">☰</button>
+                    <span className="min-w-0 truncate font-display text-[16px] font-bold text-heading max-sm:text-sm">{current?.label || 'BulkApply'}</span>
+                    <div className="min-w-0 flex-1" />
+                    <button className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-muted transition-all hover:bg-hover hover:text-heading active:scale-95 max-[420px]:hidden max-sm:h-9 max-sm:w-9 [&_svg]:h-[18px] [&_svg]:w-[18px]" onClick={toggleTheme} title="Toggle light / dark" aria-label="Toggle theme">
+                        <ThemeIcon icon={theme === 'dark' ? 'sun' : 'moon'} />
                     </button>
                     <ThemeMenu theme={theme} onToggleTheme={toggleTheme} />
                     {user && (
@@ -502,30 +604,32 @@ export default function Layout({ children }) {
                         />
                     )}
                     {user && (
-                        <div className="topbar-user-wrap" ref={userMenuRef}>
+                        <div className="relative shrink-0" ref={userMenuRef}>
                             <div
-                                className="topbar-user"
+                                className={`flex cursor-pointer items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-3.5 transition-colors max-sm:gap-0 max-sm:p-1 ${
+                                    userMenuOpen ? 'bg-hover' : 'hover:bg-hover'
+                                }`}
                                 onClick={() => setUserMenuOpen((o) => !o)}
                                 title={user?.name || 'Account'}
                                 role="button"
                                 tabIndex={0}
                                 onKeyDown={(e) => e.key === 'Enter' && setUserMenuOpen((o) => !o)}
                             >
-                                <span className="avatar">{initials}</span>
-                                <span className="topbar-user-name">{user?.name || 'User'}</span>
+                                <span className="inline-flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-white max-sm:h-8 max-sm:w-8">{initials}</span>
+                                <span className="max-w-[160px] truncate text-[13.5px] font-semibold text-heading max-sm:hidden">{user?.name || 'User'}</span>
                             </div>
                             {userMenuOpen && (
-                                <div className="user-pop">
-                                    <div className="user-pop-head">
-                                        <span className="avatar">{initials}</span>
-                                        <div className="user-pop-id">
-                                            <span className="user-pop-name">{user?.name || 'User'}</span>
-                                            <span className="user-pop-email">{user?.email}</span>
+                                <div className={userPopClass}>
+                                    <div className="mb-1.5 flex items-center gap-2.5 border-b border-border px-2.5 pb-3 pt-2">
+                                        <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-[13px] font-bold text-white">{initials}</span>
+                                        <div className="flex min-w-0 flex-col">
+                                            <span className="truncate text-[13.5px] font-bold text-heading">{user?.name || 'User'}</span>
+                                            <span className="truncate text-xs text-muted">{user?.email}</span>
                                         </div>
                                     </div>
                                     <button
                                         type="button"
-                                        className="user-pop-item"
+                                        className="flex w-full items-center gap-2.5 rounded-[10px] px-2.5 py-2.5 text-left text-[13.5px] font-semibold text-text hover:bg-hover"
                                         onClick={() => { setUserMenuOpen(false); setProfileModalOpen(true); }}
                                     >
                                         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4" /><path d="M4 21v-1a7 7 0 0 1 7-7h2a7 7 0 0 1 7 7v1" /></svg>
@@ -533,7 +637,7 @@ export default function Layout({ children }) {
                                     </button>
                                     <button
                                         type="button"
-                                        className="user-pop-item user-pop-logout"
+                                        className="flex w-full items-center gap-2.5 rounded-[10px] px-2.5 py-2.5 text-left text-[13.5px] font-semibold text-rose-600 hover:bg-rose-600/10"
                                         onClick={() => router.post('/logout')}
                                     >
                                         <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
@@ -543,7 +647,6 @@ export default function Layout({ children }) {
                             )}
                         </div>
                     )}
-                    <ProgressBar />
                 </header>
 
                 <div className="content animate-enter">

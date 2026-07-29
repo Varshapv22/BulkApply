@@ -12,16 +12,18 @@ function PlanCard({ plan, isCurrent, isPending, onPay, currencySymbol }) {
                 <span> / {formatDuration(plan.duration_days)}</span>
             </div>
 
-            <p className="hint" style={{ margin: '4px 0 20px' }}>
-                Full access to every feature — unlimited emails, resumes, and applications.
-            </p>
+            <ul className="plan-card-features">
+                <li><span className="tick"><ChipIcon icon={Icons.check} /></span> Full access to every feature</li>
+                <li><span className="tick"><ChipIcon icon={Icons.check} /></span> Unlimited emails &amp; applications</li>
+                <li><span className="tick"><ChipIcon icon={Icons.check} /></span> Unlimited resumes</li>
+            </ul>
 
             {isCurrent ? (
-                <button type="button" className="btn btn-ghost btn-block" disabled>You're on this plan</button>
+                <button type="button" className="btn btn-ghost btn-block btn-lg" disabled>You're on this plan</button>
             ) : isPending ? (
-                <button type="button" className="btn btn-ghost btn-block" disabled>Payment pending verification</button>
+                <button type="button" className="btn btn-ghost btn-block btn-lg" disabled>Payment pending verification</button>
             ) : (
-                <button type="button" className="btn btn-primary btn-block" onClick={() => onPay(plan)}>
+                <button type="button" className="btn btn-primary btn-block btn-lg" onClick={() => onPay(plan)}>
                     Pay via UPI
                 </button>
             )}
@@ -36,6 +38,10 @@ export default function Billing({ plans, currentPlanId, subscription, upiId, upi
     const currencySymbol = props.currencySymbol || '₹';
     const [payingPlan, setPayingPlan] = useState(null);
     const pending = new Set(pendingPlanIds || []);
+
+    let statusVariant = 'pending', statusLabel = 'No active plan';
+    if (currentPlanId) { statusVariant = 'sent'; statusLabel = 'Active'; }
+    else if (trial && !trial.expired) { statusVariant = 'amber'; statusLabel = `Trial · ${trial.days_left}d left`; }
 
     return (
         <>
@@ -54,6 +60,7 @@ export default function Billing({ plans, currentPlanId, subscription, upiId, upi
                     <div>
                         <h2 style={{ margin: 0 }}>Your subscription</h2>
                     </div>
+                    <span className={`badge ${statusVariant} hero-card-status`}>{statusLabel}</span>
                 </div>
 
                 {currentPlanId ? (

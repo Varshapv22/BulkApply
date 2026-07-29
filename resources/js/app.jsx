@@ -18,7 +18,8 @@ createInertiaApp({
     setup({ el, App, props }) {
         createRoot(el).render(<App {...props} />);
     },
-    progress: {
-        color: '#4f46e5',
-    },
+    // Disabled: Layout.jsx's own <ProgressBar /> (an ECG-style loader spanning
+    // the full viewport top) replaces Inertia's default NProgress-style bar —
+    // having both on screen at once during a visit was the bug being fixed here.
+    progress: false,
 });

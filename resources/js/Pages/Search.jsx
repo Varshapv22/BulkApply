@@ -74,7 +74,7 @@ function SkillsBar({ profile }) {
     if (skills.length === 0) {
         return (
             <div className="skills-bar">
-                <ChipIcon icon={Icons.sparkle} />
+                <ChipIcon icon={Icons.target} />
                 <span>
                     Add your skills (or auto-fill them from your resume) to see which jobs match you best.
                 </span>
@@ -85,7 +85,7 @@ function SkillsBar({ profile }) {
 
     return (
         <div className="skills-bar">
-            <ChipIcon icon={Icons.sparkle} />
+            <ChipIcon icon={Icons.target} />
             <span className="skills-bar-label">Matching against your skills:</span>
             <div className="skills-bar-chips">
                 {skills.slice(0, 8).map((s) => <span key={s} className="skill-chip matched">{s}</span>)}
@@ -120,7 +120,7 @@ function SearchForm({ profile, onSearching }) {
     return (
         <div className="card hero-card">
             <div className="hero-card-head">
-                <span className="hero-card-ico"><ChipIcon icon={Icons.sparkle} /></span>
+                <span className="hero-card-ico"><ChipIcon icon={Icons.search} /></span>
                 <div>
                     <h2 style={{ margin: 0 }}>Find your next role</h2>
                     <p className="hint" style={{ margin: '3px 0 0' }}>
