@@ -291,40 +291,53 @@ function ProfileModal({ user, onClose }) {
 }
 
 /** Thin animated bar under the topbar while any Inertia request is in flight. */
+/**
+ * The standard "visit in progress" bar used by YouTube/GitHub/Linear/Vercel:
+ * a thin, flat, full-width fill at the very top of the viewport. Inertia
+ * rarely reports a real byte percentage (our JSON responses seldom send
+ * Content-Length), so this simulates a decelerating trickle up to 94% the
+ * same way NProgress does, and snaps to 100% the instant the visit actually
+ * finishes — a real progress event (if one arrives) overrides the simulation
+ * whenever it's further along.
+ */
 function ProgressBar() {
-    const [active, setActive] = useState(false);
+    const [state, setState] = useState({ active: false, percent: 0 });
+    const timerRef = useRef(null);
 
     useEffect(() => {
-        const offStart = router.on('start', () => setActive(true));
-        const offFinish = router.on('finish', () => setActive(false));
-        return () => { offStart(); offFinish(); };
+        const stopTimer = () => { if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; } };
+
+        const offStart = router.on('start', () => {
+            stopTimer();
+            setState({ active: true, percent: 8 });
+            timerRef.current = setInterval(() => {
+                setState((s) => {
+                    if (!s.active || s.percent >= 94) return s;
+                    const step = s.percent < 40 ? Math.random() * 8 : s.percent < 70 ? Math.random() * 4 : Math.random() * 1.5;
+                    return { active: true, percent: Math.min(94, s.percent + step) };
+                });
+            }, 220);
+        });
+        const offProgress = router.on('progress', (event) => {
+            const pct = event.detail?.progress?.percentage;
+            if (typeof pct === 'number') setState((s) => (s.active ? { active: true, percent: Math.max(s.percent, pct) } : s));
+        });
+        const offFinish = router.on('finish', () => {
+            stopTimer();
+            setState((s) => ({ ...s, percent: 100 }));
+            setTimeout(() => setState({ active: false, percent: 0 }), 300);
+        });
+
+        return () => { offStart(); offProgress(); offFinish(); stopTimer(); };
     }, []);
 
-    if (!active) return null;
+    if (!state.active) return null;
     return (
-        <div
-            className="pointer-events-none fixed inset-x-0 top-[var(--banner-h,0px)] z-[100] h-2.5 overflow-hidden"
-            style={{
-                WebkitMaskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
-                maskImage: 'linear-gradient(to right, transparent, black 10%, black 90%, transparent)',
-            }}
-        >
-            <svg
-                className="absolute left-0 top-0 h-full w-[200%] animate-[ecgScroll_1.3s_linear_infinite] text-primary"
-                viewBox="0 0 220 20"
-                preserveAspectRatio="none"
-                fill="none"
-                style={{ filter: 'drop-shadow(0 0 2px var(--primary))' }}
-            >
-                <path
-                    d="M0,10 L35,10 L42,3 L50,17 L57,10 L110,10 L145,10 L152,3 L160,17 L167,10 L220,10"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    vectorEffect="non-scaling-stroke"
-                />
-            </svg>
+        <div className="pointer-events-none fixed inset-x-0 top-[var(--banner-h,0px)] z-[100] h-[3px] bg-transparent">
+            <div
+                className="h-full bg-gradient-to-r from-primary to-primary-2 transition-[width] duration-200 ease-out"
+                style={{ width: `${state.percent}%` }}
+            />
         </div>
     );
 }
