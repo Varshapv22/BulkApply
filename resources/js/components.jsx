@@ -558,71 +558,81 @@ export function UpiPaymentModal({ plan, upiId, upiPayeeName, currencySymbol = '�
         // zIndex sits above the blocking trial-expired overlay (9999), which also
         // portals to <body> and would otherwise paint over this modal.
         <div className="modal-overlay" style={{ zIndex: 10000 }} onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-            <div className="modal modal-sm">
+            <div className="modal modal-upi">
                 <button className="modal-close" onClick={onClose} aria-label="Close"><ChipIcon icon={Icons.x} /></button>
                 <h3 className="modal-title">Pay via UPI</h3>
                 <p className="hint" style={{ marginTop: -8 }}>
                     Scan the QR or pay to the UPI ID below using GPay, PhonePe, Paytm, or any UPI app — then submit your transaction reference.
                 </p>
 
-                {upiId ? (
-                    <>
-                        <div className="upi-qr-frame">
-                            {qrDataUrl ? (
-                                <img src={qrDataUrl} alt="UPI QR code" width={200} height={200} />
-                            ) : (
-                                <div className="upi-qr-frame-loading" style={{ width: 200, height: 200 }} />
-                            )}
-                        </div>
+                <div className="upi-split">
+                    <div className="upi-pay-col">
+                        {upiId ? (
+                            <>
+                                <div className="upi-qr-frame">
+                                    {qrDataUrl ? (
+                                        <img src={qrDataUrl} alt="UPI QR code" width={168} height={168} />
+                                    ) : (
+                                        <div className="upi-qr-frame-loading" style={{ width: 168, height: 168 }} />
+                                    )}
+                                </div>
 
-                        <div className="upi-id-field">
-                            <span className="upi-id-text">{upiId}</span>
-                            <button type="button" className={`upi-id-copy${copied ? ' copied' : ''}`} onClick={copyUpiId}>
-                                <ChipIcon icon={copied ? Icons.check : Icons.copy} />
-                                {copied ? 'Copied' : 'Copy'}
-                            </button>
-                        </div>
-                        <p className="upi-amount-line">
-                            Amount: <strong>{currencySymbol}{plan.price}</strong> · {plan.name} plan
-                        </p>
+                                <div className="upi-id-field">
+                                    <span className="upi-id-text">{upiId}</span>
+                                    <button
+                                        type="button"
+                                        className={`upi-id-copy${copied ? ' copied' : ''}`}
+                                        onClick={copyUpiId}
+                                        title={copied ? 'Copied' : 'Copy UPI ID'}
+                                        aria-label={copied ? 'Copied' : 'Copy UPI ID'}
+                                    >
+                                        <ChipIcon icon={copied ? Icons.check : Icons.copy} />
+                                    </button>
+                                </div>
+                                <p className="upi-amount-line">
+                                    Amount: <strong>{currencySymbol}{plan.price}</strong> · {plan.name} plan
+                                </p>
 
-                        <a href={upiLink} className="btn btn-primary btn-block">
-                            Open UPI app to pay
-                        </a>
-                    </>
-                ) : (
-                    <p className="field-error" style={{ marginTop: 12 }}>
-                        No UPI ID has been configured yet — contact support to complete this payment.
-                    </p>
-                )}
-
-                <div className="or-divider"><span>then submit for verification</span></div>
-
-                <form onSubmit={submit}>
-                    <div style={{ marginBottom: 14 }}>
-                        <label>UPI Transaction ID / UTR Number</label>
-                        <input
-                            type="text"
-                            autoFocus
-                            required
-                            value={txnRef}
-                            onChange={(e) => setTxnRef(e.target.value)}
-                            placeholder="e.g. 234567891234"
-                        />
-                        {errors.transaction_ref && <p className="field-error">{errors.transaction_ref}</p>}
+                                <a href={upiLink} className="btn btn-primary btn-block upi-open-btn">
+                                    Open UPI app to pay
+                                </a>
+                            </>
+                        ) : (
+                            <p className="field-error">
+                                No UPI ID has been configured yet — contact support to complete this payment.
+                            </p>
+                        )}
                     </div>
-                    <div style={{ marginBottom: 20 }}>
-                        <label>Payment screenshot <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                        <FileDropzone value={screenshot} onChange={setScreenshot} accept="image/*,.pdf" />
-                        {errors.screenshot && <p className="field-error">{errors.screenshot}</p>}
+
+                    <div className="upi-verify-col">
+                        <span className="upi-col-label">Then submit for verification</span>
+                        <form onSubmit={submit} className="upi-verify-form">
+                            <div>
+                                <label>UPI Transaction ID / UTR Number</label>
+                                <input
+                                    type="text"
+                                    autoFocus
+                                    required
+                                    value={txnRef}
+                                    onChange={(e) => setTxnRef(e.target.value)}
+                                    placeholder="e.g. 234567891234"
+                                />
+                                {errors.transaction_ref && <p className="field-error">{errors.transaction_ref}</p>}
+                            </div>
+                            <div>
+                                <label>Payment screenshot <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
+                                <FileDropzone value={screenshot} onChange={setScreenshot} accept="image/*,.pdf" />
+                                {errors.screenshot && <p className="field-error">{errors.screenshot}</p>}
+                            </div>
+                            <div className="modal-actions">
+                                <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" disabled={busy || !txnRef}>
+                                    {busy ? 'Submitting…' : "I've paid — submit for verification"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div className="modal-actions">
-                        <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
-                        <button type="submit" className="btn btn-primary" disabled={busy || !txnRef}>
-                            {busy ? 'Submitting…' : "I've paid — submit for verification"}
-                        </button>
-                    </div>
-                </form>
+                </div>
             </div>
         </div>
     );

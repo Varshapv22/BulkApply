@@ -294,7 +294,7 @@ a:hover { text-decoration: underline; }
 
 /* Copyable UPI-ID field — one bordered control instead of loose bold text + a floating button. */
 .upi-id-field {
-    display: flex; align-items: stretch; gap: 0; margin: 14px 0 4px;
+    display: flex; align-items: stretch; gap: 0; width: 100%; margin: 14px 0 4px;
     border: 1px solid var(--border-strong); border-radius: 11px; overflow: hidden; background: var(--input-bg);
 }
 .upi-id-text {
@@ -312,6 +312,34 @@ a:hover { text-decoration: underline; }
 .upi-id-copy.copied { color: var(--green); }
 .upi-amount-line { text-align: center; color: var(--muted); font-size: 12.5px; margin: 8px 0 18px; }
 .upi-amount-line strong { color: var(--text); font-weight: 700; }
+
+/* Wide, short layout: "how to pay" and "confirm you paid" side by side
+   instead of one long vertical stack. */
+.modal.modal-upi { max-width: 700px; }
+.upi-split { display: grid; grid-template-columns: 272px minmax(0, 1fr); gap: 28px; margin-top: 18px; }
+.upi-pay-col { display: flex; flex-direction: column; align-items: center; text-align: center;
+    padding-right: 32px; border-right: 1px solid var(--border); }
+.upi-verify-col { min-width: 0; }
+.upi-col-label { display: block; margin: 0 0 14px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.upi-verify-form > div { margin-bottom: 16px; }
+.upi-verify-form .modal-actions { margin-top: 4px; }
+
+/* Standard tactile hover/press feedback for this modal's interactive controls. */
+.upi-open-btn { transition: transform .15s, filter .15s, box-shadow .15s; }
+.upi-open-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--primary) 55%, transparent); }
+.upi-open-btn:active { transform: translateY(0); }
+.upi-id-copy { transition: background .15s, color .15s, transform .1s; }
+.upi-id-copy:active { transform: scale(.94); }
+.upi-verify-col .modal-actions .btn { transition: transform .15s, filter .15s, background .15s, box-shadow .15s; }
+.upi-verify-col .modal-actions .btn:hover { transform: translateY(-1px); }
+.upi-verify-col .modal-actions .btn:active { transform: translateY(0); }
+.upi-verify-col .modal-actions .btn-primary:hover { box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--primary) 55%, transparent); }
+
+@media (max-width: 640px) {
+    .upi-split { grid-template-columns: 1fr; gap: 20px; }
+    .upi-pay-col { border-right: 0; padding-right: 0; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+}
 
 /* ---------- Drag-and-drop file picker ---------- */
 .dropzone {
