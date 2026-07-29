@@ -196,7 +196,7 @@ function getCsrfCookie() {
     return match ? decodeURIComponent(match[2]) : '';
 }
 
-function timeAgo(dateString) {
+export function timeAgo(dateString) {
     const seconds = Math.max(0, Math.floor((Date.now() - new Date(dateString).getTime()) / 1000));
     if (seconds < 60) return 'just now';
     const minutes = Math.floor(seconds / 60);
@@ -211,9 +211,11 @@ function timeAgo(dateString) {
 /**
  * Topbar notification bell + dropdown. Data-shape agnostic — pass `getMessage`
  * to extract display text, since admin notifications (`{message}`) and user
- * database notifications (`{data: {message}}`) don't share a schema.
+ * database notifications (`{data: {message}}`) don't share a schema. Pass
+ * `getUrl` for notifications that should navigate somewhere on click
+ * (defaults to `n.data?.url`, present on some but not all user notifications).
  */
-export function NotificationBell({ unreadCount = 0, recentUrl, markReadUrl, markAllReadUrl, viewAllHref, getMessage }) {
+export function NotificationBell({ unreadCount = 0, recentUrl, markReadUrl, markAllReadUrl, viewAllHref, getMessage, getUrl = (n) => n.data?.url }) {
     const [open, setOpen] = useState(false);
     const [items, setItems] = useState(null);
     const [count, setCount] = useState(unreadCount);
@@ -261,17 +263,29 @@ export function NotificationBell({ unreadCount = 0, recentUrl, markReadUrl, mark
                             <div className="notif-pop-empty">Loading…</div>
                         ) : items.length === 0 ? (
                             <div className="notif-pop-empty">You're all caught up.</div>
-                        ) : items.map((n) => (
-                            <div
-                                key={n.id}
-                                className={`notif-item${n.read_at ? '' : ' unread'}`}
-                                onClick={() => !n.read_at && markRead(n.id)}
-                                role={n.read_at ? undefined : 'button'}
-                            >
+                        ) : items.map((n) => {
+                            const url = getUrl(n);
+                            const body = <>
                                 <p>{getMessage(n)}</p>
                                 <span className="notif-item-time">{timeAgo(n.created_at)}</span>
-                            </div>
-                        ))}
+                            </>;
+                            const onClick = () => { if (!n.read_at) markRead(n.id); };
+
+                            return url ? (
+                                <Link key={n.id} href={url} className={`notif-item${n.read_at ? '' : ' unread'}`} onClick={onClick}>
+                                    {body}
+                                </Link>
+                            ) : (
+                                <div
+                                    key={n.id}
+                                    className={`notif-item${n.read_at ? '' : ' unread'}`}
+                                    onClick={() => !n.read_at && markRead(n.id)}
+                                    role={n.read_at ? undefined : 'button'}
+                                >
+                                    {body}
+                                </div>
+                            );
+                        })}
                     </div>
                     {viewAllHref && (
                         <Link href={viewAllHref} className="notif-pop-footer">View all</Link>

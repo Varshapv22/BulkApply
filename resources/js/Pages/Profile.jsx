@@ -415,100 +415,98 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
                 )}
             </div>
 
-            {/* Resumes */}
-            <div className="card">
-                <div className="card-head-row">
-                    <h2>Resumes</h2>
-                    <button type="button" className="btn btn-primary btn-sm" onClick={() => setModal('resume')}>+ Add Resume</button>
-                </div>
-                <p className="hint">Upload multiple resumes (PDF, DOC/X, max 10MB). Select which one to use when applying.</p>
-
-                {resumes.length > 0 ? (
-                    <div className="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th style={{ width: 100 }}>Status</th>
-                                    <th style={{ width: 150, textAlign: 'right' }}>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {resumes.map(r => (
-                                    <tr key={r.id}>
-                                        <td>{r.name}</td>
-                                        <td>
-                                            {r.is_default ? <span className="badge sent">Default</span> : null}
-                                        </td>
-                                        <td style={{ textAlign: 'right' }}>
-                                            {!r.is_default && (
-                                                <Link href={`/resumes/${r.id}/default`} method="post" as="button" className="btn-link" style={{ fontSize: 13, marginRight: 12 }}>Make Default</Link>
-                                            )}
-                                            <Link href={`/resumes/${r.id}`} method="delete" as="button" className="btn-link" style={{ fontSize: 13, color: 'var(--red)' }}>Delete</Link>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+            <div className="settings-grid">
+                {/* Resumes */}
+                <div className="card card-pad-sm">
+                    <div className="card-head-row">
+                        <h2>Resumes</h2>
+                        <button type="button" className="btn btn-primary btn-sm" onClick={() => setModal('resume')}>+ Add</button>
                     </div>
-                ) : (
-                    <p className="muted" style={{ fontSize: 13 }}>No resumes uploaded yet.</p>
-                )}
-            </div>
+                    <p className="hint">PDF, DOC/X, max 10MB. Select which one to use when applying.</p>
 
-            <div className="card">
-                <h2>Cover Letter</h2>
-                <p className="hint">PDF, DOC or DOCX, up to 10 MB. Attached to applications when specified.</p>
-                <div>
-                    <label>Cover letter file</label>
-                    <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setData('cover_letter', e.target.files[0])} />
-                    {profile.cover_letter_name && <p className="muted" style={{ fontSize: 12, margin: '6px 0 0' }}>Current: {profile.cover_letter_name}</p>}
-                </div>
-            </div>
-
-            {/* Email Sending — summary */}
-            <div className="card hero-card">
-                <div className="hero-card-head">
-                    <span className="hero-card-ico"><ChipIcon icon={Icons.mail} /></span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <div className="card-head-row">
-                            <h2 style={{ margin: 0 }}>Email Sending</h2>
-                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setModal('email')}>
-                                {profile.mail_connected && !data.mail_disconnect ? 'Manage' : 'Connect Gmail'}
-                            </button>
+                    {resumes.length > 0 ? (
+                        <div className="settings-file-list">
+                            {resumes.map(r => (
+                                <div className="settings-file-row" key={r.id}>
+                                    <span className="settings-file-ico"><ChipIcon icon={Icons.save} /></span>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <strong className="settings-file-name">{r.name}</strong>
+                                        {!!r.is_default && <span className="badge sent" style={{ marginLeft: 8 }}>Default</span>}
+                                    </div>
+                                    <div className="settings-file-actions">
+                                        {!r.is_default && (
+                                            <Link href={`/resumes/${r.id}/default`} method="post" as="button" className="btn-link">Make default</Link>
+                                        )}
+                                        <Link href={`/resumes/${r.id}`} method="delete" as="button" className="btn-link" style={{ color: 'var(--red)' }}>Delete</Link>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <p className="hint" style={{ margin: '3px 0 0' }}>
-                            Applications send through YOUR OWN Gmail — never a shared account.
-                        </p>
+                    ) : (
+                        <p className="muted" style={{ fontSize: 13 }}>No resumes uploaded yet.</p>
+                    )}
+                </div>
+
+                {/* Cover Letter */}
+                <div className="card card-pad-sm">
+                    <h2>Cover Letter</h2>
+                    <p className="hint">PDF, DOC or DOCX, up to 10 MB. Attached to applications when specified.</p>
+                    <div>
+                        <label>Cover letter file</label>
+                        <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setData('cover_letter', e.target.files[0])} />
+                        {profile.cover_letter_name && (
+                            <div className="settings-file-row" style={{ marginTop: 10 }}>
+                                <span className="settings-file-ico"><ChipIcon icon={Icons.save} /></span>
+                                <span className="settings-file-name" style={{ flex: 1, minWidth: 0 }}>{profile.cover_letter_name}</span>
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {profile.mail_connected && !data.mail_disconnect ? (
-                    <div className="mail-status mail-status-connected">
-                        <ChipIcon icon={Icons.check} />
-                        Connected as <strong>{profile.mail_username}</strong>
+                {/* Email Sending — summary */}
+                <div className="card card-pad-sm hero-card">
+                    <div className="hero-card-head">
+                        <span className="hero-card-ico sm"><ChipIcon icon={Icons.mail} /></span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="card-head-row">
+                                <h2 style={{ margin: 0 }}>Email Sending</h2>
+                                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setModal('email')}>
+                                    {profile.mail_connected && !data.mail_disconnect ? 'Manage' : 'Connect Gmail'}
+                                </button>
+                            </div>
+                            <p className="hint" style={{ margin: '3px 0 0' }}>
+                                Sent through YOUR OWN Gmail — never a shared account.
+                            </p>
+                        </div>
                     </div>
-                ) : data.mail_disconnect ? (
-                    <div className="mail-status mail-status-pending">
-                        Will disconnect <strong>{profile.mail_username}</strong> when you save.
-                    </div>
-                ) : (
-                    <div className="mail-status mail-status-off">
-                        <ChipIcon icon={Icons.alert} />
-                        Not connected — applications can't be emailed until you connect an account.
-                    </div>
-                )}
-            </div>
 
-            {/* Default email template — summary */}
-            <div className="card">
-                <div className="card-head-row">
-                    <h2>Default email template</h2>
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setModal('template')}>Edit Template</button>
+                    {profile.mail_connected && !data.mail_disconnect ? (
+                        <div className="mail-status mail-status-connected">
+                            <ChipIcon icon={Icons.check} />
+                            Connected as <strong>{profile.mail_username}</strong>
+                        </div>
+                    ) : data.mail_disconnect ? (
+                        <div className="mail-status mail-status-pending">
+                            Will disconnect <strong>{profile.mail_username}</strong> when you save.
+                        </div>
+                    ) : (
+                        <div className="mail-status mail-status-off">
+                            <ChipIcon icon={Icons.alert} />
+                            Not connected — applications can't be emailed.
+                        </div>
+                    )}
                 </div>
-                <p className="hint" style={{ margin: '0 0 4px' }}>Subject: <strong>{data.email_subject || '—'}</strong></p>
-                <p className="muted" style={{ fontSize: 13, margin: 0 }}>{truncate(data.email_body, 160) || 'No body set.'}</p>
-                <p className="hint" style={{ margin: '10px 0 0' }}>You can also create <Link href="/templates">multiple templates</Link>.</p>
+
+                {/* Default email template — summary */}
+                <div className="card card-pad-sm">
+                    <div className="card-head-row">
+                        <h2>Default email template</h2>
+                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setModal('template')}>Edit Template</button>
+                    </div>
+                    <p className="hint" style={{ margin: '0 0 4px' }}>Subject: <strong>{data.email_subject || '—'}</strong></p>
+                    <p className="muted" style={{ fontSize: 13, margin: 0 }}>{truncate(data.email_body, 130) || 'No body set.'}</p>
+                    <p className="hint" style={{ margin: '10px 0 0' }}>You can also create <Link href="/templates">multiple templates</Link>.</p>
+                </div>
             </div>
 
             {/* Automation & Notifications — summary */}

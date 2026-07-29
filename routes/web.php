@@ -13,6 +13,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ResumeCheckController;
+use App\Http\Controllers\SavedSearchController;
 use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Route;
 
@@ -86,6 +87,11 @@ Route::middleware(['auth', 'trial.active'])->group(function () {
     Route::get('/search', [JobSearchController::class, 'index'])->name('search.index');
     Route::post('/search', [JobSearchController::class, 'search'])->name('search.search');
     Route::post('/search/apply', [JobSearchController::class, 'autoApply'])->name('search.autoApply');
+
+    // Saved search alerts
+    Route::post('/saved-searches', [SavedSearchController::class, 'store'])->name('savedSearches.store');
+    Route::post('/saved-searches/{savedSearch}/toggle', [SavedSearchController::class, 'toggleActive'])->name('savedSearches.toggle');
+    Route::delete('/saved-searches/{savedSearch}', [SavedSearchController::class, 'destroy'])->name('savedSearches.destroy');
 
     // Company insights (employee LinkedIn profiles + culture links).
     // Throttled: each miss crawls the company's website.

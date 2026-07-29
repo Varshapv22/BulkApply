@@ -37,6 +37,32 @@ class SiteJobService
         'dice' => 'Dice', 'simplyhired' => 'SimplyHired',
     ];
 
+    /**
+     * True if $site names one of the big aggregator platforms this service
+     * deliberately doesn't scrape directly (see PLATFORMS above) — used to
+     * block saving search alerts against a platform whose "results" are
+     * really just an aggregated web search with a disclaimer, not real
+     * platform-specific listings.
+     */
+    public function isKnownPlatform(string $site): bool
+    {
+        $site = trim($site);
+        if ($site === '') {
+            return false;
+        }
+
+        $lower = Str::lower($site);
+        $host = $this->host($site);
+
+        foreach (self::PLATFORMS as $needle => $label) {
+            if (Str::contains($lower, $needle) || ($host && Str::contains($host, $needle))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function search(string $role, string $site, int $limit = 30): array
     {
         $role = trim($role);

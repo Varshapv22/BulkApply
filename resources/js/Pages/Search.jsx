@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
-import { PageHead, Badge, Icons, Spinner, EmptyState, ChipIcon, IconField, CompanyInsightButton } from '../components';
+import { PageHead, Badge, Icons, Spinner, EmptyState, ChipIcon, IconField, CompanyInsightButton, timeAgo } from '../components';
 
 const MAX_SKILL_CHIPS = 4;
 
@@ -55,6 +55,21 @@ function SearchingCard({ findContacts }) {
 
 const QUICK_SITES = ['Technopark', 'Infopark', 'Cyberpark', 'Indeed', 'Naukri', 'LinkedIn'];
 
+// Big aggregator platforms the backend won't scrape directly (mirrors
+// SiteJobService::PLATFORMS) — alerts aren't offered for these since their
+// "results" are just an aggregated web search with a disclaimer, not real
+// platform-specific listings. Client-side mirror of the server check so the
+// Save button doesn't invite a request that will 422.
+const ALERT_BLOCKED_PLATFORMS = [
+    'indeed', 'naukri', 'linkedin', 'monster', 'foundit', 'glassdoor',
+    'shine', 'timesjobs', 'instahyre', 'wellfound', 'angellist', 'ziprecruiter',
+    'dice', 'simplyhired',
+];
+function isAlertBlockedSite(site) {
+    const lower = (site || '').trim().toLowerCase();
+    return lower !== '' && ALERT_BLOCKED_PLATFORMS.some((p) => lower.includes(p));
+}
+
 function Switch({ checked, onChange, label, hint }) {
     return (
         <label className="switch-row">
@@ -96,7 +111,7 @@ function SkillsBar({ profile }) {
     );
 }
 
-function SearchForm({ profile, onSearching }) {
+function SearchForm({ profile, onSearching, searched }) {
     const { data, setData, post, processing } = useForm({
         role: profile.preferred_role || '',
         location: profile.location || '',
@@ -105,8 +120,10 @@ function SearchForm({ profile, onSearching }) {
         full_time: false,
         find_contacts: true,
     });
+    const [saving, setSaving] = useState(false);
 
     const hasSite = data.site.trim() !== '';
+    const canSave = searched && data.role.trim() !== '' && !isAlertBlockedSite(data.site);
 
     const submit = (e) => {
         e.preventDefault();
@@ -114,6 +131,14 @@ function SearchForm({ profile, onSearching }) {
             preserveScroll: true,
             onStart: () => onSearching({ active: true, findContacts: data.find_contacts && !hasSite }),
             onFinish: () => onSearching({ active: false, findContacts: false }),
+        });
+    };
+
+    const saveSearch = () => {
+        setSaving(true);
+        router.post('/saved-searches', { role: data.role, location: data.location, site: data.site }, {
+            preserveScroll: true,
+            onFinish: () => setSaving(false),
         });
     };
 
@@ -183,20 +208,80 @@ function SearchForm({ profile, onSearching }) {
                     </div>
                 )}
 
-                <button type="submit" className="btn btn-primary btn-lg" disabled={processing}>
-                    {processing ? <><Spinner /> Searching…</> : <>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            {Icons.search}
-                        </svg>
-                        Search Jobs
-                    </>}
-                </button>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button type="submit" className="btn btn-primary btn-lg" disabled={processing}>
+                        {processing ? <><Spinner /> Searching…</> : <>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                {Icons.search}
+                            </svg>
+                            Search Jobs
+                        </>}
+                    </button>
+                    {searched && (
+                        <button type="button" className="btn btn-ghost" disabled={!canSave || saving} onClick={saveSearch}
+                            title={isAlertBlockedSite(data.site)
+                                ? "Alerts aren't supported for this platform — it only shows aggregated web results."
+                                : 'Get notified when new listings match this search'}>
+                            {saving ? <><Spinner /> Saving…</> : 'Save this search'}
+                        </button>
+                    )}
+                </div>
             </form>
         </div>
     );
 }
 
-export default function Search({ profile, jobSites, results, searched, searchError, hasDocuments, resumes = [] }) {
+function SavedSearchesPanel({ searches }) {
+    const [busyId, setBusyId] = useState(null);
+
+    if (!searches || searches.length === 0) return null;
+
+    const toggle = (s) => {
+        setBusyId(s.id);
+        router.post(`/saved-searches/${s.id}/toggle`, {}, { preserveScroll: true, onFinish: () => setBusyId(null) });
+    };
+    const remove = (s) => {
+        setBusyId(s.id);
+        router.delete(`/saved-searches/${s.id}`, { preserveScroll: true, onFinish: () => setBusyId(null) });
+    };
+
+    return (
+        <div className="card">
+            <div className="hero-card-head">
+                <span className="hero-card-ico"><ChipIcon icon={Icons.target} /></span>
+                <div>
+                    <h2 style={{ margin: 0 }}>Saved searches</h2>
+                    <p className="hint" style={{ margin: '3px 0 0' }}>
+                        We'll check these in the background and notify you when new listings show up.
+                    </p>
+                </div>
+            </div>
+            <div style={{ display: 'grid', gap: 10, marginTop: 14 }}>
+                {searches.map((s) => (
+                    <div key={s.id} style={{
+                        display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+                        padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)',
+                    }}>
+                        <div style={{ flex: 1, minWidth: 180 }}>
+                            <strong>{s.role || 'Any role'}</strong>
+                            {s.location && <span className="muted"> · {s.location}</span>}
+                            {s.site && <span className="muted"> · {s.site}</span>}
+                            <div className="muted" style={{ fontSize: 11, marginTop: 2 }}>
+                                {s.last_checked_at ? `Last checked ${timeAgo(s.last_checked_at)}` : 'Not checked yet'}
+                            </div>
+                        </div>
+                        <Switch checked={s.is_active} onChange={() => toggle(s)} label={s.is_active ? 'Active' : 'Paused'} />
+                        <button type="button" className="btn btn-ghost btn-sm" disabled={busyId === s.id} onClick={() => remove(s)}>
+                            Delete
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+export default function Search({ profile, jobSites, results, searched, searchError, hasDocuments, resumes = [], savedSearches = [] }) {
     const [selected, setSelected] = useState(() => new Set());
     const [searching, setSearching] = useState({ active: false, findContacts: false });
     const [selectedResumeId, setSelectedResumeId] = useState('');
@@ -239,7 +324,9 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                 </div>
             )}
 
-            <SearchForm profile={profile} onSearching={setSearching} />
+            <SearchForm profile={profile} onSearching={setSearching} searched={searched} />
+
+            <SavedSearchesPanel searches={savedSearches} />
 
             <SkillsBar profile={profile} />
 

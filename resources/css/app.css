@@ -384,6 +384,23 @@ a:hover { text-decoration: underline; }
 .card-pad-sm { padding: 16px 18px; }
 .card-head-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 5px; flex-wrap: wrap; }
 .card-head-row h2 { margin: 0; }
+
+/* ---------- Settings page: two-up card grid ---------- */
+.settings-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; align-items: start; margin-bottom: 16px; }
+.settings-grid .card { margin-bottom: 0; height: 100%; }
+@media (max-width: 780px) {
+    .settings-grid { grid-template-columns: 1fr; }
+}
+
+.settings-file-list { display: flex; flex-direction: column; gap: 8px; }
+.settings-file-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 10px; background: var(--card-2); }
+.settings-file-ico { width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+    background: var(--primary-soft); color: var(--primary); display: inline-flex; align-items: center; justify-content: center; }
+.settings-file-ico svg { width: 14px; height: 14px; }
+.settings-file-name { font-size: 13.5px; }
+.settings-file-actions { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.settings-file-actions .btn-link { font-size: 12.5px; white-space: nowrap; }
 .modal-section + .modal-section { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
 .modal-section h4 { margin: 0 0 4px; font-size: 14px; font-weight: 700; color: var(--heading); }
 
@@ -481,6 +498,43 @@ thead th { background: var(--card-2); font-size: 11px; text-transform: uppercase
 tbody tr { transition: background .12s; }
 tbody tr:hover { background: var(--hover); }
 tbody tr:last-child td { border-bottom: none; }
+
+/* ---------- Applications board (Kanban) ---------- */
+.board { display: flex; gap: 16px; align-items: flex-start; overflow-x: auto; padding-bottom: 10px;
+    scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.board-col { flex: 0 0 280px; min-width: 260px; max-width: 320px; display: flex; flex-direction: column;
+    background: var(--card-2); border: 1px solid var(--border); border-radius: 14px;
+    max-height: calc(100vh - 260px); scroll-snap-align: start; transition: border-color .12s, box-shadow .12s, background .12s; }
+.board-col.is-drag-over { border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring);
+    background: color-mix(in srgb, var(--primary) 5%, var(--card-2)); }
+.board-col-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; padding: 12px 14px; background: var(--card-2); border-bottom: 1px solid var(--border);
+    border-radius: 14px 14px 0 0; font-size: 13px; font-weight: 700; color: var(--heading); }
+.board-col-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+.board-col-dot.pipe-applied   { background: var(--primary); }
+.board-col-dot.pipe-replied   { background: var(--blue); }
+.board-col-dot.pipe-interview { background: var(--amber); }
+.board-col-dot.pipe-rejected  { background: var(--red); }
+.board-col-dot.pipe-offer     { background: var(--green); }
+.board-col-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+
+.board-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow-sm); transition: box-shadow .15s, opacity .15s; }
+.board-card.is-draggable { cursor: grab; touch-action: none; }
+.board-card.is-draggable:active { cursor: grabbing; }
+.board-card.is-dragging { opacity: .35; }
+.board-card.is-failed { border-left: 3px solid var(--red); }
+.board-card.drag-overlay { box-shadow: var(--shadow-lg); transform: rotate(1.5deg) scale(1.03); cursor: grabbing;
+    pointer-events: none; width: 256px; }
+.board-card .co-cell { align-items: flex-start; }
+.board-card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
+
+.board-empty-col { text-align: center; padding: 36px 14px; color: var(--muted); font-size: 12.5px; }
+
+@media (max-width: 640px) {
+    .board-col { flex-basis: 82vw; }
+    .board { gap: 12px; }
+}
 
 /* ---------- Badges ---------- */
 .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 20px; font-size: 11px;
@@ -683,8 +737,37 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
     color: var(--primary-dark); cursor: pointer; transition: all .13s; }
 .ph-chip:hover { background: var(--primary-soft); border-color: var(--primary); transform: translateY(-1px); }
 
-.template-card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.template-card-head .btn svg { width: 13px; height: 13px; }
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); gap: 16px; }
+
+.tpl-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+    display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow-sm); transition: box-shadow .15s, border-color .15s, transform .15s; }
+.tpl-card.is-default { border-color: color-mix(in srgb, var(--green) 40%, var(--border)); }
+.tpl-card:hover { box-shadow: var(--shadow); }
+
+.tpl-card-head { display: flex; align-items: center; gap: 12px; }
+.tpl-card-name { display: block; font-size: 14.5px; color: var(--heading); margin-bottom: 4px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tpl-card-setdefault { font-size: 12px; padding: 0; }
+
+.tpl-card-subject { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600;
+    color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tpl-card-subject svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--muted); }
+.tpl-card-body { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--muted); flex: 1;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+.tpl-card-actions { display: flex; gap: 8px; padding-top: 10px; border-top: 1px solid var(--border); }
+.tpl-card-actions .btn svg { width: 13px; height: 13px; }
+
+/* Dashed "add new" tile — first item in the grid, same footprint as a card. */
+.tpl-card-new { min-height: 168px; border: 1.5px dashed var(--border-strong); border-radius: 14px;
+    background: transparent; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; cursor: pointer; color: var(--text); font-family: inherit; text-align: center; padding: 18px;
+    transition: border-color .15s, background .15s, transform .15s; }
+.tpl-card-new:hover { border-color: var(--primary); background: var(--primary-soft); transform: translateY(-1px); }
+.tpl-card-new strong { font-size: 14px; color: var(--heading); }
+.tpl-card-new-ico { width: 38px; height: 38px; border-radius: 50%; background: var(--primary-soft); color: var(--primary);
+    display: inline-flex; align-items: center; justify-content: center; }
+.tpl-card-new-ico svg { width: 17px; height: 17px; }
 
 /* ---------- Pipeline stage dropdown ---------- */
 .pipe-dd { position: relative; display: inline-block; }
@@ -701,7 +784,14 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
 .pipe-rejected  { background: var(--red-bg);   color: var(--red); }
 .pipe-offer     { background: var(--green-bg); color: var(--green); }
 
-.pipe-menu { position: absolute; top: calc(100% + 6px); left: 0; z-index: 60; min-width: 178px; padding: 6px;
+/* Compact variant used on board cards, next to Send/Preview/Delete. */
+.pipe-dd-sm .pipe-trigger { padding: 4px 8px 4px 9px; font-size: 11px; }
+.pipe-dd-sm .pipe-trigger svg:first-child { width: 11px; height: 11px; }
+.pipe-dd-sm .pipe-chevron { width: 9px; height: 9px; }
+
+/* Positioned inline (fixed, from the trigger's live bounding rect) since it's
+   rendered through a portal — see PipelineDropdown's comment in Jobs.jsx. */
+.pipe-menu { z-index: 60; min-width: 178px; padding: 6px;
     background: var(--card); border: 1px solid var(--border); border-radius: 13px; box-shadow: var(--shadow-lg);
     animation: fadeUp .14s ease both; }
 .pipe-opt { width: 100%; display: flex; align-items: center; gap: 9px; padding: 8px 9px; border-radius: 9px;
@@ -1129,7 +1219,13 @@ tbody tr:hover .insight-btn { color: var(--primary); background: var(--primary-s
 }
 .stat-hero-foot { display: flex; align-items: center; gap: 7px; }
 
-.animate-enter { animation: bentoEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; }
+/* fill-mode is 'backwards', not 'both' — the "to" keyframe (opacity:1, transform:none) is
+   identical to the element's un-animated resting state, so nothing forwards-fills it.
+   'both' left a lingering identity transform on this ancestor after the animation ended,
+   which quietly turns it into a containing block for any position:fixed descendant (modals,
+   dropdowns) — on short pages that shrank the modal-overlay to the page's own height instead
+   of the full viewport, pushing tall modals off the top of the screen. */
+.animate-enter { animation: bentoEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards; }
 .animate-delay-1 { animation-delay: 0.05s; }
 .animate-delay-2 { animation-delay: 0.1s; }
 .animate-delay-3 { animation-delay: 0.15s; }
@@ -1361,7 +1457,7 @@ select { text-overflow: ellipsis; }
     .toolbar > .spacer { flex-basis: 100%; height: 0; }
     .add-jobs-panel { min-width: 100%; }
     .searching-box { padding: 14px 0 4px; }
-    .template-card-head { flex-wrap: wrap; }
+    .tpl-grid { grid-template-columns: 1fr; }
     .add-jobs-card summary { gap: 10px; }
     .add-jobs-summary-title { font-size: 13.5px; }
     .search-options-row { flex-direction: column; align-items: stretch; gap: 12px; }

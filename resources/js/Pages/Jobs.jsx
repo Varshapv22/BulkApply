@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useForm, router } from '@inertiajs/react';
+import {
+    DndContext, DragOverlay, PointerSensor, KeyboardSensor,
+    useSensor, useSensors, useDraggable, useDroppable, rectIntersection,
+} from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { PageHead, Stat, Badge, Icons, EmptyState, IconField, ChipIcon, Spinner, useConfirm, CompanyInsightButton } from '../components';
 
 function getCookie(name) {
@@ -12,22 +18,61 @@ const PIPELINE_ICONS = {
     offer: Icons.trophy, rejected: Icons.xCircle,
 };
 
-function PipelineDropdown({ value, labels, onChange }) {
+/**
+ * Lives inside a board column with its own scroll (`.board-col-body`,
+ * overflow-y: auto) — an absolutely positioned menu inside a scrolling
+ * ancestor gets clipped to it instead of floating above the board.
+ * Rendering the menu into a portal at document.body, positioned from the
+ * trigger's live bounding rect, sidesteps that clipping entirely and keeps
+ * the menu on-screen (clamped to the viewport) at any scroll position or
+ * window size. `size="sm"` renders the compact in-card variant.
+ */
+function PipelineDropdown({ value, labels, onChange, size }) {
     const [open, setOpen] = useState(false);
-    const ref = useRef(null);
+    const [pos, setPos] = useState(null);
+    const triggerRef = useRef(null);
+    const menuRef = useRef(null);
     const current = value || 'applied';
 
+    const place = () => {
+        const trigger = triggerRef.current;
+        if (!trigger) return;
+        const r = trigger.getBoundingClientRect();
+        const menuWidth = 190;
+        const margin = 12;
+        const left = Math.min(r.left, window.innerWidth - menuWidth - margin);
+        setPos({ top: r.bottom + 6, left: Math.max(margin, left) });
+    };
+
     useEffect(() => {
-        const onDoc = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        if (!open) return;
+        place();
+
+        const onDoc = (e) => {
+            if (triggerRef.current?.contains(e.target)) return;
+            if (menuRef.current?.contains(e.target)) return;
+            setOpen(false);
+        };
+        // Any scroll (including the table's own horizontal scroll) or resize
+        // can move the trigger out from under a stale menu position — close
+        // it rather than let it drift.
+        const close = () => setOpen(false);
+
         document.addEventListener('mousedown', onDoc);
-        return () => document.removeEventListener('mousedown', onDoc);
-    }, []);
+        window.addEventListener('scroll', close, true);
+        window.addEventListener('resize', close);
+        return () => {
+            document.removeEventListener('mousedown', onDoc);
+            window.removeEventListener('scroll', close, true);
+            window.removeEventListener('resize', close);
+        };
+    }, [open]);
 
     const pick = (key) => { onChange(key); setOpen(false); };
 
     return (
-        <div className="pipe-dd" ref={ref}>
-            <button type="button" className={`pipe-trigger pipe-${current}`} onClick={() => setOpen((o) => !o)}>
+        <div className={`pipe-dd${size === 'sm' ? ' pipe-dd-sm' : ''}`}>
+            <button type="button" ref={triggerRef} className={`pipe-trigger pipe-${current}`} onClick={() => setOpen((o) => !o)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     {PIPELINE_ICONS[current] || Icons.send}
                 </svg>
@@ -36,8 +81,8 @@ function PipelineDropdown({ value, labels, onChange }) {
                     {Icons.chevronDown}
                 </svg>
             </button>
-            {open && (
-                <div className="pipe-menu">
+            {open && pos && createPortal(
+                <div className="pipe-menu" ref={menuRef} style={{ position: 'fixed', top: pos.top, left: pos.left }}>
                     {Object.entries(labels).map(([key, label]) => (
                         <button type="button" key={key} className={`pipe-opt${key === current ? ' active' : ''}`} onClick={() => pick(key)}>
                             <span className={`pipe-opt-ico pipe-${key}`}>
@@ -53,7 +98,8 @@ function PipelineDropdown({ value, labels, onChange }) {
                             )}
                         </button>
                     ))}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
@@ -147,10 +193,14 @@ function ImportAndAdd() {
     );
 }
 
-function Filters({ filters, pipelineLabels }) {
+function Filters({ filters }) {
+    // Status/stage no longer need their own selects — the board's columns
+    // already are those two dimensions. Filtering by one server-side would
+    // empty most columns, which defeats a board's point of showing the
+    // whole funnel at once. Search still narrows cards within each column;
+    // sort still controls each column's internal ordering.
     const [f, setF] = useState({
-        search: filters.search || '', status: filters.status || '',
-        pipeline: filters.pipeline || '', sort: filters.sort || 'created_at',
+        search: filters.search || '', sort: filters.sort || 'created_at',
     });
 
     const apply = (e) => {
@@ -158,28 +208,16 @@ function Filters({ filters, pipelineLabels }) {
         router.get('/jobs', f, { preserveState: true, preserveScroll: true });
     };
     const clear = () => router.get('/jobs');
-    const hasActive = filters.search || filters.status || filters.pipeline;
+    const hasActive = filters.search;
 
     return (
         <div className="card card-pad-sm">
             <form onSubmit={apply} style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                 <input type="text" placeholder="Search company, title, recruiter..." style={{ flex: 1, minWidth: 200 }}
                     value={f.search} onChange={(e) => setF({ ...f, search: e.target.value })} />
-                <select value={f.status} onChange={(e) => setF({ ...f, status: e.target.value })} style={{ width: 'auto' }}>
-                    <option value="">All statuses</option>
-                    <option value="pending">Pending</option>
-                    <option value="queued">Queued</option>
-                    <option value="sent">Sent</option>
-                    <option value="failed">Failed</option>
-                </select>
-                <select value={f.pipeline} onChange={(e) => setF({ ...f, pipeline: e.target.value })} style={{ width: 'auto' }}>
-                    <option value="">All stages</option>
-                    {Object.entries(pipelineLabels).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
-                </select>
                 <select value={f.sort} onChange={(e) => setF({ ...f, sort: e.target.value })} style={{ width: 'auto' }}>
                     <option value="created_at">Newest first</option>
                     <option value="company">Company</option>
-                    <option value="status">Status</option>
                     <option value="sent_at">Sent date</option>
                 </select>
                 <button type="submit" className="btn btn-ghost">Filter</button>
@@ -247,6 +285,174 @@ function BatchProgress({ batch, onCancel, cancelling }) {
     );
 }
 
+function BoardEmpty({ isQueue }) {
+    return (
+        <div className="board-empty-col">
+            {isQueue ? "Nothing to send — add jobs above or check Find Jobs." : 'No applications here yet.'}
+        </div>
+    );
+}
+
+function JobCard({ job, variant, pipelineLabels, busy, onSend, onPreview, onDelete, onPipelineChange }) {
+    const draggable = useDraggable({ id: job.id, disabled: variant !== 'pipeline' });
+    const { attributes, listeners, setNodeRef, transform, isDragging } = draggable;
+
+    const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
+    const isFailed = variant === 'queue' && job.status === 'failed';
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...(variant === 'pipeline' ? listeners : {})}
+            className={`board-card${variant === 'pipeline' ? ' is-draggable' : ''}${isDragging ? ' is-dragging' : ''}${isFailed ? ' is-failed' : ''}${variant === 'overlay' ? ' drag-overlay' : ''}`}>
+            <div className="co-cell">
+                <span className="co-avatar">{(job.company || '?')[0].toUpperCase()}</span>
+                <div className="co-info" style={{ minWidth: 0 }}>
+                    <strong style={{ display: 'block' }}>{job.company}</strong>
+                    <span className="muted">{job.job_title || '—'}</span>
+                    <CompanyInsightButton company={job.company} role={job.job_title} />
+                </div>
+            </div>
+
+            {job.source ? (
+                <Badge status="queued">{job.source}</Badge>
+            ) : (
+                <div className="muted" style={{ fontSize: 11.5 }}>
+                    {job.recruiter_name || job.recruiter_email || '—'}
+                </div>
+            )}
+
+            {variant === 'queue' && (
+                <div>
+                    <Badge status={job.status} />
+                    {job.status === 'failed' && job.error && (
+                        <span className="muted" style={{ fontSize: 11, marginLeft: 6 }} title={job.error}>{job.error_short}</span>
+                    )}
+                </div>
+            )}
+
+            {variant === 'pipeline' && (
+                <div className="muted" style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {job.opened_at && <span style={{ color: 'var(--green)' }}>Opened</span>}
+                    {job.clicked_at && <span style={{ color: 'var(--blue)' }}>Clicked</span>}
+                    {job.followup_count > 0 && <span>{job.followup_count}x follow-up</span>}
+                    {job.sent_at && <span>Sent {job.sent_at}</span>}
+                </div>
+            )}
+
+            {variant === 'pipeline' && (
+                <PipelineDropdown value={job.pipeline_status} labels={pipelineLabels} size="sm"
+                    onChange={(v) => onPipelineChange(job.id, v)} />
+            )}
+
+            <div className="board-card-actions">
+                {/* Once a send is dispatched the job sits in "queued" until a background
+                    worker actually delivers it — the button must stay disabled through
+                    that whole window (not just the click's own request), or a second
+                    click before the worker runs would dispatch a duplicate send. */}
+                {variant === 'queue' && job.status === 'queued' && (
+                    <button className="btn btn-ghost btn-sm" disabled>
+                        <Spinner dark size={12} /> Queued
+                    </button>
+                )}
+                {variant === 'queue' && job.status !== 'sent' && job.status !== 'queued' && job.apply_type !== 'easy_apply' && (
+                    <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => onSend(job.id)}>
+                        {busy ? <Spinner dark size={12} /> : 'Send'}
+                    </button>
+                )}
+                <button className="btn btn-ghost btn-sm" onClick={() => onPreview(job.id)} title="Preview email">Preview</button>
+                <button className="btn btn-danger btn-sm" disabled={busy} onClick={() => onDelete(job.id)}>
+                    {busy ? <Spinner dark size={12} /> : '✕'}
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function Column({ id, label, colorKey, jobsInColumn, isQueue, pipelineLabels, busyIds, onSend, onPreview, onDelete, onPipelineChange }) {
+    const droppable = useDroppable({ id, disabled: isQueue });
+    const { setNodeRef, isOver } = droppable;
+
+    return (
+        <div ref={isQueue ? undefined : setNodeRef} className={`board-col${isOver ? ' is-drag-over' : ''}`}>
+            <div className="board-col-head">
+                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span className={`board-col-dot${colorKey ? ` pipe-${colorKey}` : ''}`} />
+                    {label}
+                </span>
+                <Badge status="neutral">{jobsInColumn.length}</Badge>
+            </div>
+            <div className="board-col-body">
+                {jobsInColumn.length === 0 ? (
+                    <BoardEmpty isQueue={isQueue} />
+                ) : (
+                    jobsInColumn.map((job) => (
+                        <JobCard key={job.id} job={job} variant={isQueue ? 'queue' : 'pipeline'}
+                            pipelineLabels={pipelineLabels} busy={busyIds.has(job.id)}
+                            onSend={onSend} onPreview={onPreview} onDelete={onDelete} onPipelineChange={onPipelineChange} />
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}
+
+function Board({ jobs, pipelineLabels, busyIds, onSend, onPreview, onDelete, onPipelineChange }) {
+    const [activeId, setActiveId] = useState(null);
+    // Optimistic column moves: applied the instant a drop lands so the card
+    // doesn't wait for the round trip; cleared once the request settles
+    // (the next Inertia prop set already reflects the real value by then).
+    const [pendingMoves, setPendingMoves] = useState({});
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+        useSensor(KeyboardSensor),
+    );
+
+    const displayJobs = jobs.map((j) => (pendingMoves[j.id] ? { ...j, pipeline_status: pendingMoves[j.id] } : j));
+    const activeJob = activeId ? displayJobs.find((j) => j.id === activeId) : null;
+
+    const queueJobs = displayJobs.filter((j) => j.status !== 'sent');
+    const columns = Object.entries(pipelineLabels).map(([key, label]) => ({
+        key, label,
+        jobs: displayJobs.filter((j) => j.status === 'sent' && (j.pipeline_status || 'applied') === key),
+    }));
+
+    const handleDragEnd = ({ active, over }) => {
+        setActiveId(null);
+        if (!over) return; // dropped on Queue (not droppable) or nowhere — snaps back, no request
+        const job = jobs.find((j) => j.id === active.id);
+        if (!job || (job.pipeline_status || 'applied') === over.id) return; // same column — no-op
+
+        setPendingMoves((m) => ({ ...m, [active.id]: over.id }));
+        router.patch(`/jobs/${active.id}/pipeline`, { pipeline_status: over.id }, {
+            preserveScroll: true, preserveState: true,
+            onFinish: () => setPendingMoves((m) => { const n = { ...m }; delete n[active.id]; return n; }),
+        });
+    };
+
+    return (
+        <DndContext sensors={sensors} collisionDetection={rectIntersection}
+            onDragStart={({ active }) => setActiveId(active.id)}
+            onDragEnd={handleDragEnd} onDragCancel={() => setActiveId(null)}>
+            <div className="board">
+                <Column id="queue" label="Queue" isQueue jobsInColumn={queueJobs}
+                    pipelineLabels={pipelineLabels} busyIds={busyIds}
+                    onSend={onSend} onPreview={onPreview} onDelete={onDelete} onPipelineChange={onPipelineChange} />
+                {columns.map((c) => (
+                    <Column key={c.key} id={c.key} label={c.label} colorKey={c.key} jobsInColumn={c.jobs}
+                        pipelineLabels={pipelineLabels} busyIds={busyIds}
+                        onSend={onSend} onPreview={onPreview} onDelete={onDelete} onPipelineChange={onPipelineChange} />
+                ))}
+            </div>
+            <DragOverlay>
+                {activeJob && (
+                    <JobCard job={activeJob} variant="overlay" pipelineLabels={pipelineLabels} busy={false}
+                        onSend={() => {}} onPreview={() => {}} onDelete={() => {}} onPipelineChange={() => {}} />
+                )}
+            </DragOverlay>
+        </DndContext>
+    );
+}
+
 export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, counts, filters, activeBatch }) {
     const [previewId, setPreviewId] = useState(null);
     const [templateId, setTemplateId] = useState('');
@@ -256,13 +462,19 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
     const [busyIds, setBusyIds] = useState(() => new Set());
     const { confirm, dialog } = useConfirm();
 
+    // A single "Send" doesn't create a batch (that's only for bulk sends), so
+    // without this an individually-queued job just sits showing "Queued" on
+    // screen forever — the background worker finishes it in a few seconds,
+    // but nothing tells the page to go look. Poll while anything is queued,
+    // same as the batch-progress polling below.
+    const hasQueued = jobs.some((j) => j.status === 'queued');
     useEffect(() => {
-        if (!activeBatch) return;
+        if (!activeBatch && !hasQueued) return;
         const interval = setInterval(() => {
             router.reload({ only: ['jobs', 'counts', 'activeBatch'], preserveScroll: true, preserveState: true });
         }, 3000);
         return () => clearInterval(interval);
-    }, [activeBatch]);
+    }, [activeBatch, hasQueued]);
 
     const setBusy = (id, busy) => setBusyIds((s) => {
         const next = new Set(s);
@@ -343,7 +555,7 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
             {activeBatch && <BatchProgress batch={activeBatch} onCancel={cancelSend} cancelling={cancelling} />}
 
             <ImportAndAdd />
-            <Filters filters={filters} pipelineLabels={pipelineLabels} />
+            <Filters filters={filters} />
 
             <div className="card">
                 <div className="toolbar">
@@ -366,83 +578,18 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
                         </button>
                     )}
                 </div>
+            </div>
 
-                {jobs.length === 0 ? (
+            {jobs.length === 0 ? (
+                <div className="card">
                     <EmptyState icon="briefcase" title="No applications yet">
                         <Link href="/search">Find Jobs</Link> to search and auto-apply, or import a CSV above.
                     </EmptyState>
-                ) : (
-                    <div className="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Company / Role</th><th>Source</th><th>Status</th>
-                                    <th>Pipeline</th><th>Tracking</th><th>Sent</th><th></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {jobs.map((job) => (
-                                    <tr key={job.id}>
-                                        <td>
-                                            <div className="co-cell">
-                                                <span className="co-avatar">{(job.company || '?')[0].toUpperCase()}</span>
-                                                <div className="co-info">
-                                                    <div style={{ minWidth: 0 }}>
-                                                        <strong>{job.company}</strong><br />
-                                                        <span className="muted">{job.job_title || '—'}</span>
-                                                        {job.job_url && <> · <a href={job.job_url} target="_blank" rel="noopener">link</a></>}
-                                                        {(job.apply_type === 'link' || job.apply_type === 'easy_apply') && job.apply_url &&
-                                                            <> · <a href={job.apply_url} target="_blank" rel="noopener" style={{ color: 'var(--amber)' }}>
-                                                                {job.apply_type === 'easy_apply' ? 'Apply on LinkedIn' : 'Apply on portal'}
-                                                            </a></>}
-                                                    </div>
-                                                    <CompanyInsightButton company={job.company} role={job.job_title} />
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            {job.source ? <Badge status="queued">{job.source}</Badge> : (
-                                                <>
-                                                    <span className="muted">{job.recruiter_name || '—'}</span><br />
-                                                    <span className="muted" style={{ fontSize: 11 }}>{job.recruiter_email}</span>
-                                                </>
-                                            )}
-                                        </td>
-                                        <td>
-                                            <Badge status={job.status} />
-                                            {job.status === 'failed' && job.error &&
-                                                <><br /><span className="muted" style={{ fontSize: 11 }} title={job.error}>{job.error_short}</span></>}
-                                        </td>
-                                        <td>
-                                            <PipelineDropdown value={job.pipeline_status} labels={pipelineLabels}
-                                                onChange={(v) => updatePipeline(job.id, v)} />
-                                        </td>
-                                        <td className="muted" style={{ fontSize: 12 }}>
-                                            {job.opened_at && <span style={{ color: 'var(--green)' }} title={`Opened ${job.opened_at}`}>Opened<br /></span>}
-                                            {job.clicked_at && <span style={{ color: 'var(--blue)' }} title={`Clicked ${job.clicked_at}`}>Clicked<br /></span>}
-                                            {job.followup_count > 0 && <span>{job.followup_count}x follow-up</span>}
-                                            {!job.opened_at && !job.clicked_at && job.followup_count === 0 && '—'}
-                                        </td>
-                                        <td className="muted">{job.sent_at || '—'}</td>
-                                        <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
-                                            {job.status !== 'sent' && job.apply_type !== 'easy_apply' &&
-                                                <button className="btn btn-ghost btn-sm" disabled={busyIds.has(job.id)} onClick={() => sendOne(job.id)}>
-                                                    {busyIds.has(job.id) ? <Spinner dark size={12} /> : 'Send'}
-                                                </button>}
-                                            {' '}
-                                            <button className="btn btn-ghost btn-sm" onClick={() => setPreviewId(job.id)} title="Preview email">Preview</button>
-                                            {' '}
-                                            <button className="btn btn-danger btn-sm" disabled={busyIds.has(job.id)} onClick={() => destroy(job.id)}>
-                                                {busyIds.has(job.id) ? <Spinner dark size={12} /> : '✕'}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
+                </div>
+            ) : (
+                <Board jobs={jobs} pipelineLabels={pipelineLabels} busyIds={busyIds}
+                    onSend={sendOne} onPreview={setPreviewId} onDelete={destroy} onPipelineChange={updatePipeline} />
+            )}
 
             {previewId && <PreviewModal jobId={previewId} onClose={() => setPreviewId(null)} />}
             {dialog}

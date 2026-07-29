@@ -30,6 +30,7 @@ class FeatureFlagSeeder extends Seeder
         'feature.email_tracking' => 'Email open/click tracking',
         'feature.followups' => 'Follow-up emails',
         'feature.webhooks' => 'Webhook notifications',
+        'feature.saved_search_alerts' => 'Saved search alerts',
     ];
 
     /**

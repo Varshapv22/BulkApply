@@ -121,10 +121,11 @@ class GmailImapService
 
             $snippet  = $this->extractSnippet($mailbox, $msgNum);
             $received = isset($header->udate) ? now()->setTimestamp($header->udate) : now();
+            $application = $appLookup[$fromEmail] ?? null;
 
             GmailReply::create([
                 'user_id'            => $user->id,
-                'job_application_id' => $appLookup[$fromEmail]?->id ?? null,
+                'job_application_id' => $application?->id,
                 'message_id'         => $messageId,
                 'from_name'          => $fromName ?: null,
                 'from_email'         => $fromEmail,
@@ -133,6 +134,14 @@ class GmailImapService
                 'received_at'        => $received,
                 'is_read'            => false,
             ]);
+
+            // A recruiter reply means the pipeline has moved past "applied" —
+            // advance it automatically. Only from "applied" specifically, so
+            // this never regresses a stage the user already set by hand (e.g.
+            // Interview/Offer) back down to "replied" on a later reply.
+            if ($application && $application->pipeline_status === 'applied') {
+                $application->update(['pipeline_status' => 'replied']);
+            }
 
             $synced++;
         }

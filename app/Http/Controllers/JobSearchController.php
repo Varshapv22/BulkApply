@@ -6,11 +6,10 @@ use App\Jobs\SendJobApplication;
 use App\Models\FeatureFlag;
 use App\Models\JobApplication;
 use App\Models\Profile;
-use App\Services\JobSearchService;
-use App\Services\SiteJobService;
+use App\Services\JobQueryService;
 use App\Services\SkillExtractor;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class JobSearchController extends Controller
@@ -30,14 +29,15 @@ class JobSearchController extends Controller
             'searched'     => false,
             'searchError'  => null,
             'hasDocuments' => $profile->hasDocuments(),
-            'resumes'      => \Illuminate\Support\Facades\Auth::user()->resumes()->orderByDesc('is_default')->get(),
+            'resumes'      => Auth::user()->resumes()->orderByDesc('is_default')->get(),
+            'savedSearches' => Auth::user()->savedSearches()->latest()->get(),
         ]);
     }
 
     /**
      * Search for jobs using the API.
      */
-    public function search(Request $request, JobSearchService $service)
+    public function search(Request $request, JobQueryService $service)
     {
         $data = $request->validate([
             'role'      => ['required_without:site', 'nullable', 'string', 'max:255'],
@@ -62,43 +62,11 @@ class JobSearchController extends Controller
             $profile->save();
         }
 
-        $adzunaOpts = [
+        $result = $service->run($role, $data['location'] ?? '', $site, [
             'sort_by'       => $data['sort_by'] ?? 'relevance',
             'full_time'     => $request->boolean('full_time'),
             'find_contacts' => $request->boolean('find_contacts'),
-        ];
-
-        if ($site !== '') {
-            // The candidate named a specific site/company.
-            $siteResult = (new SiteJobService())->search($role, $site, 30);
-
-            if ($siteResult['handled'] && !empty($siteResult['jobs'])) {
-                // We read the site directly.
-                $result = ['jobs' => $siteResult['jobs'], 'error' => $siteResult['error']];
-            } elseif ($siteResult['handled']) {
-                // Recognised a site/URL but got nothing usable — fall back to the
-                // aggregated index (using the site's name as a keyword) with a note.
-                $agg  = $service->search($role, $data['location'] ?? '', $adzunaOpts + ['keyword' => $this->siteKeyword($site)], 30);
-                $note = $siteResult['error'] ?: 'No listings could be read from that site.';
-                $result = !empty($agg['jobs'])
-                    ? ['jobs' => $agg['jobs'], 'error' => $note . ' Showing related jobs from across the web instead.']
-                    : ['jobs' => [], 'error' => $siteResult['error'] ?? ($agg['error'] ?? 'No jobs found.')];
-            } elseif (!empty($siteResult['platform'])) {
-                // A big platform (Indeed/Naukri/LinkedIn…) we can't scrape, but the
-                // aggregator already indexes jobs from it — search role + location.
-                $agg = $service->search($role, $data['location'] ?? '', $adzunaOpts, 30);
-                $note = $siteResult['platform'] . " can't be read directly (it blocks automated access), so these are matching jobs aggregated from across the web — many originate from " . $siteResult['platform'] . '.';
-                $result = !empty($agg['jobs'])
-                    ? ['jobs' => $agg['jobs'], 'error' => $note]
-                    : ['jobs' => [], 'error' => $agg['error'] ?? 'No jobs found.'];
-            } else {
-                // A bare name we can't fetch — aggregated search with it as keyword.
-                $result = $service->search($role, $data['location'] ?? '', $adzunaOpts + ['keyword' => $site], 30);
-            }
-        } else {
-            // Plain aggregated search across the whole web.
-            $result = $service->search($role, $data['location'] ?? '', $adzunaOpts, 30);
-        }
+        ], 30);
 
         $jobs = $this->attachSkills($result['jobs'], $profile->skills ?? '');
 
@@ -109,7 +77,8 @@ class JobSearchController extends Controller
             'searched'     => true,
             'searchError'  => $result['error'],
             'hasDocuments' => $profile->hasDocuments(),
-            'resumes'      => \Illuminate\Support\Facades\Auth::user()->resumes()->orderByDesc('is_default')->get(),
+            'resumes'      => Auth::user()->resumes()->orderByDesc('is_default')->get(),
+            'savedSearches' => Auth::user()->savedSearches()->latest()->get(),
         ]);
     }
 
@@ -133,25 +102,6 @@ class JobSearchController extends Controller
         }
 
         return $jobs;
-    }
-
-    /**
-     * Derive a search keyword from a site input (URL or name).
-     * e.g. "https://infopark.in/jobs" -> "infopark".
-     */
-    private function siteKeyword(string $site): string
-    {
-        $isUrlish = Str::startsWith($site, ['http://', 'https://'])
-            || (!str_contains($site, ' ') && preg_match('/\.[a-z]{2,}(\/|$)/i', $site));
-
-        if ($isUrlish) {
-            $url  = Str::startsWith($site, ['http://', 'https://']) ? $site : 'https://' . $site;
-            $host = parse_url($url, PHP_URL_HOST) ?: $site;
-            $host = preg_replace('/^www\./', '', $host);
-            return explode('.', $host)[0] ?: $host;
-        }
-
-        return $site;
     }
 
     /**

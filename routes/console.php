@@ -13,3 +13,6 @@ Schedule::command('app:sweep-stale-queued')->everyFiveMinutes();
 
 // Dispatch follow-up emails for overdue applications (hourly)
 Schedule::command('app:dispatch-followups')->hourly();
+
+// Re-run active saved searches and notify users of new listings (every 3 hours)
+Schedule::command('app:check-saved-search-alerts')->everyThreeHours();
