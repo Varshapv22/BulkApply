@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'feature' => \App\Http\Middleware\EnsureFeatureEnabled::class,
+            'trial.active' => \App\Http\Middleware\EnsureTrialIsActive::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

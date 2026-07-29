@@ -1,0 +1,372 @@
+/* ============================================================
+   BulkApply — public landing page ("/", guests only)
+   Scoped entirely under .lp-page so it can never leak into or be
+   overridden by the dashboard's design system loaded on the same page.
+   Reuses the product's real tokens (Outfit/Inter, indigo accent) so the
+   marketing site and the actual app feel like the same product.
+   ============================================================ */
+
+/* The dashboard's shell relies on `html, body { height: 100% }` for its
+   flex layout, which on a plain long-scrolling page like this one clamps
+   both boxes to exactly the viewport height — content overflows silently
+   instead of the page scrolling. Restore normal document scroll, scoped so
+   it never touches the dashboard/auth pages that depend on the fixed height. */
+html:has(.lp-page), body:has(.lp-page) { height: auto; }
+
+.lp-page {
+    --lp-bg: #f6f7fc;
+    --lp-surface: #ffffff;
+    --lp-surface-2: #fbfbfe;
+    --lp-ink: #161b30;
+    --lp-body: #454b68;
+    --lp-muted: #767ca0;
+    --lp-border: #e7e8f4;
+    --lp-border-strong: #d7d9ee;
+    --lp-primary: #4f5fe0;
+    --lp-primary-2: #6b76e8;
+    --lp-primary-dark: #4048c7;
+    --lp-primary-soft: #eef0fd;
+    --lp-ink-panel: #0b1120;
+    --lp-good: #0f9d68;
+    --lp-good-soft: #e7f8f1;
+    --lp-sky: #0c93b5;
+    --lp-sky-soft: #e3f5f8;
+
+    background: var(--lp-bg);
+    color: var(--lp-body);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+.lp-page * { box-sizing: border-box; }
+.lp-page img { max-width: 100%; display: block; }
+.lp-page a { color: inherit; text-decoration: none; }
+
+.lp-page h1, .lp-page h2, .lp-page h3 {
+    font-family: 'Outfit', sans-serif;
+    color: var(--lp-ink);
+    letter-spacing: -0.02em;
+    margin: 0;
+    text-wrap: balance;
+}
+
+.lp-shell { max-width: 1760px; margin: 0 auto; padding: 0 28px; }
+
+/* ---------- Nav ---------- */
+.lp-nav {
+    position: sticky; top: 0; z-index: 40;
+    background: color-mix(in srgb, var(--lp-bg) 82%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--lp-border);
+}
+.lp-nav-inner { display: flex; align-items: center; gap: 28px; height: 72px; }
+.lp-brand { display: flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 19px; color: var(--lp-ink); flex-shrink: 0; }
+.lp-brand .dot {
+    width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--lp-primary), var(--lp-primary-2));
+    color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;
+}
+.lp-nav-links { display: flex; align-items: center; gap: 26px; margin-left: 8px; }
+.lp-nav-links a { font-size: 14px; font-weight: 600; color: var(--lp-body); transition: color .15s; }
+.lp-nav-links a:hover { color: var(--lp-ink); }
+.lp-nav-cta { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+.lp-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: 'Inter', sans-serif; font-size: 14.5px; font-weight: 700;
+    padding: 11px 20px; border-radius: 11px; border: 1px solid transparent;
+    cursor: pointer; transition: transform .15s, box-shadow .15s, background .15s, border-color .15s;
+    white-space: nowrap;
+}
+.lp-btn:active { transform: scale(.97); }
+.lp-btn.lp-btn-primary {
+    background: linear-gradient(135deg, var(--lp-primary), var(--lp-primary-2)); color: #fff;
+    box-shadow: 0 10px 24px -10px color-mix(in srgb, var(--lp-primary) 65%, transparent);
+}
+.lp-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 14px 30px -10px color-mix(in srgb, var(--lp-primary) 70%, transparent); }
+.lp-btn.lp-btn-ghost { background: var(--lp-surface); color: var(--lp-ink); border-color: var(--lp-border-strong); }
+.lp-btn-ghost:hover { background: var(--lp-surface-2); border-color: var(--lp-primary); }
+.lp-btn-lg { padding: 14px 26px; font-size: 15.5px; border-radius: 12px; }
+.lp-btn-block { width: 100%; }
+
+/* ---------- Hero ---------- */
+.lp-hero { padding: 76px 0 40px; }
+.lp-hero-inner { max-width: 760px; }
+.lp-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; color: var(--lp-primary-dark);
+    background: var(--lp-primary-soft); padding: 7px 13px; border-radius: 999px; margin-bottom: 20px;
+}
+.lp-hero h1 { font-size: 52px; font-weight: 800; line-height: 1.06; }
+.lp-hero-lead { font-size: 18px; color: var(--lp-body); margin: 22px 0 0; max-width: 62ch; line-height: 1.6; }
+.lp-hero-ctas { display: flex; align-items: center; gap: 14px; margin-top: 32px; flex-wrap: wrap; }
+.lp-hero-trust { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 26px; font-size: 13.5px; color: var(--lp-muted); font-weight: 600; }
+.lp-hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
+.lp-hero-trust svg { width: 15px; height: 15px; color: var(--lp-good); flex-shrink: 0; }
+
+/* Screenshot frame — a plain, real browser chrome, not a decorative device. */
+.lp-shot-frame {
+    margin-top: 54px; border-radius: 16px; overflow: hidden;
+    background: var(--lp-ink-panel);
+    box-shadow: 0 40px 80px -30px rgba(20, 24, 50, .35), 0 1px 0 rgba(255,255,255,.06) inset;
+    border: 1px solid #1c2338;
+}
+.lp-shot-chrome { display: flex; align-items: center; gap: 7px; padding: 12px 16px; }
+.lp-shot-chrome span { width: 10px; height: 10px; border-radius: 50%; background: #3a4160; }
+.lp-shot-frame img { width: 100%; display: block; }
+
+/* ---------- Source tile (honest: real integrations, not fake client logos) ----------
+   Reused inside the problem/solution comparison below — a "tidy" cluster on the
+   solution side, and a jittered one on the problem side (see .lp-vs-chip). */
+.lp-source-tile {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--lp-surface); border: 1px solid var(--lp-border);
+    border-radius: 14px; padding: 8px 18px 8px 8px;
+    box-shadow: 0 1px 2px rgba(20, 24, 50, .04);
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.lp-source-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px -14px rgba(20, 24, 50, .22);
+    border-color: var(--lp-border-strong);
+}
+.lp-source-icon {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 34px; height: 34px; border-radius: 9px;
+    font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 12.5px; letter-spacing: -.01em;
+}
+.lp-source-icon svg { width: 18px; height: 18px; }
+.lp-source-name { font-size: 13.5px; font-weight: 700; color: var(--lp-ink); }
+@media (max-width: 640px) {
+    .lp-source-tile { padding: 7px 14px 7px 7px; }
+    .lp-source-icon { width: 30px; height: 30px; }
+    .lp-source-name { font-size: 12.5px; }
+}
+
+/* ---------- Problem vs solution ---------- */
+.lp-vs {
+    position: relative; display: flex; flex-direction: column;
+    border-radius: 24px; overflow: hidden; margin-top: 48px;
+    box-shadow: 0 50px 90px -50px rgba(20, 24, 50, .4);
+}
+.lp-vs-panel { padding: 44px 36px 40px; }
+.lp-vs-problem { background: var(--lp-ink-panel); }
+.lp-vs-solution { background: var(--lp-surface); border-top: 1px solid var(--lp-border); }
+
+.lp-vs-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 24px; }
+.lp-vs-problem .lp-vs-label { color: #9096bd; }
+.lp-vs-solution .lp-vs-label { color: var(--lp-primary-dark); }
+
+.lp-vs-points { display: flex; flex-direction: column; gap: 15px; }
+.lp-vs-point { display: flex; align-items: center; gap: 11px; font-size: 15px; font-weight: 600; }
+.lp-vs-point svg { width: 18px; height: 18px; flex-shrink: 0; }
+.lp-vs-problem .lp-vs-point { color: #c3c7e6; }
+.lp-vs-problem .lp-vs-point svg { color: #666e9e; }
+.lp-vs-solution .lp-vs-point { color: var(--lp-ink); }
+.lp-vs-solution .lp-vs-point svg { color: var(--lp-good); }
+
+.lp-vs-cluster-label { margin: 30px 0 14px; font-size: 12px; font-weight: 600; }
+.lp-vs-problem .lp-vs-cluster-label { color: #666e9e; }
+.lp-vs-solution .lp-vs-cluster-label { color: var(--lp-muted); }
+
+.lp-vs-cluster { display: flex; flex-wrap: wrap; gap: 12px; }
+.lp-vs-chip {
+    display: flex; align-items: center; gap: 8px; padding: 7px 14px 7px 7px; border-radius: 12px;
+    background: rgba(255, 255, 255, .05); border: 1px solid rgba(255, 255, 255, .1);
+    transition: transform .15s ease;
+}
+.lp-vs-chip .lp-source-icon { width: 28px; height: 28px; border-radius: 8px; font-size: 11px; }
+.lp-vs-chip .lp-source-icon svg { width: 15px; height: 15px; }
+.lp-vs-chip-name { font-size: 12.5px; font-weight: 700; color: #cdd1ee; }
+/* A few fixed nth-child rotations jitter the chips into an "untidy" cluster —
+   deterministic (not random) so the layout doesn't shift between renders. */
+.lp-vs-cluster:not(.is-tidy) .lp-vs-chip:nth-child(odd) { transform: rotate(-4deg) translateY(3px); }
+.lp-vs-cluster:not(.is-tidy) .lp-vs-chip:nth-child(even) { transform: rotate(3deg) translateY(-2px); }
+.lp-vs-cluster:not(.is-tidy) .lp-vs-chip:nth-child(3n) { transform: rotate(-7deg) translateY(5px); }
+.lp-vs-cluster:not(.is-tidy) .lp-vs-chip:nth-child(5n) { transform: rotate(6deg) translateY(-3px); }
+.lp-vs-cluster:not(.is-tidy) .lp-vs-chip:hover { transform: none; }
+
+.lp-vs-divider {
+    position: relative; z-index: 2; margin: -22px auto; flex-shrink: 0;
+    width: 54px; height: 54px; border-radius: 50%;
+    background: var(--lp-ink); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    border: 4px solid var(--lp-bg); box-shadow: 0 10px 24px -8px rgba(20, 24, 50, .5);
+}
+.lp-vs-divider span { font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 12px; letter-spacing: .02em; }
+
+@media (min-width: 900px) {
+    .lp-vs { flex-direction: row; }
+    .lp-vs-panel { flex: 1; padding: 52px 44px 46px; }
+    .lp-vs-solution { border-top: none; border-left: 1px solid var(--lp-border); }
+    .lp-vs-divider { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); margin: 0; }
+}
+
+/* ---------- Section scaffolding ---------- */
+.lp-section { padding: 96px 0; }
+.lp-section-alt { background: var(--lp-surface); border-top: 1px solid var(--lp-border); border-bottom: 1px solid var(--lp-border); }
+.lp-section-head { max-width: 620px; margin: 0 0 56px; }
+.lp-section-head.lp-center { margin-left: auto; margin-right: auto; text-align: center; }
+.lp-kicker { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--lp-primary); margin-bottom: 12px; }
+.lp-section-head h2 { font-size: 34px; font-weight: 800; }
+.lp-section-head p { font-size: 16px; color: var(--lp-muted); margin-top: 14px; line-height: 1.6; }
+
+/* ---------- How it works ---------- */
+.lp-steps { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: center; gap: 4px; }
+.lp-step {
+    position: relative; padding: 32px 28px 28px; background: var(--lp-surface);
+    border: 1px solid var(--lp-border); border-radius: 18px; align-self: stretch;
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.lp-step:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 26px 50px -30px rgba(20, 24, 50, .25);
+    border-color: var(--lp-border-strong);
+}
+.lp-step-top { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.lp-step-ico {
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    width: 46px; height: 46px; border-radius: 13px;
+}
+.lp-step-ico svg { width: 22px; height: 22px; }
+.lp-step-1 .lp-step-ico { background: var(--lp-primary-soft); color: var(--lp-primary-dark); }
+.lp-step-2 .lp-step-ico { background: var(--lp-good-soft); color: var(--lp-good); }
+.lp-step-3 .lp-step-ico { background: var(--lp-sky-soft); color: var(--lp-sky); }
+.lp-step-num {
+    margin-left: auto; display: inline-flex; align-items: center; justify-content: center;
+    width: 25px; height: 25px; border-radius: 50%; background: var(--lp-ink); color: #fff;
+    font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 12px; flex-shrink: 0;
+}
+.lp-step h3 { font-size: 18px; font-weight: 700; margin-bottom: 9px; }
+.lp-step p { font-size: 14.5px; color: var(--lp-muted); line-height: 1.6; margin: 0; }
+.lp-step-arrow { display: flex; align-items: center; justify-content: center; color: var(--lp-border-strong); }
+.lp-step-arrow svg { width: 22px; height: 22px; }
+
+/* ---------- Feature showcase (alternating screenshot/copy rows) ---------- */
+.lp-feature-row { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+.lp-feature-row + .lp-feature-row { margin-top: 100px; }
+.lp-feature-row.lp-reverse .lp-feature-copy { order: 2; }
+.lp-feature-row.lp-reverse .lp-feature-shot { order: 1; }
+.lp-feature-copy h3 { font-size: 27px; font-weight: 800; margin-bottom: 14px; }
+.lp-feature-copy p { font-size: 15.5px; line-height: 1.65; color: var(--lp-body); margin: 0 0 20px; }
+.lp-feature-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
+.lp-feature-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; color: var(--lp-body); font-weight: 500; }
+.lp-feature-list svg { width: 17px; height: 17px; color: var(--lp-primary); flex-shrink: 0; margin-top: 1px; }
+.lp-feature-shot {
+    border-radius: 14px; overflow: hidden; border: 1px solid var(--lp-border);
+    box-shadow: 0 24px 50px -24px rgba(20, 24, 50, .22);
+}
+.lp-feature-shot img { width: 100%; }
+
+/* ---------- Secondary feature grid (icon cards, no screenshots) ---------- */
+.lp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.lp-card {
+    background: var(--lp-surface); border: 1px solid var(--lp-border); border-radius: 16px; padding: 26px;
+    transition: border-color .15s, transform .15s, box-shadow .15s;
+}
+.lp-card:hover { border-color: var(--lp-border-strong); transform: translateY(-2px); box-shadow: 0 16px 34px -20px rgba(20,24,50,.2); }
+.lp-card-ico {
+    width: 40px; height: 40px; border-radius: 11px; background: var(--lp-primary-soft); color: var(--lp-primary-dark);
+    display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;
+}
+.lp-card-ico svg { width: 19px; height: 19px; }
+.lp-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.lp-card p { font-size: 14px; color: var(--lp-muted); line-height: 1.6; margin: 0; }
+
+/* ---------- Sign-in showcase / final CTA ---------- */
+.lp-final { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+.lp-final-copy h2 { font-size: 32px; font-weight: 800; margin-bottom: 16px; }
+.lp-final-copy p { font-size: 15.5px; color: var(--lp-body); line-height: 1.65; margin: 0 0 26px; max-width: 46ch; }
+.lp-final-shot {
+    border-radius: 16px; overflow: hidden; border: 1px solid var(--lp-border);
+    box-shadow: 0 30px 60px -28px rgba(20, 24, 50, .25);
+}
+
+.lp-price-note { display: flex; align-items: center; gap: 10px; margin-top: 24px; font-size: 13.5px; color: var(--lp-muted); font-weight: 600; }
+.lp-price-note svg { width: 15px; height: 15px; color: var(--lp-good); flex-shrink: 0; }
+
+/* ---------- Standalone content pages (Pricing / FAQ / Privacy / Terms) ---------- */
+.lp-doc-hero { padding: 68px 0 18px; text-align: center; }
+.lp-doc-hero .lp-kicker { display: flex; justify-content: center; }
+.lp-doc-hero h1 { font-size: 36px; }
+.lp-doc-meta { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--lp-muted); }
+
+.lp-doc-section { padding: 20px 0 100px; }
+.lp-doc-shell { max-width: 760px; }
+.lp-doc-shell-wide { max-width: 940px; }
+
+.lp-doc-card {
+    background: var(--lp-surface); border: 1px solid var(--lp-border); border-radius: 20px;
+    padding: 44px 48px; box-shadow: 0 30px 70px -45px rgba(20, 24, 50, .18);
+}
+.lp-doc-card > * + * { margin-top: 22px; }
+.lp-doc-block h2 { font-size: 19px; margin-bottom: 12px; }
+.lp-doc-p { font-size: 15px; line-height: 1.75; color: var(--lp-body); }
+.lp-doc-card > .lp-doc-p:first-child { font-size: 17px; color: var(--lp-ink); font-weight: 600; line-height: 1.6; }
+
+.lp-doc-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.lp-doc-list li { position: relative; padding-left: 20px; font-size: 15px; line-height: 1.65; color: var(--lp-body); }
+.lp-doc-list li::before {
+    content: ''; position: absolute; left: 0; top: 9px; width: 6px; height: 6px; border-radius: 2px;
+    background: var(--lp-primary);
+}
+
+/* Plan cards on the Pricing page — pulled live from the plans table, not hand-typed */
+.lp-doc-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.lp-doc-plan {
+    position: relative; background: var(--lp-surface); border: 1px solid var(--lp-border);
+    border-radius: 16px; padding: 22px 20px; box-shadow: 0 20px 45px -34px rgba(20, 24, 50, .22);
+}
+.lp-doc-plan.is-free { border-color: color-mix(in srgb, var(--lp-primary) 35%, var(--lp-border)); background: var(--lp-primary-soft); }
+.lp-doc-plan-badge {
+    position: absolute; top: -11px; left: 20px; background: var(--lp-primary); color: #fff;
+    font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;
+    padding: 4px 10px; border-radius: 999px;
+}
+.lp-doc-plan-name { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--lp-muted); }
+.lp-doc-plan.is-free .lp-doc-plan-name { color: var(--lp-primary-dark); }
+.lp-doc-plan-price {
+    font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; color: var(--lp-ink); margin-top: 6px;
+    display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px;
+}
+.lp-doc-plan-price span { font-family: 'Inter', sans-serif; font-size: 12.5px; font-weight: 600; color: var(--lp-muted); white-space: nowrap; }
+.lp-doc-plan ul { list-style: none; padding: 0; margin: 14px 0 0; display: flex; flex-direction: column; gap: 7px; }
+.lp-doc-plan li { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; color: var(--lp-body); }
+.lp-doc-plan li svg { width: 14px; height: 14px; color: var(--lp-good); flex-shrink: 0; }
+
+/* ---------- Footer ---------- */
+.lp-footer { padding: 52px 0 40px; }
+.lp-footer-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; padding-bottom: 32px; border-bottom: 1px solid var(--lp-border); }
+.lp-footer-links { display: flex; flex-wrap: wrap; gap: 22px; font-size: 13.5px; font-weight: 600; color: var(--lp-body); }
+.lp-footer-links a:hover { color: var(--lp-primary-dark); }
+.lp-footer-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-top: 22px; font-size: 13px; color: var(--lp-muted); }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 980px) {
+    .lp-hero h1 { font-size: 40px; }
+    .lp-steps { grid-template-columns: 1fr; gap: 20px; }
+    .lp-step-arrow { display: none; }
+    .lp-feature-row { grid-template-columns: 1fr; gap: 32px; }
+    .lp-feature-row.lp-reverse .lp-feature-copy, .lp-feature-row.lp-reverse .lp-feature-shot { order: initial; }
+    .lp-grid { grid-template-columns: repeat(2, 1fr); }
+    .lp-final { grid-template-columns: 1fr; gap: 36px; }
+}
+@media (max-width: 640px) {
+    .lp-shell { padding: 0 18px; }
+    .lp-nav-links { display: none; }
+    .lp-nav-cta .lp-btn-ghost { display: none; }
+    .lp-nav-cta .lp-btn { padding: 10px 16px; font-size: 13.5px; }
+    .lp-hero { padding: 48px 0 20px; }
+    .lp-hero h1 { font-size: 32px; }
+    .lp-hero-lead { font-size: 16px; }
+    .lp-section { padding: 64px 0; }
+    .lp-section-head h2 { font-size: 26px; }
+    .lp-grid { grid-template-columns: 1fr; }
+    .lp-hero-ctas .lp-btn { flex: 1; }
+    .lp-footer-top, .lp-footer-bottom { flex-direction: column; }
+    .lp-doc-hero { padding: 48px 0 16px; }
+    .lp-doc-hero h1 { font-size: 27px; }
+    .lp-doc-card { padding: 28px 22px; }
+    .lp-doc-plans { grid-template-columns: repeat(2, 1fr); }
+}

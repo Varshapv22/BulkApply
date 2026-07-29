@@ -104,7 +104,7 @@ export default function Dashboard({
                         Applications added per day. <span style={{ color: 'var(--primary)' }}>Blue</span> = total,{' '}
                         <span style={{ color: 'var(--green)' }}>Green</span> = sent.
                     </p>
-                    <div className="chart" style={{ flex: 1, marginTop: '20px' }}>
+                    <div className="chart" style={{ marginTop: '20px' }}>
                         {chartData.map((day, i) => (
                             <div className="bar-col" key={i} title={`${day.label}: ${day.total} added, ${day.sent} sent`}>
                                 {day.total > 0 ? (
@@ -152,7 +152,7 @@ export default function Dashboard({
                 <div className="card bento-col-6 animate-delay-3">
                     <h2>Pipeline Status</h2>
                     <p className="hint">Application stages breakdown</p>
-                    <div style={{ marginTop: 'auto' }}>
+                    <div className="list-fill">
                         {Object.entries(pipelineLabels).map(([key, label]) => (
                             <div className="list-row" key={key}>
                                 <span className="lead">{label}</span>
@@ -170,7 +170,7 @@ export default function Dashboard({
                     {recentActivity.length === 0 ? (
                         <div className="empty">No sent or failed applications yet.</div>
                     ) : (
-                        <div className="activity-list" style={{ marginTop: 'auto' }}>
+                        <div className="activity-list">
                             {recentActivity.slice(0, 5).map((job) => (
                                 <div key={job.id} className="activity-row">
                                     <span className="activity-avatar">{job.company.charAt(0)}</span>

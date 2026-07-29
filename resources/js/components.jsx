@@ -14,7 +14,7 @@ export const PLAN_DURATIONS = [
 
 export function formatDuration(days) {
     const preset = PLAN_DURATIONS.find((d) => d.days === days);
-    if (preset) return preset.label.replace(' — 7 days', '');
+    if (preset) return preset.label;
     if (days % 30 === 0) return `${days / 30} Months`;
     return `${days} days`;
 }

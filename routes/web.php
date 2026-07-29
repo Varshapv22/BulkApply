@@ -39,10 +39,15 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.stor
 // --- CMS pages (public, published only) ---
 Route::get('/p/{slug}', [PageController::class, 'show'])->name('page.show');
 
-// --- Authenticated routes ---
-Route::middleware('auth')->group(function () {
-    Route::redirect('/', '/dashboard');
+// --- Public marketing landing page (guests see it; logged-in users go straight to their dashboard) ---
+Route::get('/', function () {
+    return auth()->check()
+        ? redirect()->route('dashboard')
+        : \Inertia\Inertia::render('Welcome');
+})->name('home');
 
+// --- Authenticated routes ---
+Route::middleware(['auth', 'trial.active'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Profile
