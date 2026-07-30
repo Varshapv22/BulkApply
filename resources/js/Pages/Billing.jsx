@@ -1,35 +1,6 @@
 import React, { useState } from 'react';
 import { usePage } from '@inertiajs/react';
-import { PageHead, ChipIcon, Icons, UpiPaymentModal, formatDuration } from '../components';
-
-function PlanCard({ plan, isCurrent, isPending, onPay, currencySymbol }) {
-    return (
-        <div className={`card plan-card${isCurrent ? ' plan-card-current' : ''}`}>
-            {isCurrent && <span className="plan-card-badge">Current plan</span>}
-            <div className="plan-card-name">{plan.name}</div>
-            <div className="plan-card-price">
-                {currencySymbol}{plan.price}
-                <span> / {formatDuration(plan.duration_days)}</span>
-            </div>
-
-            <ul className="plan-card-features">
-                <li><span className="tick"><ChipIcon icon={Icons.check} /></span> Full access to every feature</li>
-                <li><span className="tick"><ChipIcon icon={Icons.check} /></span> Unlimited emails &amp; applications</li>
-                <li><span className="tick"><ChipIcon icon={Icons.check} /></span> Unlimited resumes</li>
-            </ul>
-
-            {isCurrent ? (
-                <button type="button" className="btn btn-ghost btn-block btn-lg" disabled>You're on this plan</button>
-            ) : isPending ? (
-                <button type="button" className="btn btn-ghost btn-block btn-lg" disabled>Payment pending verification</button>
-            ) : (
-                <button type="button" className="btn btn-primary btn-block btn-lg" onClick={() => onPay(plan)}>
-                    Pay via UPI
-                </button>
-            )}
-        </div>
-    );
-}
+import { PageHead, ChipIcon, Icons, UpiPaymentModal, PlanCard } from '../components';
 
 export default function Billing({ plans, currentPlanId, subscription, upiId, upiPayeeName, pendingPlanIds }) {
     const { props } = usePage();

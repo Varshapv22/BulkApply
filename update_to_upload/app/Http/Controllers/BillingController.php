@@ -15,7 +15,7 @@ class BillingController extends Controller
         $subscription = $user->activeSubscription();
 
         return Inertia::render('Billing', [
-            'plans' => Plan::where('is_active', true)->orderBy('price')->get(),
+            'plans' => Plan::where('is_active', true)->orderBy('price')->exc->get(),
             'currentPlanId' => $subscription?->plan_id,
             'subscription' => $subscription ? [
                 'status'    => $subscription->status,

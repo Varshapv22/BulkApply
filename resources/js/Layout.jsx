@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, usePage, router } from '@inertiajs/react';
-import { NotificationBell, PasswordInput, UpiPaymentModal, formatDuration } from './components';
+import { NotificationBell, PasswordInput, UpiPaymentModal, PlanCard, Icons } from './components';
 
 const ACCENTS = [
     { id: 'indigo',  label: 'Indigo',  c: ['#6366f1', '#a855f7'] },
@@ -343,10 +343,10 @@ function ProgressBar() {
     );
 }
 
-function BlockingModal({ children }) {
+function BlockingModal({ children, maxWidth = 700 }) {
     return createPortal(
         <div className="modal-overlay" style={{ zIndex: 9999, cursor: 'default' }}>
-            <div className="modal" style={{ maxWidth: 700, width: '100%' }}>
+            <div className="modal" style={{ maxWidth, width: '100%' }}>
                 {children}
             </div>
         </div>,
@@ -359,13 +359,26 @@ function TrialExpiredModal({ plans, upiId, upiPayeeName, pendingPlanIds, currenc
     const [justSubmittedId, setJustSubmittedId] = useState(null);
     const pending = new Set([...(pendingPlanIds || []), ...(justSubmittedId ? [justSubmittedId] : [])]);
 
+    // Best value = lowest cost per day. Only worth flagging when there's an actual choice.
+    const bestValueId = plans.length > 1
+        ? plans.reduce((best, p) => (p.price / p.duration_days < best.price / best.duration_days ? p : best)).id
+        : null;
+
     return (
-        <BlockingModal>
-            <div style={{ textAlign: 'center', padding: '8px 0 20px' }}>
-                <div style={{ fontSize: 42, marginBottom: 8 }}>⏰</div>
-                <h2 className="modal-title" style={{ fontSize: 22, marginBottom: 6 }}>Your Free Trial Has Ended</h2>
-                <p style={{ color: 'var(--muted)', fontSize: 14 }}>
-                    Your 7-day free trial is over. Choose a plan below to continue using BulkApply.
+        <BlockingModal maxWidth={1040}>
+            <div style={{ textAlign: 'center', padding: '4px 0 28px' }}>
+                <span style={{
+                    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                    width: 56, height: 56, borderRadius: 16, marginBottom: 14,
+                    background: 'var(--primary-soft, var(--hover))', color: 'var(--primary)',
+                }}>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        {Icons.clock}
+                    </svg>
+                </span>
+                <h2 className="modal-title" style={{ fontSize: 23, marginBottom: 6 }}>Your Free Trial Has Ended</h2>
+                <p style={{ color: 'var(--muted)', fontSize: 14.5, maxWidth: 440, margin: '0 auto' }}>
+                    Your 7-day free trial is over. Choose a plan below to keep applying to jobs with BulkApply.
                 </p>
             </div>
 
@@ -374,26 +387,17 @@ function TrialExpiredModal({ plans, upiId, upiPayeeName, pendingPlanIds, currenc
                     No plans are available right now. Please contact support.
                 </p>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(180px, 100%), 1fr))', gap: 14, marginTop: 8 }}>
+                <div className="plan-grid">
                     {plans.map((plan) => (
-                        <div key={plan.id} className="card card-pad-sm" style={{ border: '1.5px solid var(--border-strong)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--heading)' }}>{plan.name}</div>
-                            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--primary)' }}>
-                                {currencySymbol}{plan.price}
-                                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--muted)' }}>
-                                    {' '}/ {formatDuration(plan.duration_days)}
-                                </span>
-                            </div>
-                            <button
-                                type="button"
-                                className="btn btn-primary btn-block"
-                                disabled={pending.has(plan.id)}
-                                onClick={() => setPayingPlan(plan)}
-                                style={{ marginTop: 'auto' }}
-                            >
-                                {pending.has(plan.id) ? 'Pending verification' : 'Pay via UPI'}
-                            </button>
-                        </div>
+                        <PlanCard
+                            key={plan.id}
+                            plan={plan}
+                            isCurrent={false}
+                            isPending={pending.has(plan.id)}
+                            onPay={setPayingPlan}
+                            currencySymbol={currencySymbol}
+                            highlight={plan.id === bestValueId ? 'Best value' : null}
+                        />
                     ))}
                 </div>
             )}
@@ -459,7 +463,7 @@ export default function Layout({ children }) {
     const { props, url } = usePage();
     const user = props.auth?.user;
     const trial = props.trial;
-    const plans = props.plans || [];
+    const plans = props.upgradePlans || [];
     const errors = props.errors || {};
     const needsOnboarding = props.needsOnboarding;
     // Open the Gmail account we actually send FROM (not the browser default).

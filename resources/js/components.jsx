@@ -160,6 +160,41 @@ export function Stat({ label, value, accent = 'primary', icon }) {
     );
 }
 
+/** Pricing card used on the Billing page and the trial-expired paywall modal — one design, everywhere a plan is offered.
+ * `highlight`, when set (and the card isn't the user's current plan), renders it as the featured tier: raised above
+ * its row, elevated shadow, and a ribbon badge carrying the given label (e.g. "Best value"). */
+export function PlanCard({ plan, isCurrent, isPending, onPay, currencySymbol, highlight }) {
+    const featured = !isCurrent && !!highlight;
+
+    return (
+        <div className={`card plan-card${isCurrent ? ' plan-card-current' : ''}${featured ? ' plan-card-featured' : ''}`}>
+            {isCurrent && <span className="plan-card-badge">Current plan</span>}
+            {featured && <span className="plan-card-ribbon">{highlight}</span>}
+            <div className="plan-card-name">{plan.name}</div>
+            <div className="plan-card-price">
+                {currencySymbol}{plan.price}
+                <span> / {formatDuration(plan.duration_days)}</span>
+            </div>
+
+            <ul className="plan-card-features">
+                <li><span className="tick"><ChipIcon icon={Icons.check} /></span> Full access to every feature</li>
+                <li><span className="tick"><ChipIcon icon={Icons.check} /></span> Unlimited emails &amp; applications</li>
+                <li><span className="tick"><ChipIcon icon={Icons.check} /></span> Unlimited resumes</li>
+            </ul>
+
+            {isCurrent ? (
+                <button type="button" className="btn btn-ghost btn-block btn-lg" disabled>You're on this plan</button>
+            ) : isPending ? (
+                <button type="button" className="btn btn-ghost btn-block btn-lg" disabled>Payment pending verification</button>
+            ) : (
+                <button type="button" className="btn btn-primary btn-block btn-lg" onClick={() => onPay(plan)}>
+                    Pay via UPI
+                </button>
+            )}
+        </div>
+    );
+}
+
 export function Badge({ status, children }) {
     return <span className={`badge ${status}`}>{children ?? status}</span>;
 }

@@ -104,14 +104,23 @@ class HandleInertiaRequests extends Middleware
                     ? \App\Models\AdminNotification::unread()->count()
                     : $user->unreadNotifications()->count();
             },
-            // Active plans — shared so the upgrade modal can list them without a separate request.
-            'plans' => function () use ($request) {
+            // Active plans for the trial-expired paywall modal, shared so it can list them
+            // without a separate request. Deliberately named "upgradePlans", not "plans" —
+            // EnsureTrialIsActive forces every expired-trial user onto /billing, and
+            // BillingController renders its own "plans" prop (all plans, including Free).
+            // A same-named page prop silently wins over a shared one in Inertia, so using
+            // "plans" here let the Free plan leak into the modal on the one page these
+            // users can actually reach.
+            'upgradePlans' => function () use ($request) {
                 $user = $request->user();
                 if (! $user || $user->getRoleNames()->isNotEmpty() || $user->activeSubscription()) {
                     return [];
                 }
 
+                // Excludes free/₹0 plans: offering a "free trial" plan to a user whose
+                // trial already ended makes no sense — only real paid plans belong here.
                 return \App\Models\Plan::where('is_active', true)
+                    ->where('price', '>', 0)
                     ->orderBy('duration_days')
                     ->get(['id', 'name', 'price', 'duration_days'])
                     ->toArray();
