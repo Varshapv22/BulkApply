@@ -31,6 +31,7 @@ class FeatureFlagSeeder extends Seeder
         'feature.followups' => 'Follow-up emails',
         'feature.webhooks' => 'Webhook notifications',
         'feature.saved_search_alerts' => 'Saved search alerts',
+        'feature.gmail_sync' => 'Automatic Gmail sync',
     ];
 
     /**

@@ -66,6 +66,20 @@ services:
     networks:
       - bulkapply
 
+  scheduler:
+    image: bulkapply-app
+    container_name: bulkapply-scheduler
+    restart: unless-stopped
+    working_dir: /var/www/html
+    command: php artisan schedule:work
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - app
+      - mysql
+    networks:
+      - bulkapply
+
   mailpit:
     image: axllent/mailpit:latest
     container_name: bulkapply-mailpit

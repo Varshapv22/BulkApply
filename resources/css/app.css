@@ -921,30 +921,61 @@ tbody tr:hover .insight-btn { color: var(--primary); background: var(--primary-s
 /* ---------- Billing / plan cards ----------
    Grid (not flex+max-width) so cards genuinely fill the row edge-to-edge
    at any count/width, instead of clumping center with dead space beside them. */
-.plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; align-items: stretch; }
+.plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; align-items: stretch; perspective: 1400px; }
 .plan-card {
     display: flex; flex-direction: column; position: relative; text-align: center;
     padding: 30px 26px 26px; overflow: hidden;
+    transition: transform .34s cubic-bezier(.2,.8,.2,1), box-shadow .34s cubic-bezier(.2,.8,.2,1), border-color .34s cubic-bezier(.2,.8,.2,1), opacity .34s ease;
+    will-change: transform;
+    transform-style: preserve-3d;
 }
-.plan-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--primary); opacity: .35; }
+.plan-card::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: var(--primary); opacity: .35;
+    transition: opacity .34s cubic-bezier(.2,.8,.2,1), height .34s cubic-bezier(.2,.8,.2,1); }
 .plan-card-current { border-width: 1.5px; border-color: var(--primary); }
 .plan-card-current::before { opacity: 1; }
 .plan-card-badge { position: absolute; top: 16px; right: 16px; background: var(--primary-soft); color: var(--primary);
     font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: .05em; }
 
-/* Featured/"best value" tier — visually bulges above its row via a paint-only
-   transform (never affects grid track sizing, unlike margin tricks), plus a
-   gold diagonal corner ribbon. The ribbon is deliberately a normal child of
-   the card (unlike an earlier version of this) — a corner ribbon is SUPPOSED
-   to be clipped flush by .plan-card's own overflow:hidden/border-radius. */
-.plan-card-featured { border-width: 1.5px; border-color: var(--primary); box-shadow: var(--shadow-lg); transform: scale(1.02); z-index: 2; }
+/* The hovered plan card lifts and tilts toward the viewer — translateY +
+   rotateX (against the .plan-grid perspective) reads as the card "projecting"
+   off the page rather than a flat zoom. A soft primary-tinted glow layers
+   under the normal shadow for depth, the top accent bar brightens in step,
+   and border color eases toward primary so the highlight doesn't snap in.
+   z-index rises on hover so the lifted card overlaps its neighbors, and its
+   siblings ease back/dim slightly so the hovered one reads as popped forward.
+   Pressing settles the lift back partway with a much quicker transition, so
+   the release doesn't feel laggy. */
+.plan-card:hover {
+    transform: translateY(-14px) scale(1.055) rotateX(4deg);
+    box-shadow: 0 40px 60px -20px color-mix(in srgb, var(--primary) 34%, transparent), var(--shadow-lg);
+    border-color: var(--primary);
+    z-index: 5;
+}
+.plan-card:hover::before { opacity: .75; height: 4px; }
+.plan-card:active { transform: translateY(-8px) scale(1.03) rotateX(2deg); transition-duration: .1s; }
+.plan-grid:hover .plan-card:not(:hover) { transform: scale(.97); opacity: .85; }
+
+/* Featured/"best value" tier — same resting height as the other cards, just
+   a primary border and a gold diagonal corner ribbon. Its hover zoom and glow
+   run a touch stronger, matching its emphasis. The ribbon is a normal child
+   of the card — a corner ribbon is SUPPOSED to be clipped flush by
+   .plan-card's own overflow:hidden/border-radius. */
+.plan-card-featured { border-width: 1.5px; border-color: var(--primary); box-shadow: var(--shadow); z-index: 2; }
 .plan-card-featured::before { opacity: 1; height: 4px; }
+.plan-card-featured:hover {
+    transform: translateY(-18px) scale(1.075) rotateX(4deg);
+    box-shadow: 0 46px 72px -20px color-mix(in srgb, var(--primary) 44%, transparent), var(--shadow-lg);
+    z-index: 5;
+}
+.plan-card-featured:hover .plan-card-ribbon { filter: brightness(1.08); }
+.plan-card-featured:active { transform: translateY(-10px) scale(1.045) rotateX(2deg); transition-duration: .1s; }
 .plan-card-ribbon {
     position: absolute; top: 19px; right: -38px; z-index: 3; width: 150px;
     padding: 6px 0; text-align: center; transform: rotate(45deg);
     background: linear-gradient(135deg, #ffe08a, #d9a520 55%, #b9860f);
     color: #4a3200; font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
     box-shadow: 0 3px 10px -2px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.4);
+    transition: filter .34s cubic-bezier(.2,.8,.2,1);
 }
 .plan-card-name { font-size: 16px; font-weight: 700; color: var(--heading); letter-spacing: -.01em; margin-bottom: 4px; }
 .plan-card-price { font-size: 34px; font-weight: 800; color: var(--heading); letter-spacing: -.03em; margin: 8px 0 22px; }
@@ -1468,7 +1499,6 @@ select { text-overflow: ellipsis; }
     .score-ring svg { width: 100%; height: 100%; }
     .empty { padding: 32px 14px; }
     .plan-grid { grid-template-columns: 1fr; gap: 14px; }
-    .plan-card-featured { transform: none; }
     .plan-card { padding: 24px 20px 20px; }
     .toolbar > .spacer { flex-basis: 100%; height: 0; }
     .add-jobs-panel { min-width: 100%; }

@@ -54,7 +54,7 @@ html:has(.lp-page), body:has(.lp-page) { height: auto; overflow-x: visible; }
     text-wrap: balance;
 }
 
-.lp-shell { max-width: 1760px; margin: 0 auto; padding: 0 28px; }
+.lp-shell { max-width: 1280px; margin: 0 auto; padding: 0 28px; }
 
 /* ---------- Nav: floating dark pill ---------- */
 .lp-nav { position: sticky; top: 0; z-index: 40; padding: 18px 0; pointer-events: none; }
@@ -367,12 +367,28 @@ html:has(.lp-page), body:has(.lp-page) { height: auto; overflow-x: visible; }
 }
 
 /* Plan cards on the Pricing page — pulled live from the plans table, not hand-typed */
-.lp-doc-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+.lp-doc-plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; perspective: 1400px; }
 .lp-doc-plan {
     position: relative; background: var(--lp-surface); border: 1px solid var(--lp-border);
     border-radius: 16px; padding: 22px 20px; box-shadow: 0 20px 45px -34px rgba(20, 24, 50, .22);
+    transition: transform .34s cubic-bezier(.2,.8,.2,1), box-shadow .34s cubic-bezier(.2,.8,.2,1), border-color .34s cubic-bezier(.2,.8,.2,1), opacity .34s ease;
+    will-change: transform;
+    transform-style: preserve-3d;
 }
 .lp-doc-plan.is-free { border-color: color-mix(in srgb, var(--lp-primary) 35%, var(--lp-border)); background: var(--lp-primary-soft); }
+
+/* Lifts and tilts toward the viewer on hover, mirroring the same "projecting
+   forward" interaction on the Billing page's plan cards (.plan-card in
+   app.css) — translateY + rotateX against the .lp-doc-plans perspective, with
+   a colored glow, and siblings ease back/dim so the hovered card pops. */
+.lp-doc-plan:hover {
+    transform: translateY(-12px) scale(1.05) rotateX(4deg);
+    box-shadow: 0 38px 56px -18px color-mix(in srgb, var(--lp-primary) 32%, transparent), 0 20px 45px -20px rgba(20, 24, 50, .3);
+    border-color: var(--lp-primary);
+    z-index: 5;
+}
+.lp-doc-plan:active { transform: translateY(-7px) scale(1.03) rotateX(2deg); transition-duration: .1s; }
+.lp-doc-plans:hover .lp-doc-plan:not(:hover) { transform: scale(.97); opacity: .85; }
 .lp-doc-plan-badge {
     position: absolute; top: -11px; left: 20px; background: var(--lp-primary); color: #fff;
     font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em;

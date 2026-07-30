@@ -53,10 +53,13 @@ class GmailController extends Controller
                 'job_id'      => $r->job_application_id,
             ]);
 
+        $profile = Profile::where('user_id', $userId)->first();
+
         return Inertia::render('Replies', [
             'replies'        => $replies->values(),
             'filters'        => $filters,
-            'gmailConnected' => Profile::where('user_id', $userId)->first()?->hasMailCredentials() ?? false,
+            'gmailConnected' => $profile?->hasMailCredentials() ?? false,
+            'lastSyncedAt'   => $profile?->gmail_synced_at?->diffForHumans(),
             'counts'         => [
                 'total'   => GmailReply::where('user_id', $userId)->count(),
                 'unread'  => GmailReply::where('user_id', $userId)->where('is_read', false)->count(),
@@ -71,6 +74,8 @@ class GmailController extends Controller
     public function sync(Request $request)
     {
         $result = (new GmailImapService())->sync($request->user());
+
+        Profile::where('user_id', $request->user()->id)->update(['gmail_synced_at' => now()]);
 
         if ($result['error']) {
             return back()->with('gmail_error', $result['error']);

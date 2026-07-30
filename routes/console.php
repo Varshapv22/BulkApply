@@ -16,3 +16,7 @@ Schedule::command('app:dispatch-followups')->hourly();
 
 // Re-run active saved searches and notify users of new listings (every 3 hours)
 Schedule::command('app:check-saved-search-alerts')->everyThreeHours();
+
+// Pull new recruiter replies from Gmail for every connected account (every minute —
+// the finest granularity a cron-driven scheduler supports)
+Schedule::command('app:sync-gmail-replies')->everyMinute();

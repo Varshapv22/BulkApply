@@ -6,12 +6,19 @@ use App\Models\GmailReply;
 use App\Models\JobApplication;
 use App\Models\Profile;
 use App\Models\User;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Cache;
 
 class GmailImapService
 {
     /**
      * Connect to the user's Gmail via IMAP and pull in any replies
      * from recruiter email addresses stored in their job applications.
+     *
+     * Guarded by a per-user lock so the scheduled auto-sync and a manual
+     * "Sync now" click (or two overlapping scheduler ticks) can't run at the
+     * same time — without it, both would race to insert the same message and
+     * the loser crashes on the unique (user_id, message_id) constraint.
      *
      * @return array{synced: int, error: string|null}
      */
@@ -26,6 +33,22 @@ class GmailImapService
         if (!$profile || !$profile->hasMailCredentials()) {
             return ['synced' => 0, 'error' => 'Connect your Gmail in Profile → Email Sending first.'];
         }
+
+        $lock = Cache::lock("gmail-sync:{$user->id}", 90);
+
+        if (!$lock->get()) {
+            return ['synced' => 0, 'error' => null];
+        }
+
+        try {
+            return $this->doSync($user, $profile);
+        } finally {
+            $lock->release();
+        }
+    }
+
+    private function doSync(User $user, Profile $profile): array
+    {
 
         // Collect all unique recruiter emails from sent applications
         $recruiterEmails = JobApplication::where('user_id', $user->id)
@@ -123,17 +146,23 @@ class GmailImapService
             $received = isset($header->udate) ? now()->setTimestamp($header->udate) : now();
             $application = $appLookup[$fromEmail] ?? null;
 
-            GmailReply::create([
-                'user_id'            => $user->id,
-                'job_application_id' => $application?->id,
-                'message_id'         => $messageId,
-                'from_name'          => $fromName ?: null,
-                'from_email'         => $fromEmail,
-                'subject'            => $subject,
-                'snippet'            => $snippet ?: null,
-                'received_at'        => $received,
-                'is_read'            => false,
-            ]);
+            try {
+                GmailReply::create([
+                    'user_id'            => $user->id,
+                    'job_application_id' => $application?->id,
+                    'message_id'         => $messageId,
+                    'from_name'          => $fromName ?: null,
+                    'from_email'         => $fromEmail,
+                    'subject'            => $subject,
+                    'snippet'            => $snippet ?: null,
+                    'received_at'        => $received,
+                    'is_read'            => false,
+                ]);
+            } catch (UniqueConstraintViolationException) {
+                // Already synced by another process in between our lookup and this
+                // insert — not a real failure, just skip it and keep going.
+                continue;
+            }
 
             // A recruiter reply means the pipeline has moved past "applied" —
             // advance it automatically. Only from "applied" specifically, so

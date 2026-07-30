@@ -14,6 +14,7 @@ class Profile extends Model
         'preferred_sites'    => 'array',
         // Encrypted at rest with APP_KEY — never stored or transmitted in plain text.
         'mail_password'      => 'encrypted',
+        'gmail_synced_at'    => 'datetime',
     ];
 
     public const JOB_SITES = [

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, router } from '@inertiajs/react';
-import { PageHead, Pagination, Badge, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES } from '../../../components';
+import { PageHead, Pagination, Badge, ChipIcon, Icons, SUPPORT_TICKET_TYPES, SUPPORT_TICKET_STATUSES } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
 export default function AdminSupportIndex({ tickets, filters }) {
@@ -47,8 +47,12 @@ export default function AdminSupportIndex({ tickets, filters }) {
                                                 </select>
                                             </td>
                                             <td>{new Date(t.created_at).toLocaleDateString()}</td>
-                                            <td className="cell-actions">
-                                                <Link href={`/admin/support/${t.id}`} className="btn btn-ghost btn-sm">View</Link>
+                                            <td>
+                                                <div className="cell-actions">
+                                                    <Link href={`/admin/support/${t.id}`} className="icon-btn" title="View" aria-label="View">
+                                                        <ChipIcon icon={Icons.eye} />
+                                                    </Link>
+                                                </div>
                                             </td>
                                         </tr>
                                     );

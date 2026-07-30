@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 import { PageHead, Stat, Icons, Spinner, EmptyState, ChipIcon } from '../components';
 
@@ -48,7 +48,7 @@ function ReplyItem({ reply, onRead, mailFrom }) {
     );
 }
 
-export default function Replies({ replies, filters, gmailConnected, counts }) {
+export default function Replies({ replies, filters, gmailConnected, lastSyncedAt, counts }) {
     const { props } = usePage();
     const flash = props.flash || {};
     const [syncing, setSyncing] = useState(false);
@@ -59,6 +59,16 @@ export default function Replies({ replies, filters, gmailConnected, counts }) {
         setSyncing(true);
         router.post('/gmail/sync', {}, { preserveScroll: true, onFinish: () => setSyncing(false) });
     };
+
+    // The scheduler syncs Gmail in the background every minute — poll so
+    // newly-arrived replies show up here without needing a manual click.
+    useEffect(() => {
+        if (!gmailConnected) return;
+        const id = setInterval(() => {
+            router.reload({ only: ['replies', 'counts', 'lastSyncedAt'], preserveScroll: true, preserveState: true });
+        }, 20000);
+        return () => clearInterval(id);
+    }, [gmailConnected]);
 
     const markRead = (id) => {
         setReadIds((prev) => new Set(prev).add(id));
@@ -109,8 +119,11 @@ export default function Replies({ replies, filters, gmailConnected, counts }) {
                             {counts.unread > 0 && (
                                 <button className="btn-link" onClick={markAllRead}>Mark all read</button>
                             )}
+                            <span className="muted" style={{ fontSize: 12.5 }}>
+                                Auto-syncs every minute{lastSyncedAt ? ` · Last synced ${lastSyncedAt}` : ''}
+                            </span>
                             <button className="btn btn-primary btn-sm" onClick={sync} disabled={syncing}>
-                                {syncing ? <><Spinner /> Syncing…</> : <><ChipIcon icon={Icons.mail} /> Sync Gmail</>}
+                                {syncing ? <><Spinner /> Syncing…</> : <><ChipIcon icon={Icons.mail} /> Sync now</>}
                             </button>
                         </div>
 
@@ -118,7 +131,7 @@ export default function Replies({ replies, filters, gmailConnected, counts }) {
                             <EmptyState icon="chat" title={filters.search || filters.unread ? 'Nothing matches that filter' : 'No replies yet'}>
                                 {filters.search || filters.unread
                                     ? 'Clear the filters to see every reply.'
-                                    : <>Replies are pulled from the inbox of the Gmail account you send from. Hit <strong>Sync Gmail</strong> after a recruiter answers.</>}
+                                    : <>Replies are pulled automatically from the inbox of the Gmail account you send from — no need to sync manually. Hit <strong>Sync now</strong> for the very latest.</>}
                             </EmptyState>
                         ) : (
                             <div className="reply-list">
