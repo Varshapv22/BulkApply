@@ -6,12 +6,16 @@
    marketing site and the actual app feel like the same product.
    ============================================================ */
 
-/* The dashboard's shell relies on `html, body { height: 100% }` for its
-   flex layout, which on a plain long-scrolling page like this one clamps
-   both boxes to exactly the viewport height — content overflows silently
-   instead of the page scrolling. Restore normal document scroll, scoped so
-   it never touches the dashboard/auth pages that depend on the fixed height. */
-html:has(.lp-page), body:has(.lp-page) { height: auto; }
+/* The dashboard's shell relies on `html, body { height: 100%; overflow-x: hidden }`
+   for its flex layout. Two problems for a plain long-scrolling page like this one:
+   height: 100% clamps both boxes to the viewport, so content overflows silently
+   instead of the page scrolling; and overflow-x: hidden with no overflow-y set
+   makes the UA compute overflow-y as auto, which breaks position: sticky on
+   .lp-nav in every browser (a sticky element's containing block must have no
+   ancestor with a non-visible overflow other than the actual scroller).
+   Restore normal document scroll and drop the overflow clip, scoped so this
+   never touches the dashboard/auth pages that depend on the fixed-height shell. */
+html:has(.lp-page), body:has(.lp-page) { height: auto; overflow-x: visible; }
 
 .lp-page {
     --lp-bg: #f6f7fc;
@@ -36,7 +40,6 @@ html:has(.lp-page), body:has(.lp-page) { height: auto; }
     color: var(--lp-body);
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height: 1.5;
-    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
 }
 .lp-page * { box-sizing: border-box; }
@@ -53,24 +56,58 @@ html:has(.lp-page), body:has(.lp-page) { height: auto; }
 
 .lp-shell { max-width: 1760px; margin: 0 auto; padding: 0 28px; }
 
-/* ---------- Nav ---------- */
-.lp-nav {
-    position: sticky; top: 0; z-index: 40;
-    background: color-mix(in srgb, var(--lp-bg) 82%, transparent);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--lp-border);
+/* ---------- Nav: floating dark pill ---------- */
+.lp-nav { position: sticky; top: 0; z-index: 40; padding: 18px 0; pointer-events: none; }
+.lp-nav-pill {
+    pointer-events: auto;
+    max-width: 1040px; margin: 0 auto;
+    display: flex; align-items: center; gap: 6px; height: 64px;
+    padding: 6px 8px 6px 20px; border-radius: 999px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--lp-ink-panel) 96%, #2a2f45), var(--lp-ink-panel));
+    box-shadow: 0 24px 48px -18px rgba(11, 17, 32, .45), 0 1px 0 rgba(255,255,255,.06) inset;
+    transition: box-shadow .2s ease;
 }
-.lp-nav-inner { display: flex; align-items: center; gap: 28px; height: 72px; }
-.lp-brand { display: flex; align-items: center; gap: 10px; font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 19px; color: var(--lp-ink); flex-shrink: 0; }
+.lp-nav .lp-brand {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Outfit', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -0.01em;
+    color: #fff; flex-shrink: 0; transition: opacity .15s;
+}
+.lp-brand:hover { opacity: .85; }
 .lp-brand .dot {
-    width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
-    background: linear-gradient(135deg, var(--lp-primary), var(--lp-primary-2));
-    color: #fff; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px;
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    background: #fff;
+    color: var(--lp-primary-dark); display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15.5px;
 }
-.lp-nav-links { display: flex; align-items: center; gap: 26px; margin-left: 8px; }
-.lp-nav-links a { font-size: 14px; font-weight: 600; color: var(--lp-body); transition: color .15s; }
-.lp-nav-links a:hover { color: var(--lp-ink); }
-.lp-nav-cta { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.lp-nav-links { display: flex; align-items: center; gap: 2px; margin: 0 auto; }
+.lp-nav-links a {
+    position: relative; font-size: 14px; font-weight: 600; color: color-mix(in srgb, #fff 78%, transparent);
+    padding: 9px 16px; border-radius: 999px; transition: color .15s, background .15s;
+}
+.lp-nav-links a:hover { color: #fff; background: rgba(255,255,255,.09); }
+.lp-nav-cta {
+    display: flex; align-items: center; gap: 2px; flex-shrink: 0;
+    background: #fff; border-radius: 999px; padding: 4px;
+}
+.lp-nav-cta .lp-btn.lp-btn-ghost {
+    background: transparent; border-color: transparent; color: var(--lp-ink);
+    box-shadow: none; padding: 9px 16px;
+}
+.lp-nav-cta .lp-btn.lp-btn-ghost:hover { background: color-mix(in srgb, var(--lp-ink) 6%, transparent); border-color: transparent; }
+.lp-nav-cta .lp-btn.lp-btn-primary { border-radius: 999px; padding: 9px 18px; }
+
+/* ---------- Nav: mobile toggle + menu ---------- */
+.lp-nav-toggle {
+    display: none; flex-direction: column; justify-content: center; align-items: center; gap: 5px;
+    width: 44px; height: 44px; margin-left: auto; padding: 0;
+    background: #fff; border: none; border-radius: 50%;
+    cursor: pointer; flex-shrink: 0;
+}
+.lp-nav-toggle span { width: 16px; height: 2px; border-radius: 2px; background: var(--lp-ink); transition: transform .2s, opacity .2s; }
+.lp-nav.is-open .lp-nav-toggle span:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.lp-nav.is-open .lp-nav-toggle span:nth-child(2) { opacity: 0; }
+.lp-nav.is-open .lp-nav-toggle span:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+.lp-nav-mobile { display: none; }
 
 .lp-btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -90,24 +127,41 @@ html:has(.lp-page), body:has(.lp-page) { height: auto; }
 .lp-btn-lg { padding: 14px 26px; font-size: 15.5px; border-radius: 12px; }
 .lp-btn-block { width: 100%; }
 
-/* ---------- Hero ---------- */
-.lp-hero { padding: 76px 0 40px; }
-.lp-hero-inner { max-width: 760px; }
+/* ---------- Hero: two columns — copy left, product shot right ---------- */
+.lp-hero { position: relative; padding: 88px 0 64px; overflow: hidden; }
+.lp-hero::before {
+    content: ''; position: absolute; top: -140px; right: -180px; width: 640px; height: 640px;
+    background: radial-gradient(circle, color-mix(in srgb, var(--lp-primary) 14%, transparent), transparent 70%);
+    pointer-events: none;
+}
+.lp-hero .lp-shell {
+    position: relative; max-width: 1220px;
+    display: grid; grid-template-columns: 1fr 1.05fr; align-items: center; gap: 56px;
+}
+.lp-hero-inner { position: relative; z-index: 1; }
 .lp-eyebrow {
     display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700;
     text-transform: uppercase; letter-spacing: .08em; color: var(--lp-primary-dark);
     background: var(--lp-primary-soft); padding: 7px 13px; border-radius: 999px; margin-bottom: 20px;
 }
-.lp-hero h1 { font-size: 52px; font-weight: 800; line-height: 1.06; }
-.lp-hero-lead { font-size: 18px; color: var(--lp-body); margin: 22px 0 0; max-width: 62ch; line-height: 1.6; }
-.lp-hero-ctas { display: flex; align-items: center; gap: 14px; margin-top: 32px; flex-wrap: wrap; }
+.lp-hero h1 { font-size: 45px; font-weight: 800; line-height: 1.1; }
+.lp-hero-lead { font-size: 17px; color: var(--lp-body); margin: 20px 0 0; max-width: 52ch; line-height: 1.6; }
+.lp-hero-ctas { display: flex; align-items: center; gap: 14px; margin-top: 30px; flex-wrap: wrap; }
 .lp-hero-trust { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 26px; font-size: 13.5px; color: var(--lp-muted); font-weight: 600; }
 .lp-hero-trust span { display: inline-flex; align-items: center; gap: 7px; }
 .lp-hero-trust svg { width: 15px; height: 15px; color: var(--lp-good); flex-shrink: 0; }
 
-/* Screenshot frame — a plain, real browser chrome, not a decorative device. */
+/* Product shot — a plain, real browser chrome, not a decorative device.
+   The glow sits on the wrapper (not the frame) since the frame clips its own
+   corners with overflow: hidden and would cut the blur off. */
+.lp-hero-shot { position: relative; z-index: 1; }
+.lp-hero-shot::before {
+    content: ''; position: absolute; inset: -32px -16px -16px 32px; border-radius: 40px;
+    background: radial-gradient(circle at 32% 24%, color-mix(in srgb, var(--lp-primary-2) 38%, transparent), transparent 65%);
+    filter: blur(46px);
+}
 .lp-shot-frame {
-    margin-top: 54px; border-radius: 16px; overflow: hidden;
+    position: relative; border-radius: 16px; overflow: hidden;
     background: var(--lp-ink-panel);
     box-shadow: 0 40px 80px -30px rgba(20, 24, 50, .35), 0 1px 0 rgba(255,255,255,.06) inset;
     border: 1px solid #1c2338;
@@ -344,7 +398,9 @@ html:has(.lp-page), body:has(.lp-page) { height: auto; }
 
 /* ---------- Responsive ---------- */
 @media (max-width: 980px) {
+    .lp-hero .lp-shell { grid-template-columns: 1fr; max-width: 640px; gap: 40px; }
     .lp-hero h1 { font-size: 40px; }
+    .lp-hero-lead { max-width: none; }
     .lp-steps { grid-template-columns: 1fr; gap: 20px; }
     .lp-step-arrow { display: none; }
     .lp-feature-row { grid-template-columns: 1fr; gap: 32px; }
@@ -354,12 +410,35 @@ html:has(.lp-page), body:has(.lp-page) { height: auto; }
 }
 @media (max-width: 640px) {
     .lp-shell { padding: 0 18px; }
-    .lp-nav-links { display: none; }
-    .lp-nav-cta .lp-btn-ghost { display: none; }
-    .lp-nav-cta .lp-btn { padding: 10px 16px; font-size: 13.5px; }
+    .lp-nav { padding: 14px 0; }
+    .lp-nav-pill { height: 58px; padding: 5px 6px 5px 16px; }
+    .lp-brand .dot { width: 34px; height: 34px; }
+    .lp-nav-links, .lp-nav-cta { display: none; }
+    .lp-nav-toggle { display: flex; }
+    .lp-nav-mobile {
+        display: flex; flex-direction: column; gap: 18px;
+        max-width: 1040px; margin: 10px auto 0;
+        max-height: 0; overflow: hidden; opacity: 0;
+        padding: 20px; border-radius: 26px;
+        background: linear-gradient(180deg, color-mix(in srgb, var(--lp-ink-panel) 96%, #2a2f45), var(--lp-ink-panel));
+        box-shadow: 0 24px 48px -18px rgba(11, 17, 32, .45);
+        transition: max-height .25s ease, opacity .2s ease;
+    }
+    .lp-nav.is-open .lp-nav-mobile { max-height: 420px; opacity: 1; }
+    .lp-nav-mobile nav { display: flex; flex-direction: column; gap: 2px; }
+    .lp-nav-mobile nav a {
+        font-size: 15px; font-weight: 600; color: #fff;
+        padding: 12px 14px; border-radius: 12px; transition: background .15s;
+    }
+    .lp-nav-mobile nav a:hover { background: rgba(255,255,255,.09); }
+    .lp-nav-mobile-cta { display: flex; flex-direction: column; gap: 10px; }
+    .lp-nav-mobile-cta .lp-btn.lp-btn-ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.25); }
+    .lp-nav-mobile-cta .lp-btn.lp-btn-ghost:hover { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.4); }
     .lp-hero { padding: 48px 0 20px; }
+    .lp-hero::before { width: 380px; height: 380px; top: -80px; right: -120px; }
     .lp-hero h1 { font-size: 32px; }
     .lp-hero-lead { font-size: 16px; }
+    .lp-hero-shot::before { inset: -18px -10px -10px 18px; filter: blur(30px); }
     .lp-section { padding: 64px 0; }
     .lp-section-head h2 { font-size: 26px; }
     .lp-grid { grid-template-columns: 1fr; }

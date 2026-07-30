@@ -1,5 +1,6 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
+import LandingHeader from '../LandingHeader';
 import '../../css/landing.css';
 
 function Check() {
@@ -79,21 +80,7 @@ export default function Welcome() {
             </Head>
 
             {/* ---------- Nav ---------- */}
-            <header className="lp-nav">
-                <div className="lp-shell lp-nav-inner">
-                    <div className="lp-brand"><span className="dot">B</span> BulkApply</div>
-                    <nav className="lp-nav-links">
-                        <a href="#features">Features</a>
-                        <a href="#how-it-works">How it works</a>
-                        <Link href="/p/pricing">Pricing</Link>
-                        <Link href="/p/faq">FAQ</Link>
-                    </nav>
-                    <div className="lp-nav-cta">
-                        <Link href="/login" className="lp-btn lp-btn-ghost">Log in</Link>
-                        <Link href="/register" className="lp-btn lp-btn-primary">Start free trial</Link>
-                    </div>
-                </div>
-            </header>
+            <LandingHeader />
 
             {/* ---------- Hero ---------- */}
             <section className="lp-hero">
@@ -117,9 +104,11 @@ export default function Welcome() {
                         </div>
                     </div>
 
-                    <div className="lp-shot-frame">
-                        <div className="lp-shot-chrome"><span /><span /><span /></div>
-                        <img src={`${IMG}/dashboard.png`} alt="BulkApply dashboard showing total jobs, success rate, open rate and application pipeline" loading="eager" />
+                    <div className="lp-hero-shot">
+                        <div className="lp-shot-frame">
+                            <div className="lp-shot-chrome"><span /><span /><span /></div>
+                            <img src={`${IMG}/dashboard.png`} alt="BulkApply dashboard showing total jobs, success rate, open rate and application pipeline" loading="eager" />
+                        </div>
                     </div>
                 </div>
             </section>

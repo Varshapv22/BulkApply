@@ -1,6 +1,7 @@
 import React from 'react';
 import { Head, Link } from '@inertiajs/react';
 import { formatDuration } from '../components';
+import LandingHeader from '../LandingHeader';
 import '../../css/landing.css';
 
 function Icon({ path }) {
@@ -105,21 +106,7 @@ export default function Page({ slug, title, content, plans }) {
             </Head>
 
             {/* ---------- Nav ---------- */}
-            <header className="lp-nav">
-                <div className="lp-shell lp-nav-inner">
-                    <Link href="/" className="lp-brand"><span className="dot">B</span> BulkApply</Link>
-                    <nav className="lp-nav-links">
-                        <Link href="/#features">Features</Link>
-                        <Link href="/#how-it-works">How it works</Link>
-                        <Link href="/p/pricing">Pricing</Link>
-                        <Link href="/p/faq">FAQ</Link>
-                    </nav>
-                    <div className="lp-nav-cta">
-                        <Link href="/login" className="lp-btn lp-btn-ghost">Log in</Link>
-                        <Link href="/register" className="lp-btn lp-btn-primary">Start free trial</Link>
-                    </div>
-                </div>
-            </header>
+            <LandingHeader />
 
             {/* ---------- Page header ---------- */}
             <section className="lp-doc-hero">
