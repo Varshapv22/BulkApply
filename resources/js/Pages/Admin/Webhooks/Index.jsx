@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
-import { PageHead, Badge } from '../../../components';
+import { PageHead, Badge, Pagination } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
 export default function AdminWebhooksIndex({ logs }) {
@@ -12,12 +12,12 @@ export default function AdminWebhooksIndex({ logs }) {
             <PageHead title="Webhooks" subtitle="Outgoing webhook call history." />
 
             <div className="card">
-                {logs.length === 0 ? <p className="muted">No webhook calls logged yet.</p> : (
+                {logs.data.length === 0 ? <p className="muted">No webhook calls logged yet.</p> : (
                     <div className="table-wrap">
                         <table>
                             <thead><tr><th>URL</th><th>Status</th><th>When</th><th></th></tr></thead>
                             <tbody>
-                                {logs.map((l) => (
+                                {logs.data.map((l) => (
                                     <React.Fragment key={l.id}>
                                         <tr>
                                             <td>{l.url}</td>
@@ -49,6 +49,8 @@ export default function AdminWebhooksIndex({ logs }) {
                         </table>
                     </div>
                 )}
+
+                <Pagination meta={logs} />
             </div>
         </>
     );

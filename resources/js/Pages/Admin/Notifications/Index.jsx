@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, router } from '@inertiajs/react';
-import { PageHead, Badge } from '../../../components';
+import { PageHead, Badge, Pagination } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
 const TYPE_LABELS = {
@@ -9,6 +9,8 @@ const TYPE_LABELS = {
     queue_failed: 'Queue Failure',
     webhook_failed: 'Webhook Failure',
     plan_upgrade_request: 'Plan Upgrade Request',
+    support_new_ticket: 'New Support Ticket',
+    support_reply: 'Support Reply',
 };
 
 export default function AdminNotificationsIndex({ notifications, unreadCount }) {
@@ -24,12 +26,12 @@ export default function AdminNotificationsIndex({ notifications, unreadCount }) 
             )}
 
             <div className="card">
-                {notifications.length === 0 ? <p className="muted">No notifications yet.</p> : (
+                {notifications.data.length === 0 ? <p className="muted">No notifications yet.</p> : (
                     <div className="table-wrap">
                         <table>
                             <thead><tr><th>Type</th><th>Message</th><th>When</th><th></th></tr></thead>
                             <tbody>
-                                {notifications.map((n) => (
+                                {notifications.data.map((n) => (
                                     <tr key={n.id} style={{ opacity: n.read_at ? 0.55 : 1 }}>
                                         <td><Badge status={n.read_at ? 'neutral' : 'failed'}>{TYPE_LABELS[n.type] || n.type}</Badge></td>
                                         <td>{n.message}</td>
@@ -46,6 +48,8 @@ export default function AdminNotificationsIndex({ notifications, unreadCount }) 
                         </table>
                     </div>
                 )}
+
+                <Pagination meta={notifications} />
             </div>
         </>
     );

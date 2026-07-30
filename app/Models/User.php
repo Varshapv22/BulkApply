@@ -80,6 +80,11 @@ class User extends Authenticatable
         return $this->hasMany(SavedSearch::class);
     }
 
+    public function supportTickets()
+    {
+        return $this->hasMany(SupportTicket::class);
+    }
+
     public function activeSubscription(): ?Subscription
     {
         return $this->subscriptions()->active()->latest('starts_at')->first();

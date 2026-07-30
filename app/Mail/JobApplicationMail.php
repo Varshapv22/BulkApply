@@ -55,7 +55,7 @@ class JobApplicationMail extends Mailable
     }
 
     /**
-     * Attach the resume and cover letter from the local storage disk, keeping
+     * Attach the resume and cover letter from the default storage disk, keeping
      * their original filenames.
      *
      * @return array<int, Attachment>
@@ -64,13 +64,13 @@ class JobApplicationMail extends Mailable
     {
         $attachments = [];
 
-        if ($this->profile->resume_path && Storage::disk('local')->exists($this->profile->resume_path)) {
-            $attachments[] = Attachment::fromStorageDisk('local', $this->profile->resume_path)
+        if ($this->profile->resume_path && Storage::exists($this->profile->resume_path)) {
+            $attachments[] = Attachment::fromStorage($this->profile->resume_path)
                 ->as($this->profile->resume_name ?: 'resume.pdf');
         }
 
-        if ($this->profile->cover_letter_path && Storage::disk('local')->exists($this->profile->cover_letter_path)) {
-            $attachments[] = Attachment::fromStorageDisk('local', $this->profile->cover_letter_path)
+        if ($this->profile->cover_letter_path && Storage::exists($this->profile->cover_letter_path)) {
+            $attachments[] = Attachment::fromStorage($this->profile->cover_letter_path)
                 ->as($this->profile->cover_letter_name ?: 'cover-letter.pdf');
         }
 

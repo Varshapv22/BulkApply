@@ -11,7 +11,7 @@ class NotificationController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Notifications/Index', [
-            'notifications' => AdminNotification::latest()->limit(100)->get(),
+            'notifications' => AdminNotification::latest()->paginate(10)->withQueryString(),
             'unreadCount' => AdminNotification::unread()->count(),
         ]);
     }

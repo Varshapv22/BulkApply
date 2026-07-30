@@ -12,7 +12,7 @@ class WebhookController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Webhooks/Index', [
-            'logs' => WebhookLog::latest()->limit(50)->get(),
+            'logs' => WebhookLog::latest()->paginate(10)->withQueryString(),
         ]);
     }
 

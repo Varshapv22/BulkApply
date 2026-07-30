@@ -40,14 +40,21 @@ class ResumeCheckController extends Controller
         $error = null;
 
         if ($resumePath && Storage::exists($resumePath)) {
+            // Copy to a local temp file since the analyzer needs a real filesystem
+            // path (ZipArchive/PDF parser) — Storage::path() doesn't work once the
+            // default disk is a cloud disk like S3, which has no local path.
+            $tmpPath = tempnam(sys_get_temp_dir(), 'resume_');
             try {
+                file_put_contents($tmpPath, Storage::get($resumePath));
                 $report = $analyzer->analyze(
-                    Storage::path($resumePath),
+                    $tmpPath,
                     $resumeName ?: basename($resumePath),
                     $profile->preferred_role ?? ''
                 );
             } catch (\Throwable $e) {
                 $error = 'Could not analyze the resume: ' . $e->getMessage();
+            } finally {
+                @unlink($tmpPath);
             }
         }
 

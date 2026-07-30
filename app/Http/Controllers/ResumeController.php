@@ -46,8 +46,8 @@ class ResumeController extends Controller
     {
         if ($resume->user_id !== $request->user()->id) abort(403);
 
-        if (Storage::disk('local')->exists($resume->file_path)) {
-            Storage::disk('local')->delete($resume->file_path);
+        if (Storage::exists($resume->file_path)) {
+            Storage::delete($resume->file_path);
         }
         $resume->delete();
 

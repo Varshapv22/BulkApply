@@ -91,7 +91,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
 
     Route::get('/support', [SupportController::class, 'index'])->name('support.index');
+    Route::get('/support/{ticket}', [SupportController::class, 'show'])->name('support.show');
     Route::post('/support/{ticket}/status', [SupportController::class, 'updateStatus'])->name('support.updateStatus');
+    Route::post('/support/{ticket}/reply', [SupportController::class, 'reply'])->name('support.reply');
+    Route::get('/support/{ticket}/attachment', [SupportController::class, 'attachment'])->name('support.attachment');
 
     Route::get('/cms', [CmsController::class, 'index'])->name('cms.index');
     Route::post('/cms', [CmsController::class, 'store'])->name('cms.store');

@@ -14,6 +14,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ResumeCheckController;
 use App\Http\Controllers\SavedSearchController;
+use App\Http\Controllers\SupportTicketController;
 use App\Http\Controllers\TrackingController;
 use Illuminate\Support\Facades\Route;
 
@@ -68,6 +69,12 @@ Route::middleware(['auth', 'trial.active'])->group(function () {
     // Account (name / email / password)
     Route::put('/account', [AuthController::class, 'updateAccount'])->name('account.update');
     Route::put('/account/password', [AuthController::class, 'updatePassword'])->name('account.password');
+
+    // Support tickets (My Tickets — reply thread on submissions made via /contact)
+    Route::get('/support/tickets', [SupportTicketController::class, 'index'])->name('support.tickets.index');
+    Route::get('/support/tickets/{ticket}', [SupportTicketController::class, 'show'])->name('support.tickets.show');
+    Route::post('/support/tickets/{ticket}/reply', [SupportTicketController::class, 'reply'])->name('support.tickets.reply');
+    Route::get('/support/tickets/{ticket}/attachment', [SupportTicketController::class, 'attachment'])->name('support.tickets.attachment');
 
     // Resumes
     Route::post('/resumes', [\App\Http\Controllers\ResumeController::class, 'store'])->name('resumes.store');

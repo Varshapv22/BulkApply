@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { router, usePage } from '@inertiajs/react';
-import { PageHead, Stat, Badge, Icons, useConfirm } from '../../../components';
+import { PageHead, Stat, Badge, Icons, useConfirm, Pagination } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
 function TwoFactorSetup({ enabled }) {
@@ -142,7 +142,7 @@ export default function AdminSecurityIndex({ twoFactorEnabled, loginHistory, fai
                     <table>
                         <thead><tr><th>Email</th><th>Result</th><th>IP</th><th>When</th></tr></thead>
                         <tbody>
-                            {loginHistory.map((l) => (
+                            {loginHistory.data.map((l) => (
                                 <tr key={l.id}>
                                     <td>{l.email}</td>
                                     <td><Badge status={l.successful ? 'sent' : 'failed'}>{l.successful ? 'Success' : 'Failed'}</Badge></td>
@@ -153,6 +153,8 @@ export default function AdminSecurityIndex({ twoFactorEnabled, loginHistory, fai
                         </tbody>
                     </table>
                 </div>
+
+                <Pagination meta={loginHistory} />
             </div>
         </>
     );

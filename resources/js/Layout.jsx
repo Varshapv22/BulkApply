@@ -35,6 +35,7 @@ function Icon({ name, className = 'h-[18px] w-[18px] shrink-0' }) {
         inbox: <><path d="M22 12h-6l-2 3h-4l-2-3H2" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></>,
         puzzle: <><path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-3.408 0l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568a2.404 2.404 0 0 1 0-3.408l1.611-1.611c.24-.24.581-.353.917-.312.492.06.844.484 1.02.951a2.5 2.5 0 1 0 3.259-3.259c-.467-.176-.891-.528-.951-1.02-.041-.336.072-.677.312-.917l1.611-1.611a2.404 2.404 0 0 1 3.408 0l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02z" /></>,
         shield: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></>,
+        help: <><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></>,
     };
     return (
         <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -573,6 +574,10 @@ export default function Layout({ children }) {
                         <Icon name="mail" className={navIconClass(false)} />
                         <span className={navLabelClass}>Gmail — Sent ↗</span>
                     </a>
+                    <Link href="/support/tickets" className={navItemClass(url.startsWith('/support') || url.startsWith('/contact'))} title={isCollapsed ? 'Support' : undefined}>
+                        <Icon name="help" className={navIconClass(url.startsWith('/support') || url.startsWith('/contact'))} />
+                        <span className={navLabelClass}>Support</span>
+                    </Link>
                 </nav>
                 <div className="border-t border-white/[0.07] p-3">
                     <div className="flex items-center gap-2.5 rounded-xl bg-white/[0.03] p-[7px] transition-colors hover:bg-white/[0.06]" title={isCollapsed ? (user?.name || 'Account') : undefined}>

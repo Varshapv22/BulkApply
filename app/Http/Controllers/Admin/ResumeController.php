@@ -11,7 +11,9 @@ class ResumeController extends Controller
 {
     public function index()
     {
-        $resumes = Resume::with('user:id,name,email')->latest()->get()->map(fn ($r) => [
+        $totalStorageKb = Resume::get()->sum(fn ($r) => Storage::exists($r->file_path) ? round(Storage::size($r->file_path) / 1024) : 0);
+
+        $resumes = Resume::with('user:id,name,email')->latest()->paginate(10)->withQueryString()->through(fn ($r) => [
             'id' => $r->id,
             'name' => $r->name,
             'is_default' => $r->is_default,
@@ -22,7 +24,7 @@ class ResumeController extends Controller
 
         return Inertia::render('Admin/Resumes/Index', [
             'resumes' => $resumes,
-            'totalStorageKb' => $resumes->sum('size_kb'),
+            'totalStorageKb' => $totalStorageKb,
         ]);
     }
 

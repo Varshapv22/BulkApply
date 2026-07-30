@@ -22,7 +22,7 @@ class SecurityController extends Controller
 
         return Inertia::render('Admin/Security/Index', [
             'twoFactorEnabled' => $user->google2fa_enabled,
-            'loginHistory' => LoginHistory::latest('created_at')->limit(50)->get(),
+            'loginHistory' => LoginHistory::latest('created_at')->paginate(10)->withQueryString(),
             'failedAttempts' => LoginHistory::where('successful', false)->where('created_at', '>=', now()->subDay())->count(),
             'suspendedUsers' => User::where('is_active', false)->get(['id', 'name', 'email']),
             'ipRules' => IpRule::latest()->get(),

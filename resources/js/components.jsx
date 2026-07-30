@@ -164,6 +164,72 @@ export function Badge({ status, children }) {
     return <span className={`badge ${status}`}>{children ?? status}</span>;
 }
 
+/** Pager for a Laravel paginator prop (the object with `.links`), e.g. <Pagination meta={tickets} />. */
+export function Pagination({ meta, preserveScroll = false }) {
+    if (!meta?.links || meta.links.length <= 3) return null;
+
+    return (
+        <div style={{ display: 'flex', gap: 6, marginTop: 16, flexWrap: 'wrap' }}>
+            {meta.links.map((link, i) => (
+                <button key={i} className={`btn btn-sm ${link.active ? 'btn-primary' : 'btn-ghost'}`} disabled={!link.url}
+                    onClick={() => link.url && router.get(link.url, {}, { preserveState: true, preserveScroll })}
+                    dangerouslySetInnerHTML={{ __html: link.label }} />
+            ))}
+        </div>
+    );
+}
+
+/** Shared metadata for support ticket types — used by the Contact form, My Tickets, and the admin Support pages. */
+export const SUPPORT_TICKET_TYPES = {
+    contact: { label: 'General Question', icon: 'chat', badge: 'neutral' },
+    feedback: { label: 'Feedback', icon: 'star', badge: 'amber' },
+    feature_request: { label: 'Feature Request', icon: 'sparkle', badge: 'queued' },
+    bug_report: { label: 'Bug Report', icon: 'alert', badge: 'failed' },
+};
+
+export const SUPPORT_TICKET_STATUSES = {
+    open: { label: 'Open', badge: 'queued' },
+    in_progress: { label: 'In Progress', badge: 'amber' },
+    resolved: { label: 'Resolved', badge: 'sent' },
+};
+
+/** Chat-style reply thread for a support ticket, shared between the user's ticket view and the admin ticket view.
+ * `viewerIsAdmin` decides which side of the thread the viewer's own messages render on. */
+export function TicketThread({ replies, viewerIsAdmin }) {
+    if (!replies || replies.length === 0) {
+        return <p className="muted" style={{ fontSize: 13 }}>No replies yet.</p>;
+    }
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {replies.map((r) => {
+                const mine = r.is_admin === viewerIsAdmin;
+                return (
+                    <div key={r.id} style={{ display: 'flex', flexDirection: 'column', alignItems: mine ? 'flex-end' : 'flex-start' }}>
+                        <div style={{
+                            maxWidth: '80%',
+                            background: mine ? 'var(--primary)' : 'var(--hover)',
+                            color: mine ? '#fff' : 'var(--text)',
+                            padding: '10px 14px',
+                            borderRadius: 14,
+                            borderBottomRightRadius: mine ? 4 : 14,
+                            borderBottomLeftRadius: mine ? 14 : 4,
+                            whiteSpace: 'pre-wrap',
+                            fontSize: 13.5,
+                            lineHeight: 1.55,
+                        }}>
+                            {r.message}
+                        </div>
+                        <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                            {r.is_admin ? 'Support Team' : r.author_name} · {new Date(r.created_at).toLocaleString()}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+}
+
 /** Promise-based replacement for native confirm(): const { confirm, dialog } = useConfirm(); ... await confirm({ title, message, confirmLabel, danger }); render {dialog} once near the component's other conditional modals. */
 export function useConfirm() {
     const [state, setState] = useState(null);
@@ -460,8 +526,8 @@ export function CompanyInsightButton({ company, role, website, label = 'Who work
     );
 }
 
-/** Drag-and-drop file picker — used for the UPI payment screenshot upload. */
-function FileDropzone({ value, onChange, accept }) {
+/** Drag-and-drop file picker — used for the UPI payment screenshot and support ticket attachment uploads. */
+export function FileDropzone({ value, onChange, accept }) {
     const [dragOver, setDragOver] = useState(false);
     const inputRef = useRef(null);
 

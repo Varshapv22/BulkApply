@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, router } from '@inertiajs/react';
-import { PageHead, Stat, Badge, Icons } from '../../../components';
+import { PageHead, Stat, Badge, Icons, Pagination } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
 export default function AdminResumesIndex({ resumes, totalStorageKb }) {
@@ -11,17 +11,17 @@ export default function AdminResumesIndex({ resumes, totalStorageKb }) {
             <PageHead title="Resume Manager" subtitle="All resumes uploaded across the platform." />
 
             <div className="stats">
-                <Stat label="Total Resumes" value={resumes.length} icon={Icons.upload} accent="primary" />
+                <Stat label="Total Resumes" value={resumes.total} icon={Icons.upload} accent="primary" />
                 <Stat label="Total Storage" value={`${(totalStorageKb / 1024).toFixed(1)} MB`} icon={Icons.doc} accent="blue" />
             </div>
 
             <div className="card">
-                {resumes.length === 0 ? <p className="muted">No resumes uploaded yet.</p> : (
+                {resumes.data.length === 0 ? <p className="muted">No resumes uploaded yet.</p> : (
                     <div className="table-wrap">
                         <table>
                             <thead><tr><th>Name</th><th>User</th><th>Default</th><th>Size</th><th>Uploaded</th><th></th></tr></thead>
                             <tbody>
-                                {resumes.map((r) => (
+                                {resumes.data.map((r) => (
                                     <tr key={r.id}>
                                         <td>{r.name}</td>
                                         <td>{r.user ? <Link href={`/admin/users/${r.user.id}`}>{r.user.name}</Link> : '—'}</td>
@@ -38,6 +38,8 @@ export default function AdminResumesIndex({ resumes, totalStorageKb }) {
                         </table>
                     </div>
                 )}
+
+                <Pagination meta={resumes} />
             </div>
         </>
     );
