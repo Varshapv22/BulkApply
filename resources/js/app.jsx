@@ -6,9 +6,11 @@ import Layout from './Layout';
 
 createInertiaApp({
     title: (title) => (title ? `${title} · BulkApply` : 'BulkApply'),
-    resolve: (name) => {
-        const pages = import.meta.glob('./Pages/**/*.jsx', { eager: true });
-        const page = pages[`./Pages/${name}.jsx`];
+    resolve: async (name) => {
+        // Lazy per-page chunks instead of eagerly bundling every page (incl.
+        // the whole admin panel) into one JS file every visitor downloads.
+        const pages = import.meta.glob('./Pages/**/*.jsx');
+        const page = await pages[`./Pages/${name}.jsx`]();
         // Auth pages render bare; everything else gets the sidebar shell.
         if (page.default.layout === undefined && !name.startsWith('Auth/')) {
             page.default.layout = (pageEl) => <Layout>{pageEl}</Layout>;

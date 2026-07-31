@@ -9,12 +9,14 @@ use App\Models\FeatureFlag;
 use App\Models\JobApplication;
 use App\Models\Profile;
 use App\Models\WebhookLog;
+use App\Services\SafeUrlGuard;
 use App\Services\UserMailer;
 use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\RateLimited;
 use Illuminate\Queue\Middleware\SkipIfBatchCancelled;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -55,82 +57,101 @@ class SendJobApplication implements ShouldQueue
             return;
         }
 
-        // Queue workers have no logged-in session, so Profile::current() can't
-        // be trusted here — resolve the account that actually owns this job.
-        $profile = self::resolveProfileFor($job);
-
-        if (! $profile->hasMailCredentials()) {
-            $job->update([
-                'status' => JobApplication::STATUS_FAILED,
-                'error'  => 'Email sending not connected. Add your Gmail App Password in Settings.',
-            ]);
+        // Guards against this application being sent twice by two
+        // concurrently-running job instances for the same row (e.g. a
+        // re-dispatch after a stale-queue sweep race). If another worker
+        // already holds the lock it is actively handling this job right
+        // now, so skip rather than block.
+        $lock = Cache::lock("send-job-application:{$job->id}", 120);
+        if (! $lock->get()) {
             return;
         }
 
-        // Scheduling window check — release if outside window
-        if (! $profile->isInsideSendingWindow()) {
-            $this->release(300); // try again in 5 minutes
-            return;
-        }
-
-        // Assign tracking ID if not set
-        if (! $job->tracking_id) {
-            $job->tracking_id = Str::uuid()->toString();
-            $job->save();
-        }
-
-        // Resolve email template: job-specific > default template > profile template
-        $customSubject = null;
-        $customBody = null;
-
-        $template = $job->email_template_id
-            ? EmailTemplate::where('user_id', $job->user_id)->find($job->email_template_id)
-            : EmailTemplate::defaultTemplate($job->user_id);
-
-        if ($template) {
-            $customSubject = $template->subject;
-            $customBody = $template->body;
-        }
-
-        // Send through THIS account's own connected Gmail, isolated per-user
-        // so credentials never bleed across jobs processed in the same worker.
-        $userMailer = new UserMailer();
-        $mailerName = $userMailer->mailerFor($profile);
         try {
-            try {
-                Mail::mailer($mailerName)->to($job->recruiter_email)->send(
-                    new JobApplicationMail($job, $profile, $customSubject, $customBody)
-                );
-            } finally {
-                $userMailer->release($mailerName);
+            $job->refresh();
+            if ($job->status === JobApplication::STATUS_SENT) {
+                return;
             }
-        } catch (Throwable $e) {
-            // A real send failure (bad address, auth error, etc.) — fail once,
-            // immediately, rather than let retryUntil() keep retrying it for days.
-            $job->update([
-                'status' => JobApplication::STATUS_FAILED,
-                'error'  => substr($e->getMessage(), 0, 1000),
-            ]);
-            AdminNotification::log('email_failed', "Email to {$job->company} failed: " . substr($e->getMessage(), 0, 200), ['job_id' => $job->id]);
-            $this->fireWebhook($profile, $job, 'application_failed');
-            return;
+
+            // Queue workers have no logged-in session, so Profile::current()
+            // can't be trusted here — resolve the account that owns this job.
+            $profile = self::resolveProfileFor($job);
+
+            if (! $profile->hasMailCredentials()) {
+                $job->update([
+                    'status' => JobApplication::STATUS_FAILED,
+                    'error'  => 'Email sending not connected. Add your Gmail App Password in Settings.',
+                ]);
+                return;
+            }
+
+            // Scheduling window check — release if outside window
+            if (! $profile->isInsideSendingWindow()) {
+                $this->release(300); // try again in 5 minutes
+                return;
+            }
+
+            // Assign tracking ID if not set
+            if (! $job->tracking_id) {
+                $job->tracking_id = Str::uuid()->toString();
+                $job->save();
+            }
+
+            // Resolve email template: job-specific > default template > profile template
+            $customSubject = null;
+            $customBody = null;
+
+            $template = $job->email_template_id
+                ? EmailTemplate::where('user_id', $job->user_id)->find($job->email_template_id)
+                : EmailTemplate::defaultTemplate($job->user_id);
+
+            if ($template) {
+                $customSubject = $template->subject;
+                $customBody = $template->body;
+            }
+
+            // Send through THIS account's own connected Gmail, isolated per-user
+            // so credentials never bleed across jobs processed in the same worker.
+            $userMailer = new UserMailer();
+            $mailerName = $userMailer->mailerFor($profile);
+            try {
+                try {
+                    Mail::mailer($mailerName)->to($job->recruiter_email)->send(
+                        new JobApplicationMail($job, $profile, $customSubject, $customBody)
+                    );
+                } finally {
+                    $userMailer->release($mailerName);
+                }
+            } catch (Throwable $e) {
+                // A real send failure (bad address, auth error, etc.) — fail once,
+                // immediately, rather than let retryUntil() keep retrying it for days.
+                $job->update([
+                    'status' => JobApplication::STATUS_FAILED,
+                    'error'  => substr($e->getMessage(), 0, 1000),
+                ]);
+                AdminNotification::log('email_failed', "Email to {$job->company} failed: " . substr($e->getMessage(), 0, 200), ['job_id' => $job->id]);
+                $this->fireWebhook($profile, $job, 'application_failed');
+                return;
+            }
+
+            $updateData = [
+                'status'  => JobApplication::STATUS_SENT,
+                'sent_at' => now(),
+                'error'   => null,
+            ];
+
+            // Schedule follow-up if configured
+            if ($profile->followup_days > 0) {
+                $updateData['followup_at'] = now()->addDays($profile->followup_days);
+            }
+
+            $job->update($updateData);
+
+            // Fire webhook notification
+            $this->fireWebhook($profile, $job, 'application_sent');
+        } finally {
+            $lock->release();
         }
-
-        $updateData = [
-            'status'  => JobApplication::STATUS_SENT,
-            'sent_at' => now(),
-            'error'   => null,
-        ];
-
-        // Schedule follow-up if configured
-        if ($profile->followup_days > 0) {
-            $updateData['followup_at'] = now()->addDays($profile->followup_days);
-        }
-
-        $job->update($updateData);
-
-        // Fire webhook notification
-        $this->fireWebhook($profile, $job, 'application_sent');
     }
 
     public function failed(Throwable $e): void
@@ -168,6 +189,11 @@ class SendJobApplication implements ShouldQueue
     private function fireWebhook(Profile $profile, JobApplication $job, string $event): void
     {
         if (blank($profile->webhook_url) || !FeatureFlag::enabled('feature.webhooks')) {
+            return;
+        }
+
+        if (!SafeUrlGuard::isSafe($profile->webhook_url)) {
+            AdminNotification::log('webhook_blocked', "Webhook to {$profile->webhook_url} blocked: URL resolves to a private/reserved address.", ['job_id' => $job->id]);
             return;
         }
 

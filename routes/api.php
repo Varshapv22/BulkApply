@@ -8,7 +8,7 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::post('/extension/login', [\App\Http\Controllers\Api\ExtensionController::class, 'login'])
-    ->middleware('feature:feature.chrome_extension');
+    ->middleware(['feature:feature.chrome_extension', 'throttle:login']);
 
 Route::middleware(['auth:sanctum', 'feature:feature.chrome_extension'])->group(function () {
     Route::post('/extension/jobs', [\App\Http\Controllers\Api\ExtensionController::class, 'storeJob']);

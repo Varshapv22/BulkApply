@@ -48,7 +48,9 @@ class Profile extends Model
 
     public function hasDocuments(): bool
     {
-        return filled($this->resume_path) && filled($this->cover_letter_path);
+        $hasResume = filled($this->resume_path) || Resume::where('user_id', $this->user_id)->exists();
+
+        return $hasResume && filled($this->cover_letter_path);
     }
 
     /** Whether this account has connected its own email sender. */
@@ -66,7 +68,18 @@ class Profile extends Model
         }
 
         if ($this->send_start_hour !== null && $this->send_end_hour !== null) {
-            return $hour >= $this->send_start_hour && $hour < $this->send_end_hour;
+            $start = $this->send_start_hour;
+            $end = $this->send_end_hour;
+
+            if ($start === $end) {
+                return true; // identical start/end means no restriction
+            }
+
+            // Overnight window (e.g. 20 -> 6): wraps past midnight, so the
+            // "inside" range is everything except [end, start).
+            return $start < $end
+                ? ($hour >= $start && $hour < $end)
+                : ($hour >= $start || $hour < $end);
         }
 
         return true;

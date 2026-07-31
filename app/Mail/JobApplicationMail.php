@@ -64,7 +64,14 @@ class JobApplicationMail extends Mailable
     {
         $attachments = [];
 
-        if ($this->profile->resume_path && Storage::exists($this->profile->resume_path)) {
+        // Prefer the resume selected via the Resume manager for this job
+        // (job-specific > account default), falling back to the legacy
+        // single-file upload on the Profile.
+        $resume = $this->job->resume;
+        if ($resume && $resume->file_path && Storage::exists($resume->file_path)) {
+            $attachments[] = Attachment::fromStorage($resume->file_path)
+                ->as($resume->name ?: 'resume.pdf');
+        } elseif ($this->profile->resume_path && Storage::exists($this->profile->resume_path)) {
             $attachments[] = Attachment::fromStorage($this->profile->resume_path)
                 ->as($this->profile->resume_name ?: 'resume.pdf');
         }

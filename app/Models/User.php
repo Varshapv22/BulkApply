@@ -105,12 +105,22 @@ class User extends Authenticatable
             return null;
         }
 
+        $since = $subscription->starts_at ?? $subscription->created_at;
+
         $sentSinceSubscription = JobApplication::where('user_id', $this->id)
             ->where('status', JobApplication::STATUS_SENT)
-            ->where('sent_at', '>=', $subscription->starts_at ?? $subscription->created_at)
+            ->where('sent_at', '>=', $since)
             ->count();
 
-        return max(0, $limit - $sentSinceSubscription);
+        // Also count applications already queued (dispatched but not yet
+        // sent) so quota can't be bypassed by queuing repeatedly while sends
+        // are held by a closed sending window.
+        $queuedSinceSubscription = JobApplication::where('user_id', $this->id)
+            ->where('status', JobApplication::STATUS_QUEUED)
+            ->where('updated_at', '>=', $since)
+            ->count();
+
+        return max(0, $limit - $sentSinceSubscription - $queuedSinceSubscription);
     }
 
     /** Resume upload slots still available under the active plan's limit. Null = unlimited. */

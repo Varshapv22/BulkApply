@@ -3,8 +3,10 @@
 namespace App\Jobs;
 
 use App\Mail\FollowUpMail;
+use App\Models\AdminNotification;
 use App\Models\JobApplication;
-use App\Models\Profile;
+use App\Services\SafeUrlGuard;
+use App\Services\UserMailer;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Http;
@@ -34,9 +36,27 @@ class SendFollowUpEmail implements ShouldQueue
             return;
         }
 
-        $profile = Profile::current();
+        // Queue workers have no logged-in session, so Profile::current() can't
+        // be trusted here — resolve the account that actually owns this job.
+        $profile = SendJobApplication::resolveProfileFor($job);
 
-        Mail::to($job->recruiter_email)->send(new FollowUpMail($job, $profile));
+        if (!$profile->hasMailCredentials()) {
+            // Credentials were disconnected after the original send — don't
+            // retry forever; clear the schedule and let the user know.
+            $job->update(['followup_at' => null]);
+            AdminNotification::log('followup_failed', "Follow-up for {$job->company} skipped: email sending not connected.", ['job_id' => $job->id]);
+            return;
+        }
+
+        // Send through THIS account's own connected Gmail, same as the
+        // original application email — never a shared/default mailer.
+        $userMailer = new UserMailer();
+        $mailerName = $userMailer->mailerFor($profile);
+        try {
+            Mail::mailer($mailerName)->to($job->recruiter_email)->send(new FollowUpMail($job, $profile));
+        } finally {
+            $userMailer->release($mailerName);
+        }
 
         $job->update([
             'followup_count' => $job->followup_count + 1,
@@ -44,7 +64,7 @@ class SendFollowUpEmail implements ShouldQueue
         ]);
 
         // Fire webhook if configured
-        if (filled($profile->webhook_url)) {
+        if (filled($profile->webhook_url) && SafeUrlGuard::isSafe($profile->webhook_url)) {
             try {
                 Http::timeout(10)->post($profile->webhook_url, [
                     'event'   => 'followup_sent',
@@ -54,6 +74,14 @@ class SendFollowUpEmail implements ShouldQueue
             } catch (Throwable) {
                 // Don't fail the job for webhook errors
             }
+        }
+    }
+
+    public function failed(Throwable $e): void
+    {
+        $job = JobApplication::find($this->jobApplicationId);
+        if ($job) {
+            AdminNotification::log('followup_failed', "Follow-up email for {$job->company} failed: " . substr($e->getMessage(), 0, 200), ['job_id' => $job->id]);
         }
     }
 }

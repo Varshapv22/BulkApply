@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\JobApplication;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -13,12 +14,27 @@ class DashboardController extends Controller
     {
         $userId = Auth::id();
 
+        // The busiest page in the app, run through ~10 aggregate queries on
+        // every load — cache the computed payload briefly per user rather
+        // than re-running all of them on every visit/refresh.
+        $data = Cache::remember("dashboard:{$userId}", 60, fn () => $this->buildData($userId));
+
+        return Inertia::render('Dashboard', $data);
+    }
+
+    private function buildData(int $userId): array
+    {
+        $statusCounts = JobApplication::where('user_id', $userId)
+            ->selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
         $counts = [
-            'total'   => JobApplication::where('user_id', $userId)->count(),
-            'pending' => JobApplication::where('user_id', $userId)->where('status', JobApplication::STATUS_PENDING)->count(),
-            'queued'  => JobApplication::where('user_id', $userId)->where('status', JobApplication::STATUS_QUEUED)->count(),
-            'sent'    => JobApplication::where('user_id', $userId)->where('status', JobApplication::STATUS_SENT)->count(),
-            'failed'  => JobApplication::where('user_id', $userId)->where('status', JobApplication::STATUS_FAILED)->count(),
+            'total'   => $statusCounts->sum(),
+            'pending' => $statusCounts[JobApplication::STATUS_PENDING] ?? 0,
+            'queued'  => $statusCounts[JobApplication::STATUS_QUEUED] ?? 0,
+            'sent'    => $statusCounts[JobApplication::STATUS_SENT] ?? 0,
+            'failed'  => $statusCounts[JobApplication::STATUS_FAILED] ?? 0,
         ];
 
         $sentRate = $counts['total'] > 0
@@ -101,7 +117,7 @@ class DashboardController extends Controller
             ->all();
 
         // Company replies live on their own page (sidebar → Replies).
-        return Inertia::render('Dashboard', [
+        return [
             'counts'         => $counts,
             'sentRate'       => $sentRate,
             'chartData'      => $chartData->values(),
@@ -113,6 +129,6 @@ class DashboardController extends Controller
             'tracking'       => $tracking,
             'pipelineStats'  => $pipelineStats,
             'pipelineLabels' => JobApplication::PIPELINE_STATUSES,
-        ]);
+        ];
     }
 }

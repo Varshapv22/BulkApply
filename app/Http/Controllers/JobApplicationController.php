@@ -30,9 +30,14 @@ class JobApplicationController extends Controller
         if (!in_array($sortField, $allowed)) $sortField = 'created_at';
         if (!in_array($sortDir, ['asc', 'desc'])) $sortDir = 'desc';
 
-        // Always show active jobs (pending/queued/failed) first, then sent
+        // Always show active jobs (pending/queued/failed) first, then sent.
+        // The board shows the whole working set at once (drag-and-drop
+        // between pipeline columns), so this isn't paginated — but it's
+        // capped so an account with years of history can't load an
+        // unbounded result set into memory on every visit.
         $query->orderByRaw("CASE WHEN status IN ('pending','queued','failed') THEN 0 ELSE 1 END ASC")
-              ->orderBy($sortField, $sortDir);
+              ->orderBy($sortField, $sortDir)
+              ->limit(1000);
 
         $jobs = $query->get()->map(fn ($job) => [
             'id'              => $job->id,
@@ -82,12 +87,7 @@ class JobApplicationController extends Controller
             'templates'      => EmailTemplate::where('user_id', Auth::id())->get(['id', 'name', 'is_default']),
             'pipelineLabels'  => JobApplication::PIPELINE_STATUSES,
             'activeBatch'     => $activeBatch,
-            'counts'    => [
-                'total'   => JobApplication::where('user_id', Auth::id())->count(),
-                'pending' => JobApplication::where('user_id', Auth::id())->whereIn('status', [JobApplication::STATUS_PENDING, JobApplication::STATUS_FAILED])->count(),
-                'sent'    => JobApplication::where('user_id', Auth::id())->where('status', JobApplication::STATUS_SENT)->count(),
-                'failed'  => JobApplication::where('user_id', Auth::id())->where('status', JobApplication::STATUS_FAILED)->count(),
-            ],
+            'counts'    => $this->statusCounts(Auth::id()),
             'filters' => [
                 'search'   => $request->input('search'),
                 'status'   => $request->input('status'),
@@ -179,7 +179,7 @@ class JobApplicationController extends Controller
             JobApplication::create([
                 'company'         => $company,
                 'job_title'       => $record['job_title'] ?? null,
-                'recruiter_name'  => $record['  '] ?? null,
+                'recruiter_name'  => $record['recruiter_name'] ?? null,
                 'recruiter_email' => $email,
                 'job_url'         => $record['job_url'] ?? null,
                 'location'        => $record['location'] ?? null,
@@ -302,8 +302,21 @@ class JobApplicationController extends Controller
             return back()->with('error', 'Your plan\'s email limit has been reached. Upgrade your plan to send more.');
         }
 
-        $job->update(['status' => JobApplication::STATUS_QUEUED, 'error' => null]);
-        SendJobApplication::dispatch($job->id);
+        // Dispatch as a (single-job) batch, same as bulk send, so the batch
+        // tracking that SweepStaleQueued relies on to distinguish "still
+        // legitimately waiting out a closed sending window" from "actually
+        // stuck" also covers individually-sent jobs.
+        $batch = Bus::batch([new SendJobApplication($job->id)])
+            ->name("Single send ({$profile->user_id})")
+            ->allowFailures()
+            ->dispatch();
+
+        $job->update([
+            'status'        => JobApplication::STATUS_QUEUED,
+            'error'         => null,
+            'send_batch_id' => $batch->id,
+        ]);
+        $profile->update(['current_send_batch_id' => $batch->id]);
 
         return back()->with('status', "Application to {$job->company} queued.");
     }
@@ -417,6 +430,22 @@ class JobApplicationController extends Controller
             fputcsv($out, $sample);
             fclose($out);
         }, 'jobs-template.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    /** Status counts for the dashboard stat cards, in a single aggregate query. */
+    private function statusCounts(int $userId): array
+    {
+        $rows = JobApplication::where('user_id', $userId)
+            ->selectRaw('status, count(*) as count')
+            ->groupBy('status')
+            ->pluck('count', 'status');
+
+        return [
+            'total'   => $rows->sum(),
+            'pending' => ($rows[JobApplication::STATUS_PENDING] ?? 0) + ($rows[JobApplication::STATUS_FAILED] ?? 0),
+            'sent'    => $rows[JobApplication::STATUS_SENT] ?? 0,
+            'failed'  => $rows[JobApplication::STATUS_FAILED] ?? 0,
+        ];
     }
 
     private function aliasColumn(string $key): ?string

@@ -58,10 +58,17 @@ class CheckSavedSearchAlert implements ShouldQueue
     {
         $norm = fn (string $s) => preg_replace('/\s+/', ' ', trim(mb_strtolower(strip_tags($s))));
 
+        // Prefer the listing's own URL/ID — company+title+source alone
+        // collides across distinct postings (multiple openings with the
+        // same title, or a repost with a new URL) and silently swallows
+        // genuinely new listings as "already seen".
+        $identity = $job['job_url'] ?? $job['id'] ?? null;
+
         return hash('sha256', implode('|', [
             $norm($job['company'] ?? ''),
             $norm($job['job_title'] ?? ''),
             $norm($job['source'] ?? ''),
+            $identity ? $norm((string) $identity) : '',
         ]));
     }
 }

@@ -21,11 +21,11 @@ use Illuminate\Support\Facades\Route;
 // --- Auth (guest only) ---
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
     Route::post('/register', [AuthController::class, 'register']);
     Route::get('/2fa-challenge', [AuthController::class, 'showTwoFactorChallenge'])->name('2fa.challenge');
-    Route::post('/2fa-challenge', [AuthController::class, 'verifyTwoFactorChallenge'])->name('2fa.verify');
+    Route::post('/2fa-challenge', [AuthController::class, 'verifyTwoFactorChallenge'])->name('2fa.verify')->middleware('throttle:2fa-challenge');
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');

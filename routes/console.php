@@ -20,3 +20,6 @@ Schedule::command('app:check-saved-search-alerts')->everyThreeHours();
 // Pull new recruiter replies from Gmail for every connected account (every minute —
 // the finest granularity a cron-driven scheduler supports)
 Schedule::command('app:sync-gmail-replies')->everyMinute();
+
+// Prune old rows from log/audit tables that otherwise grow unbounded (daily)
+Schedule::command('app:prune-logs')->daily();
