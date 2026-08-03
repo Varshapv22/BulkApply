@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useForm } from '@inertiajs/react';
 import { PageHead, IconField, Icons, ChipIcon, PasswordInput } from '../components';
@@ -28,6 +28,110 @@ function ModalShell({ title, onClose, children, small, footer }) {
             </div>
         </div>,
         document.body
+    );
+}
+
+async function fetchJson(url) {
+    try {
+        const res = await fetch(url);
+        return res.ok ? await res.json() : [];
+    } catch {
+        return [];
+    }
+}
+
+// Country -> State -> District/City cascading selects, backed by static JSON
+// files under public/data/locations (generated from the country-state-city
+// dataset). Values are stored as human-readable names (not codes) on the
+// profile, since ISO codes are only meaningful while cascading in this UI —
+// codes are re-resolved from the stored names on load so editing an existing
+// profile restores the right dropdown state.
+function LocationFields({ country, state, district, onChange }) {
+    const [countries, setCountries] = useState([]);
+    const [states, setStates] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [countryCode, setCountryCode] = useState('');
+    const [stateCode, setStateCode] = useState('');
+    const countryResolved = useRef(false);
+    const stateResolvedFor = useRef('');
+
+    useEffect(() => {
+        fetchJson('/data/locations/countries.json').then(setCountries);
+    }, []);
+
+    useEffect(() => {
+        if (!countries.length || countryResolved.current) return;
+        countryResolved.current = true;
+        if (country) {
+            const match = countries.find((c) => c.name === country);
+            if (match) setCountryCode(match.iso2);
+        }
+    }, [countries, country]);
+
+    useEffect(() => {
+        if (!countryCode) { setStates([]); return; }
+        fetchJson(`/data/locations/states/${countryCode}.json`).then(setStates);
+    }, [countryCode]);
+
+    useEffect(() => {
+        if (!states.length || stateResolvedFor.current === countryCode) return;
+        stateResolvedFor.current = countryCode;
+        if (state) {
+            const match = states.find((s) => s.name === state);
+            if (match) setStateCode(match.code);
+        }
+    }, [states, state, countryCode]);
+
+    useEffect(() => {
+        if (!countryCode || !stateCode) { setDistricts([]); return; }
+        fetchJson(`/data/locations/cities/${countryCode}/${stateCode}.json`).then(setDistricts);
+    }, [countryCode, stateCode]);
+
+    const handleCountryChange = (e) => {
+        const iso2 = e.target.value;
+        const match = countries.find((c) => c.iso2 === iso2);
+        setCountryCode(iso2);
+        setStateCode('');
+        setStates([]);
+        setDistricts([]);
+        onChange('country', match ? match.name : '');
+        onChange('state', '');
+        onChange('district', '');
+    };
+
+    const handleStateChange = (e) => {
+        const code = e.target.value;
+        const match = states.find((s) => s.code === code);
+        setStateCode(code);
+        setDistricts([]);
+        onChange('state', match ? match.name : '');
+        onChange('district', '');
+    };
+
+    return (
+        <div className="row">
+            <div>
+                <label>Country</label>
+                <select value={countryCode} onChange={handleCountryChange}>
+                    <option value="">Select country…</option>
+                    {countries.map((c) => <option key={c.iso2} value={c.iso2}>{c.name}</option>)}
+                </select>
+            </div>
+            <div>
+                <label>State / Province</label>
+                <select value={stateCode} onChange={handleStateChange} disabled={!countryCode}>
+                    <option value="">{countryCode ? 'Select state…' : 'Select a country first'}</option>
+                    {states.map((s) => <option key={s.code} value={s.code}>{s.name}</option>)}
+                </select>
+            </div>
+            <div>
+                <label>District / City</label>
+                <select value={district || ''} onChange={(e) => onChange('district', e.target.value)} disabled={!stateCode}>
+                    <option value="">{stateCode ? 'Select district…' : 'Select a state first'}</option>
+                    {districts.map((d) => <option key={d} value={d}>{d}</option>)}
+                </select>
+            </div>
+        </div>
     );
 }
 
@@ -69,11 +173,11 @@ function DetailsModal({ data, setData, jobSites, photoPreview, onPhotoChange, re
                     <input type="tel" value={data.phone} onChange={(e) => setData('phone', e.target.value)} />
                 </div>
             </div>
-            <div className="row">
-                <div>
-                    <label>Location</label>
-                    <input type="text" value={data.location} onChange={(e) => setData('location', e.target.value)} placeholder="e.g. New York, NY" />
-                </div>
+            <label style={{ marginTop: 12 }}>Location</label>
+            <LocationFields country={data.country} state={data.state} district={data.district}
+                onChange={(field, value) => setData(field, value)} />
+
+            <div className="row" style={{ marginTop: 12 }}>
                 <div>
                     <label>Preferred Job Role</label>
                     <input type="text" value={data.preferred_role} onChange={(e) => setData('preferred_role', e.target.value)} placeholder="e.g. Software Engineer" />
@@ -321,7 +425,9 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [], 
         full_name: profile.full_name || '',
         email: profile.email || '',
         phone: profile.phone || '',
-        location: profile.location || '',
+        country: profile.country || '',
+        state: profile.state || '',
+        district: profile.district || '',
         preferred_role: profile.preferred_role || '',
         preferred_sites: profile.preferred_sites || [],
         skills: profile.skills || '',
@@ -454,11 +560,13 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [], 
                     )}
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <strong style={{ fontSize: 17 }}>{data.full_name || 'Add your name'}</strong>
-                        {(data.email || data.phone || data.location) ? (
+                        {(data.email || data.phone || data.district || data.state || data.country) ? (
                             <div className="profile-contact-row">
                                 {data.email && <span className="profile-contact-item"><ChipIcon icon={Icons.mail} />{data.email}</span>}
                                 {data.phone && <span className="profile-contact-item"><ChipIcon icon={Icons.phone} />{data.phone}</span>}
-                                {data.location && <span className="profile-contact-item"><ChipIcon icon={Icons.pin} />{data.location}</span>}
+                                {(data.district || data.state || data.country) && (
+                                    <span className="profile-contact-item"><ChipIcon icon={Icons.pin} />{[data.district, data.state, data.country].filter(Boolean).join(', ')}</span>
+                                )}
                             </div>
                         ) : (
                             <p className="muted" style={{ margin: '2px 0 0', fontSize: 13 }}>Add your contact details</p>
