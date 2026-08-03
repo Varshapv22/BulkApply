@@ -65,6 +65,11 @@ class User extends Authenticatable
         return $this->hasMany(Resume::class);
     }
 
+    public function coverLetters()
+    {
+        return $this->hasMany(CoverLetter::class);
+    }
+
     public function subscriptions()
     {
         return $this->hasMany(Subscription::class);
@@ -133,5 +138,17 @@ class User extends Authenticatable
         }
 
         return max(0, $limit - $this->resumes()->count());
+    }
+
+    /** Cover letter slots still available under the active plan's limit. Null = unlimited. */
+    public function remainingCoverLetterQuota(): ?int
+    {
+        $limit = $this->activePlan()?->cover_letter_limit;
+
+        if ($limit === null) {
+            return null;
+        }
+
+        return max(0, $limit - $this->coverLetters()->count());
     }
 }

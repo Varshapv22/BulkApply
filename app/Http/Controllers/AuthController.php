@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\AdminNotification;
 use App\Models\LoginHistory;
+use App\Models\Plan;
 use App\Models\Setting;
+use App\Models\Subscription;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -142,6 +144,22 @@ class AuthController extends Controller
             'password'      => $data['password'],
             'trial_ends_at' => now()->addDays(7),
         ]);
+
+        // Attach the designated trial plan as a real (time-boxed) subscription so
+        // resume/cover-letter quotas resolve through the normal activePlan() path
+        // during the trial. Once ends_at passes, activeSubscription() naturally
+        // returns null again and EnsureTrialIsActive's trial_ends_at check takes
+        // over exactly as it did before this existed.
+        $trialPlan = Plan::where('is_trial_plan', true)->first();
+        if ($trialPlan) {
+            Subscription::create([
+                'user_id'   => $user->id,
+                'plan_id'   => $trialPlan->id,
+                'status'    => Subscription::STATUS_ACTIVE,
+                'starts_at' => now(),
+                'ends_at'   => $user->trial_ends_at,
+            ]);
+        }
 
         AdminNotification::log('new_registration', "New user registered: {$user->name} ({$user->email})", ['user_id' => $user->id]);
 

@@ -144,6 +144,53 @@ function ResumeModal({ resumeData, setResumeData, uploadResume, processingResume
     );
 }
 
+function CoverLetterModal({ coverLetterData, setCoverLetterData, uploadCoverLetter, processingCoverLetter, onClose }) {
+    return (
+        <ModalShell
+            title="Add Cover Letter"
+            onClose={onClose}
+            small
+            footer={
+                <button type="button" className="btn btn-primary" onClick={uploadCoverLetter}
+                    disabled={processingCoverLetter || !coverLetterData.name || (coverLetterData.mode === 'file' ? !coverLetterData.cover_letter : !coverLetterData.text)}>
+                    {processingCoverLetter ? 'Saving…' : 'Save'}
+                </button>
+            }
+        >
+            <label>Name</label>
+            <input type="text" value={coverLetterData.name} onChange={(e) => setCoverLetterData('name', e.target.value)}
+                placeholder="e.g. General cover letter" />
+
+            <div className="chip-group" style={{ margin: '12px 0' }}>
+                <label className={`chip${coverLetterData.mode === 'file' ? ' checked' : ''}`}>
+                    <input type="radio" name="cover_letter_add_mode" checked={coverLetterData.mode === 'file'}
+                        onChange={() => setCoverLetterData('mode', 'file')} />
+                    Upload file
+                </label>
+                <label className={`chip${coverLetterData.mode === 'text' ? ' checked' : ''}`}>
+                    <input type="radio" name="cover_letter_add_mode" checked={coverLetterData.mode === 'text'}
+                        onChange={() => setCoverLetterData('mode', 'text')} />
+                    Write text
+                </label>
+            </div>
+
+            {coverLetterData.mode === 'file' ? (
+                <div>
+                    <label>Cover letter file</label>
+                    <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setCoverLetterData('cover_letter', e.target.files[0])} />
+                </div>
+            ) : (
+                <div>
+                    <label>Cover letter text</label>
+                    <textarea rows={8} value={coverLetterData.text}
+                        onChange={(e) => setCoverLetterData('text', e.target.value)}
+                        placeholder="Write your cover letter here…" style={{ minHeight: 140 }} />
+                </div>
+            )}
+        </ModalShell>
+    );
+}
+
 function EmailModal({ data, setData, profile, onClose }) {
     return (
         <ModalShell title="Email Sending" onClose={onClose}>
@@ -269,7 +316,7 @@ function AutomationModal({ data, setData, onClose }) {
     );
 }
 
-export default function Profile({ profile, jobSites, defaultBody, resumes = [] }) {
+export default function Profile({ profile, jobSites, defaultBody, resumes = [], coverLetters = [] }) {
     const { data, setData, post, processing } = useForm({
         full_name: profile.full_name || '',
         email: profile.email || '',
@@ -295,19 +342,23 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
         mail_password: '',
         mail_from_name: profile.mail_from_name || '',
         mail_disconnect: false,
-        cover_letter: null,
-        cover_letter_text: profile.cover_letter_text || '',
-        cover_letter_mode: profile.cover_letter_text ? 'text' : 'file',
     });
 
     const { data: resumeData, setData: setResumeData, post: postResume, processing: processingResume, reset: resetResume } = useForm({
         resume: null
     });
 
+    const { data: coverLetterData, setData: setCoverLetterData, post: postCoverLetter, processing: processingCoverLetter, reset: resetCoverLetter } = useForm({
+        mode: 'file',
+        name: '',
+        cover_letter: null,
+        text: '',
+    });
+
     const [parseStatus, setParseStatus] = useState('');
     const [parsing, setParsing] = useState(false);
     const [photoPreview, setPhotoPreview] = useState(profile.photo_url || null);
-    const [modal, setModal] = useState(null); // 'details' | 'resume' | 'email' | 'template' | 'automation' | null
+    const [modal, setModal] = useState(null); // 'details' | 'resume' | 'coverLetter' | 'email' | 'template' | 'automation' | null
     const closeModal = () => setModal(null);
 
     const onPhotoChange = (e) => {
@@ -367,6 +418,15 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
         });
     };
 
+    const uploadCoverLetter = (e) => {
+        e.preventDefault();
+        postCoverLetter('/cover-letters', {
+            forceFormData: true,
+            preserveScroll: true,
+            onSuccess: () => { resetCoverLetter(); closeModal(); },
+        });
+    };
+
     const sendingWindowText = (data.send_start_hour !== '' && data.send_end_hour !== '')
         ? `${data.send_start_hour}:00–${data.send_end_hour}:00${data.send_weekdays_only ? ' · weekdays only' : ''}`
         : `Anytime${data.send_weekdays_only ? ' · weekdays only' : ''}`;
@@ -385,34 +445,56 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
                     <h2>Your details</h2>
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setModal('details')}>Edit Details</button>
                 </div>
-                <div className="row" style={{ alignItems: 'center' }}>
-                    <div style={{ flex: '0 0 auto' }}>
-                        {photoPreview ? (
-                            <img src={photoPreview} alt="Profile photo" style={{ width: 52, height: 52, borderRadius: '50%', objectFit: 'cover', display: 'block' }} />
+
+                <div className="profile-summary-head">
+                    {photoPreview ? (
+                        <img src={photoPreview} alt="Profile photo" className="profile-summary-avatar" />
+                    ) : (
+                        <span className="co-avatar profile-summary-avatar">{(data.full_name || '?')[0].toUpperCase()}</span>
+                    )}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <strong style={{ fontSize: 17 }}>{data.full_name || 'Add your name'}</strong>
+                        {(data.email || data.phone || data.location) ? (
+                            <div className="profile-contact-row">
+                                {data.email && <span className="profile-contact-item"><ChipIcon icon={Icons.mail} />{data.email}</span>}
+                                {data.phone && <span className="profile-contact-item"><ChipIcon icon={Icons.phone} />{data.phone}</span>}
+                                {data.location && <span className="profile-contact-item"><ChipIcon icon={Icons.pin} />{data.location}</span>}
+                            </div>
                         ) : (
-                            <span className="co-avatar" style={{ width: 52, height: 52, fontSize: 19 }}>{(data.full_name || '?')[0].toUpperCase()}</span>
+                            <p className="muted" style={{ margin: '2px 0 0', fontSize: 13 }}>Add your contact details</p>
                         )}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                        <strong style={{ fontSize: 16 }}>{data.full_name || 'Add your name'}</strong>
-                        <p className="muted" style={{ margin: '2px 0 0', fontSize: 13 }}>
-                            {[data.email, data.phone, data.location].filter(Boolean).join(' · ') || 'Add your contact details'}
-                        </p>
-                    </div>
                 </div>
+
                 {(data.preferred_role || data.preferred_sites.length > 0) && (
-                    <p className="hint" style={{ margin: '12px 0 0' }}>
-                        {data.preferred_role && <>Looking for <strong>{data.preferred_role}</strong></>}
-                        {data.preferred_role && data.preferred_sites.length > 0 && ' · '}
-                        {data.preferred_sites.length > 0 && `${data.preferred_sites.length} job site${data.preferred_sites.length > 1 ? 's' : ''} selected`}
-                    </p>
+                    <div className="profile-meta-row">
+                        {data.preferred_role && (
+                            <span className="cell-chip"><ChipIcon icon={Icons.briefcase} />{data.preferred_role}</span>
+                        )}
+                        {data.preferred_sites.length > 0 && (
+                            <span className="cell-chip"><ChipIcon icon={Icons.globe} />{data.preferred_sites.length} job site{data.preferred_sites.length > 1 ? 's' : ''}</span>
+                        )}
+                    </div>
                 )}
-                {data.skills && <p className="hint" style={{ margin: '6px 0 0' }}>Skills: {truncate(data.skills, 90)}</p>}
-                {data.bio && <p className="muted" style={{ margin: '6px 0 0', fontSize: 13 }}>{truncate(data.bio, 140)}</p>}
+
+                {data.skills && (() => {
+                    const skillList = data.skills.split(',').map((s) => s.trim()).filter(Boolean);
+                    const shown = skillList.slice(0, 8);
+                    const rest = skillList.length - shown.length;
+                    return (
+                        <div className="chip-group" style={{ marginTop: 12 }}>
+                            {shown.map((skill, i) => <span key={i} className="cell-chip">{skill}</span>)}
+                            {rest > 0 && <span className="cell-chip muted">+{rest} more</span>}
+                        </div>
+                    );
+                })()}
+
+                {data.bio && <p className="muted" style={{ margin: '12px 0 0', fontSize: 13, lineHeight: 1.5 }}>{truncate(data.bio, 140)}</p>}
+
                 {(data.linkedin_url || data.portfolio_url) && (
-                    <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
-                        {data.linkedin_url && <a href={data.linkedin_url} target="_blank" rel="noopener" className="btn-link" style={{ fontSize: 13 }}>LinkedIn ↗</a>}
-                        {data.portfolio_url && <a href={data.portfolio_url} target="_blank" rel="noopener" className="btn-link" style={{ fontSize: 13 }}>Portfolio ↗</a>}
+                    <div className="profile-links-row">
+                        {data.linkedin_url && <a href={data.linkedin_url} target="_blank" rel="noopener" className="btn-link"><ChipIcon icon={Icons.linkedin} />LinkedIn</a>}
+                        {data.portfolio_url && <a href={data.portfolio_url} target="_blank" rel="noopener" className="btn-link"><ChipIcon icon={Icons.external} />Portfolio</a>}
                     </div>
                 )}
             </div>
@@ -449,42 +531,34 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
                     )}
                 </div>
 
-                {/* Cover Letter */}
+                {/* Cover Letters */}
                 <div className="card card-pad-sm">
-                    <h2>Cover Letter</h2>
-                    <p className="hint">Upload a PDF/DOC/DOCX file, or write your cover letter as text. Attached to applications when specified.</p>
-
-                    <div className="chip-group" style={{ marginBottom: 10 }}>
-                        <label className={`chip${data.cover_letter_mode === 'file' ? ' checked' : ''}`}>
-                            <input type="radio" name="cover_letter_mode" checked={data.cover_letter_mode === 'file'}
-                                onChange={() => setData('cover_letter_mode', 'file')} />
-                            Upload file
-                        </label>
-                        <label className={`chip${data.cover_letter_mode === 'text' ? ' checked' : ''}`}>
-                            <input type="radio" name="cover_letter_mode" checked={data.cover_letter_mode === 'text'}
-                                onChange={() => setData('cover_letter_mode', 'text')} />
-                            Write text
-                        </label>
+                    <div className="card-head-row">
+                        <h2>Cover Letters</h2>
+                        <button type="button" className="btn btn-primary btn-sm" onClick={() => setModal('coverLetter')}>+ Add</button>
                     </div>
+                    <p className="hint">File or text. Select which one to use when applying.</p>
 
-                    {data.cover_letter_mode === 'file' ? (
-                        <div>
-                            <label>Cover letter file</label>
-                            <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setData('cover_letter', e.target.files[0])} />
-                            {profile.cover_letter_name && (
-                                <div className="settings-file-row" style={{ marginTop: 10 }}>
+                    {coverLetters.length > 0 ? (
+                        <div className="settings-file-list">
+                            {coverLetters.map(c => (
+                                <div className="settings-file-row" key={c.id}>
                                     <span className="settings-file-ico"><ChipIcon icon={Icons.save} /></span>
-                                    <span className="settings-file-name" style={{ flex: 1, minWidth: 0 }}>{profile.cover_letter_name}</span>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <strong className="settings-file-name">{c.name}</strong>
+                                        {!!c.is_default && <span className="badge sent" style={{ marginLeft: 8 }}>Default</span>}
+                                    </div>
+                                    <div className="settings-file-actions">
+                                        {!c.is_default && (
+                                            <Link href={`/cover-letters/${c.id}/default`} method="post" as="button" className="btn-link">Make default</Link>
+                                        )}
+                                        <Link href={`/cover-letters/${c.id}`} method="delete" as="button" className="btn-link" style={{ color: 'var(--red)' }}>Delete</Link>
+                                    </div>
                                 </div>
-                            )}
+                            ))}
                         </div>
                     ) : (
-                        <div>
-                            <label>Cover letter text</label>
-                            <textarea rows={8} value={data.cover_letter_text}
-                                onChange={(e) => setData('cover_letter_text', e.target.value)}
-                                placeholder="Write your cover letter here…" style={{ minHeight: 140 }} />
-                        </div>
+                        <p className="muted" style={{ fontSize: 13 }}>No cover letters added yet.</p>
                     )}
                 </div>
 
@@ -561,6 +635,10 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
                 <ResumeModal resumeData={resumeData} setResumeData={setResumeData} uploadResume={uploadResume}
                     processingResume={processingResume} parseResume={parseResume} parsing={parsing}
                     parseStatus={parseStatus} onClose={closeModal} />
+            )}
+            {modal === 'coverLetter' && (
+                <CoverLetterModal coverLetterData={coverLetterData} setCoverLetterData={setCoverLetterData}
+                    uploadCoverLetter={uploadCoverLetter} processingCoverLetter={processingCoverLetter} onClose={closeModal} />
             )}
             {modal === 'email' && (
                 <EmailModal data={data} setData={setData} profile={profile} onClose={closeModal} />

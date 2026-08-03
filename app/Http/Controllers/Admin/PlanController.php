@@ -21,7 +21,13 @@ class PlanController extends Controller
     {
         $data = $this->validated($request);
 
-        $plan = Plan::create($data);
+        $plan = null;
+        \Illuminate\Support\Facades\DB::transaction(function () use ($data, &$plan) {
+            if (!empty($data['is_trial_plan'])) {
+                Plan::where('is_trial_plan', true)->update(['is_trial_plan' => false]);
+            }
+            $plan = Plan::create($data);
+        });
         AuditLog::record('plan.create', $plan, $data);
 
         return back()->with('status', 'Plan created.');
@@ -31,7 +37,12 @@ class PlanController extends Controller
     {
         $data = $this->validated($request);
 
-        $plan->update($data);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($data, $plan) {
+            if (!empty($data['is_trial_plan'])) {
+                Plan::where('is_trial_plan', true)->where('id', '!=', $plan->id)->update(['is_trial_plan' => false]);
+            }
+            $plan->update($data);
+        });
         AuditLog::record('plan.update', $plan, $data);
 
         return back()->with('status', 'Plan updated.');
@@ -57,18 +68,20 @@ class PlanController extends Controller
         return back()->with('status', 'Plan deleted.');
     }
 
-    // Plans differ only by name, price, and duration — every plan gives full, unlimited access.
     private function validated(Request $request): array
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'price' => ['required', 'numeric', 'min:0'],
             'duration_days' => ['required', 'integer', 'min:1'],
+            'resume_limit' => ['nullable', 'integer', 'min:0'],
+            'cover_letter_limit' => ['nullable', 'integer', 'min:0'],
+            'is_trial_plan' => ['nullable', 'boolean'],
         ]);
 
-        return array_merge($data, [
-            'email_limit' => null,
-            'resume_limit' => null,
-        ]);
+        $data['is_trial_plan'] = (bool) ($data['is_trial_plan'] ?? false);
+        $data['email_limit'] = null;
+
+        return $data;
     }
 }

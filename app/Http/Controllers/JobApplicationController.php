@@ -114,6 +114,7 @@ class JobApplicationController extends Controller
             'status'  => JobApplication::STATUS_PENDING,
             'user_id' => Auth::id(),
             'resume_id' => Auth::user()->resumes()->where('is_default', true)->value('id'),
+            'cover_letter_id' => Auth::user()->coverLetters()->where('is_default', true)->value('id'),
         ]);
 
         return redirect()->route('jobs.index')->with('status', 'Job added.');

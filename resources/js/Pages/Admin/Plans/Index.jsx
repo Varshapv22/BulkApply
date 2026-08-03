@@ -4,14 +4,21 @@ import { useForm, router, usePage } from '@inertiajs/react';
 import { PageHead, Badge, Icons, ChipIcon, PLAN_DURATIONS, formatDuration } from '../../../components';
 import AdminLayout from '../../../AdminLayout';
 
-const EMPTY = { name: '', price: 0, duration_days: 30 };
+const EMPTY = { name: '', price: 0, duration_days: 30, resume_limit: '', cover_letter_limit: '', is_trial_plan: false };
 
 const isPreset = (days) => PLAN_DURATIONS.some((d) => d.days === days);
 
 function PlanFormModal({ plan, onClose }) {
     const { props } = usePage();
     const currencySymbol = props.currencySymbol || '₹';
-    const form = useForm(plan ? { name: plan.name, price: plan.price, duration_days: plan.duration_days } : EMPTY);
+    const form = useForm(plan ? {
+        name: plan.name,
+        price: plan.price,
+        duration_days: plan.duration_days,
+        resume_limit: plan.resume_limit ?? '',
+        cover_letter_limit: plan.cover_letter_limit ?? '',
+        is_trial_plan: !!plan.is_trial_plan,
+    } : EMPTY);
     const [customDuration, setCustomDuration] = useState(plan ? !isPreset(plan.duration_days) : false);
 
     const submit = (e) => {
@@ -56,7 +63,7 @@ function PlanFormModal({ plan, onClose }) {
                     </div>
 
                     {customDuration && (
-                        <div style={{ marginBottom: 20 }}>
+                        <div style={{ marginBottom: 14 }}>
                             <label>Duration in days</label>
                             <input
                                 type="number"
@@ -68,6 +75,31 @@ function PlanFormModal({ plan, onClose }) {
                             {form.errors.duration_days && <p className="field-error">{form.errors.duration_days}</p>}
                         </div>
                     )}
+
+                    <div className="row" style={{ marginBottom: 14 }}>
+                        <div>
+                            <label>Resume limit</label>
+                            <input type="number" min="0" placeholder="Unlimited" value={form.data.resume_limit}
+                                onChange={(e) => form.setData('resume_limit', e.target.value)} />
+                            {form.errors.resume_limit && <p className="field-error">{form.errors.resume_limit}</p>}
+                        </div>
+                        <div>
+                            <label>Cover letter limit</label>
+                            <input type="number" min="0" placeholder="Unlimited" value={form.data.cover_letter_limit}
+                                onChange={(e) => form.setData('cover_letter_limit', e.target.value)} />
+                            {form.errors.cover_letter_limit && <p className="field-error">{form.errors.cover_letter_limit}</p>}
+                        </div>
+                    </div>
+                    <p className="hint" style={{ margin: '-8px 0 14px' }}>Leave blank for unlimited.</p>
+
+                    <div style={{ marginBottom: 20 }}>
+                        <label className={`chip${form.data.is_trial_plan ? ' checked' : ''}`}>
+                            <input type="checkbox" checked={form.data.is_trial_plan}
+                                onChange={(e) => form.setData('is_trial_plan', e.target.checked)} />
+                            Use as the free-trial plan
+                        </label>
+                        <p className="hint" style={{ margin: '6px 0 0' }}>Only one plan can be the trial plan — new signups get this plan's limits for their 7-day trial.</p>
+                    </div>
 
                     <div className="modal-actions">
                         <button type="button" className="btn btn-ghost" onClick={onClose}>Cancel</button>
@@ -94,7 +126,7 @@ export default function AdminPlansIndex({ plans }) {
 
     return (
         <>
-            <PageHead title="Plans" subtitle="Free trial, 1 Month, 3 Month, and 9 Month plans — priced by duration only." />
+            <PageHead title="Plans" subtitle="Free trial, 1 Month, 3 Month, and 9 Month plans — priced by duration, with configurable resume & cover letter limits." />
 
             <button className="btn btn-primary btn-sm" style={{ marginBottom: 16 }} onClick={() => setCreating(true)}>
                 <ChipIcon icon={Icons.plus} /> New plan
@@ -105,15 +137,17 @@ export default function AdminPlansIndex({ plans }) {
                     <table>
                         <thead>
                             <tr>
-                                <th>Name</th><th>Price</th><th>Duration</th><th>Subscribers</th><th>Status</th><th></th>
+                                <th>Name</th><th>Price</th><th>Duration</th><th>Resumes</th><th>Cover letters</th><th>Subscribers</th><th>Status</th><th></th>
                             </tr>
                         </thead>
                         <tbody>
                             {plans.map((p) => (
                                 <tr key={p.id}>
-                                    <td>{p.name}</td>
+                                    <td>{p.name}{!!p.is_trial_plan && <span className="badge neutral" style={{ marginLeft: 8 }}>Trial plan</span>}</td>
                                     <td>{currencySymbol}{p.price}</td>
                                     <td>{formatDuration(p.duration_days)}</td>
+                                    <td>{p.resume_limit ?? 'Unlimited'}</td>
+                                    <td>{p.cover_letter_limit ?? 'Unlimited'}</td>
                                     <td>{p.subscriptions_count}</td>
                                     <td><Badge status={p.is_active ? 'sent' : 'failed'}>{p.is_active ? 'Active' : 'Disabled'}</Badge></td>
                                     <td className="cell-actions">

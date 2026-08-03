@@ -81,6 +81,11 @@ Route::middleware(['auth', 'trial.active'])->group(function () {
     Route::post('/resumes/{resume}/default', [\App\Http\Controllers\ResumeController::class, 'set_default'])->name('resumes.default');
     Route::delete('/resumes/{resume}', [\App\Http\Controllers\ResumeController::class, 'destroy'])->name('resumes.destroy');
 
+    // Cover letters
+    Route::post('/cover-letters', [\App\Http\Controllers\CoverLetterController::class, 'store'])->name('cover-letters.store');
+    Route::post('/cover-letters/{coverLetter}/default', [\App\Http\Controllers\CoverLetterController::class, 'set_default'])->name('cover-letters.default');
+    Route::delete('/cover-letters/{coverLetter}', [\App\Http\Controllers\CoverLetterController::class, 'destroy'])->name('cover-letters.destroy');
+
     // Resume ATS check
     Route::get('/resume-check', [ResumeCheckController::class, 'index'])->name('resume.check');
 

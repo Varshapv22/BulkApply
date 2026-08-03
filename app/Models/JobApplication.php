@@ -44,6 +44,11 @@ class JobApplication extends Model
         return $this->belongsTo(Resume::class);
     }
 
+    public function coverLetter()
+    {
+        return $this->belongsTo(CoverLetter::class);
+    }
+
     public function scopeSendable($query)
     {
         // Easy Apply jobs don't have a real recruiter email — they're meant

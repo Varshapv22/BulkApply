@@ -49,7 +49,8 @@ class Profile extends Model
     public function hasDocuments(): bool
     {
         $hasResume = filled($this->resume_path) || Resume::where('user_id', $this->user_id)->exists();
-        $hasCoverLetter = filled($this->cover_letter_path) || filled($this->cover_letter_text);
+        $hasCoverLetter = filled($this->cover_letter_path) || filled($this->cover_letter_text)
+            || CoverLetter::where('user_id', $this->user_id)->exists();
 
         return $hasResume && $hasCoverLetter;
     }
