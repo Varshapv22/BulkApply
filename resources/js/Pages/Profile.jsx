@@ -296,6 +296,8 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
         mail_from_name: profile.mail_from_name || '',
         mail_disconnect: false,
         cover_letter: null,
+        cover_letter_text: profile.cover_letter_text || '',
+        cover_letter_mode: profile.cover_letter_text ? 'text' : 'file',
     });
 
     const { data: resumeData, setData: setResumeData, post: postResume, processing: processingResume, reset: resetResume } = useForm({
@@ -450,17 +452,40 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [] }
                 {/* Cover Letter */}
                 <div className="card card-pad-sm">
                     <h2>Cover Letter</h2>
-                    <p className="hint">PDF, DOC or DOCX, up to 10 MB. Attached to applications when specified.</p>
-                    <div>
-                        <label>Cover letter file</label>
-                        <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setData('cover_letter', e.target.files[0])} />
-                        {profile.cover_letter_name && (
-                            <div className="settings-file-row" style={{ marginTop: 10 }}>
-                                <span className="settings-file-ico"><ChipIcon icon={Icons.save} /></span>
-                                <span className="settings-file-name" style={{ flex: 1, minWidth: 0 }}>{profile.cover_letter_name}</span>
-                            </div>
-                        )}
+                    <p className="hint">Upload a PDF/DOC/DOCX file, or write your cover letter as text. Attached to applications when specified.</p>
+
+                    <div className="chip-group" style={{ marginBottom: 10 }}>
+                        <label className={`chip${data.cover_letter_mode === 'file' ? ' checked' : ''}`}>
+                            <input type="radio" name="cover_letter_mode" checked={data.cover_letter_mode === 'file'}
+                                onChange={() => setData('cover_letter_mode', 'file')} />
+                            Upload file
+                        </label>
+                        <label className={`chip${data.cover_letter_mode === 'text' ? ' checked' : ''}`}>
+                            <input type="radio" name="cover_letter_mode" checked={data.cover_letter_mode === 'text'}
+                                onChange={() => setData('cover_letter_mode', 'text')} />
+                            Write text
+                        </label>
                     </div>
+
+                    {data.cover_letter_mode === 'file' ? (
+                        <div>
+                            <label>Cover letter file</label>
+                            <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setData('cover_letter', e.target.files[0])} />
+                            {profile.cover_letter_name && (
+                                <div className="settings-file-row" style={{ marginTop: 10 }}>
+                                    <span className="settings-file-ico"><ChipIcon icon={Icons.save} /></span>
+                                    <span className="settings-file-name" style={{ flex: 1, minWidth: 0 }}>{profile.cover_letter_name}</span>
+                                </div>
+                            )}
+                        </div>
+                    ) : (
+                        <div>
+                            <label>Cover letter text</label>
+                            <textarea rows={8} value={data.cover_letter_text}
+                                onChange={(e) => setData('cover_letter_text', e.target.value)}
+                                placeholder="Write your cover letter here…" style={{ minHeight: 140 }} />
+                        </div>
+                    )}
                 </div>
 
                 {/* Email Sending — summary */}

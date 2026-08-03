@@ -79,6 +79,10 @@ class JobApplicationMail extends Mailable
         if ($this->profile->cover_letter_path && Storage::exists($this->profile->cover_letter_path)) {
             $attachments[] = Attachment::fromStorage($this->profile->cover_letter_path)
                 ->as($this->profile->cover_letter_name ?: 'cover-letter.pdf');
+        } elseif (filled($this->profile->cover_letter_text)) {
+            $text = $this->profile->cover_letter_text;
+            $attachments[] = Attachment::fromData(fn () => $text, 'cover-letter.txt')
+                ->withMime('text/plain');
         }
 
         return $attachments;

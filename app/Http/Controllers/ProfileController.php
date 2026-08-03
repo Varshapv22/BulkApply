@@ -47,6 +47,7 @@ TXT;
                 'email_body'          => $profile->email_body,
                 'resume_name'         => $profile->resume_name,
                 'cover_letter_name'   => $profile->cover_letter_name,
+                'cover_letter_text'   => $profile->cover_letter_text,
                 'send_start_hour'     => $profile->send_start_hour,
                 'send_end_hour'       => $profile->send_end_hour,
                 'send_weekdays_only'  => (bool) $profile->send_weekdays_only,
@@ -76,6 +77,8 @@ TXT;
             'email_body'         => ['required', 'string'],
             'resume'             => array_merge(['nullable'], Setting::uploadRules()),
             'cover_letter'       => array_merge(['nullable'], Setting::uploadRules()),
+            'cover_letter_text'  => ['nullable', 'string', 'max:10000'],
+            'cover_letter_mode'  => ['nullable', 'in:file,text'],
             'send_start_hour'    => ['nullable', 'integer', 'min:0', 'max:23'],
             'send_end_hour'      => ['nullable', 'integer', 'min:0', 'max:23'],
             'send_weekdays_only' => ['nullable'],
@@ -145,11 +148,21 @@ TXT;
             $profile->resume_name = $file->getClientOriginalName();
         }
 
-        if ($request->hasFile('cover_letter')) {
+        $coverLetterMode = $data['cover_letter_mode'] ?? 'file';
+
+        if ($coverLetterMode === 'text') {
+            // Text cover letter replaces any previously uploaded file — the two
+            // options are alternatives, not stored simultaneously.
+            $this->deleteIfExists($profile->cover_letter_path);
+            $profile->cover_letter_path = null;
+            $profile->cover_letter_name = null;
+            $profile->cover_letter_text = $data['cover_letter_text'] ?? null;
+        } elseif ($request->hasFile('cover_letter')) {
             $this->deleteIfExists($profile->cover_letter_path);
             $file = $request->file('cover_letter');
             $profile->cover_letter_path = $file->store('documents');
             $profile->cover_letter_name = $file->getClientOriginalName();
+            $profile->cover_letter_text = null;
         }
 
         if ($request->hasFile('photo')) {

@@ -49,8 +49,9 @@ class Profile extends Model
     public function hasDocuments(): bool
     {
         $hasResume = filled($this->resume_path) || Resume::where('user_id', $this->user_id)->exists();
+        $hasCoverLetter = filled($this->cover_letter_path) || filled($this->cover_letter_text);
 
-        return $hasResume && filled($this->cover_letter_path);
+        return $hasResume && $hasCoverLetter;
     }
 
     /** Whether this account has connected its own email sender. */
