@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Notifications\PlanUpgraded;
 use App\Notifications\SubscriptionCancelled;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class SubscriptionController extends Controller
@@ -52,6 +53,8 @@ class SubscriptionController extends Controller
             'status' => Subscription::STATUS_ACTIVE,
             'starts_at' => now(),
             'ends_at' => now()->addDays($plan->duration_days),
+            'source' => Subscription::SOURCE_ADMIN_GRANT,
+            'granted_by_user_id' => Auth::id(),
         ]);
 
         AuditLog::record('subscription.assign', $user, ['plan_id' => $plan->id]);

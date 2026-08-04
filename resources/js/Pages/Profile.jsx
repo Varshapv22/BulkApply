@@ -295,9 +295,17 @@ function CoverLetterModal({ coverLetterData, setCoverLetterData, uploadCoverLett
     );
 }
 
-function EmailModal({ data, setData, profile, onClose }) {
+function EmailModal({ data, setData, profile, onClose, saveEmailSettings, processing }) {
     return (
-        <ModalShell title="Email Sending" onClose={onClose}>
+        <ModalShell
+            title="Email Sending"
+            onClose={onClose}
+            footer={
+                <button type="button" className="btn btn-primary" onClick={saveEmailSettings} disabled={processing}>
+                    {processing ? 'Saving…' : 'Done'}
+                </button>
+            }
+        >
             <p className="hint">
                 Applications send through YOUR OWN Gmail — never a shared account. Your App Password
                 is encrypted and only ever used to send on your behalf.
@@ -488,6 +496,12 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [], 
     const submit = (e) => {
         e.preventDefault();
         post('/profile', { forceFormData: true, preserveScroll: true });
+    };
+
+    // "Done" in the Email Sending modal saves immediately instead of just staging
+    // the fields until the page's main Save button is clicked separately.
+    const saveEmailSettings = () => {
+        post('/profile', { forceFormData: true, preserveScroll: true, onSuccess: closeModal });
     };
 
     const parseResume = () => {
@@ -749,7 +763,8 @@ export default function Profile({ profile, jobSites, defaultBody, resumes = [], 
                     uploadCoverLetter={uploadCoverLetter} processingCoverLetter={processingCoverLetter} onClose={closeModal} />
             )}
             {modal === 'email' && (
-                <EmailModal data={data} setData={setData} profile={profile} onClose={closeModal} />
+                <EmailModal data={data} setData={setData} profile={profile} onClose={closeModal}
+                    saveEmailSettings={saveEmailSettings} processing={processing} />
             )}
             {modal === 'template' && (
                 <TemplateModal data={data} setData={setData} onClose={closeModal} />

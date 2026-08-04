@@ -23,7 +23,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
     Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
     Route::get('/2fa-challenge', [AuthController::class, 'showTwoFactorChallenge'])->name('2fa.challenge');
     Route::post('/2fa-challenge', [AuthController::class, 'verifyTwoFactorChallenge'])->name('2fa.verify')->middleware('throttle:2fa-challenge');
 });
@@ -36,7 +36,7 @@ Route::get('/track/click/{trackingId}', [TrackingController::class, 'click'])->n
 
 // --- Contact (public, works for guests and logged-in users) ---
 Route::get('/contact', [ContactController::class, 'show'])->name('contact.show');
-Route::post('/contact', [ContactController::class, 'store'])->name('contact.store');
+Route::post('/contact', [ContactController::class, 'store'])->name('contact.store')->middleware('throttle:5,1');
 
 // --- CMS pages (public, published only) ---
 Route::get('/p/{slug}', [PageController::class, 'show'])->name('page.show');
@@ -97,7 +97,7 @@ Route::middleware(['auth', 'trial.active'])->group(function () {
 
     // Job Search
     Route::get('/search', [JobSearchController::class, 'index'])->name('search.index');
-    Route::post('/search', [JobSearchController::class, 'search'])->name('search.search');
+    Route::post('/search', [JobSearchController::class, 'search'])->name('search.search')->middleware('throttle:10,1');
     Route::post('/search/apply', [JobSearchController::class, 'autoApply'])->name('search.autoApply');
 
     // Saved search alerts
@@ -132,7 +132,7 @@ Route::middleware(['auth', 'trial.active'])->group(function () {
 
     // Company replies (Gmail inbox)
     Route::get('/replies', [GmailController::class, 'index'])->name('replies.index');
-    Route::post('/gmail/sync', [GmailController::class, 'sync'])->name('gmail.sync');
+    Route::post('/gmail/sync', [GmailController::class, 'sync'])->name('gmail.sync')->middleware('throttle:6,1');
     Route::post('/gmail/replies/{reply}/read', [GmailController::class, 'markRead'])->name('gmail.markRead');
     Route::post('/gmail/replies/mark-all-read', [GmailController::class, 'markAllRead'])->name('gmail.markAllRead');
 });

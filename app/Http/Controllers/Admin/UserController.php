@@ -197,23 +197,23 @@ class UserController extends Controller
 
     public function export(): StreamedResponse
     {
-        $users = User::with('roles')->get();
-
-        $callback = function () use ($users) {
+        $callback = function () {
             $handle = fopen('php://output', 'w');
             fputcsv($handle, ['ID', 'Name', 'Email', 'Status', 'Roles', 'Last Login', 'Joined']);
 
-            foreach ($users as $user) {
-                fputcsv($handle, [
-                    $user->id,
-                    $user->name,
-                    $user->email,
-                    $user->is_active ? 'Active' : 'Suspended',
-                    $user->roles->pluck('name')->implode(', '),
-                    $user->last_login_at,
-                    $user->created_at,
-                ]);
-            }
+            User::with('roles')->orderBy('id')->chunk(200, function ($users) use ($handle) {
+                foreach ($users as $user) {
+                    fputcsv($handle, [
+                        $user->id,
+                        $user->name,
+                        $user->email,
+                        $user->is_active ? 'Active' : 'Suspended',
+                        $user->roles->pluck('name')->implode(', '),
+                        $user->last_login_at,
+                        $user->created_at,
+                    ]);
+                }
+            });
 
             fclose($handle);
         };

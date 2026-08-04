@@ -30,21 +30,22 @@ function PlanFormModal({ plan, onClose }) {
 
     const modal = (
         <div className="modal-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-            <div className="modal modal-sm">
+            <div className="modal">
                 <button type="button" className="modal-close" onClick={onClose} aria-label="Close">✕</button>
                 <h3 className="modal-title">{plan ? 'Edit plan' : 'New plan'}</h3>
 
                 <form onSubmit={submit}>
-                    <div style={{ marginBottom: 14 }}>
-                        <label>Plan name</label>
-                        <input type="text" autoFocus value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} required />
-                        {form.errors.name && <p className="field-error">{form.errors.name}</p>}
-                    </div>
-
-                    <div style={{ marginBottom: 14 }}>
-                        <label>Price ({currencySymbol})</label>
-                        <input type="number" step="0.01" min="0" value={form.data.price} onChange={(e) => form.setData('price', e.target.value)} required />
-                        {form.errors.price && <p className="field-error">{form.errors.price}</p>}
+                    <div className="row" style={{ marginBottom: 14 }}>
+                        <div>
+                            <label>Plan name</label>
+                            <input type="text" autoFocus value={form.data.name} onChange={(e) => form.setData('name', e.target.value)} required />
+                            {form.errors.name && <p className="field-error">{form.errors.name}</p>}
+                        </div>
+                        <div>
+                            <label>Price ({currencySymbol})</label>
+                            <input type="number" step="0.01" min="0" value={form.data.price} onChange={(e) => form.setData('price', e.target.value)} required />
+                            {form.errors.price && <p className="field-error">{form.errors.price}</p>}
+                        </div>
                     </div>
 
                     <div style={{ marginBottom: customDuration ? 14 : 20 }}>

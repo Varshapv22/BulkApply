@@ -90,9 +90,18 @@ class User extends Authenticatable
         return $this->hasMany(SupportTicket::class);
     }
 
+    private ?Subscription $activeSubscriptionCache = null;
+    private bool $activeSubscriptionResolved = false;
+
+    /** Memoized per-instance — called repeatedly per request (shared Inertia props, quota checks, trial middleware). */
     public function activeSubscription(): ?Subscription
     {
-        return $this->subscriptions()->active()->latest('starts_at')->first();
+        if (! $this->activeSubscriptionResolved) {
+            $this->activeSubscriptionCache = $this->subscriptions()->active()->latest('starts_at')->first();
+            $this->activeSubscriptionResolved = true;
+        }
+
+        return $this->activeSubscriptionCache;
     }
 
     public function activePlan(): ?Plan

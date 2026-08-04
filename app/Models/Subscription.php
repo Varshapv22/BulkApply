@@ -10,6 +10,9 @@ class Subscription extends Model
     public const STATUS_CANCELLED = 'cancelled';
     public const STATUS_EXPIRED = 'expired';
 
+    public const SOURCE_PAYMENT = 'payment';
+    public const SOURCE_ADMIN_GRANT = 'admin_grant';
+
     protected $guarded = [];
 
     protected $casts = [
@@ -25,6 +28,11 @@ class Subscription extends Model
     public function plan()
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    public function grantedBy()
+    {
+        return $this->belongsTo(User::class, 'granted_by_user_id');
     }
 
     public function scopeActive($query)

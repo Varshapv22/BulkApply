@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseToolController;
 use App\Http\Controllers\Admin\ExtensionController;
 use App\Http\Controllers\Admin\FeatureController;
+use App\Http\Controllers\Admin\FreeAccessController;
 use App\Http\Controllers\Admin\JobApplicationController;
 use App\Http\Controllers\Admin\JobSourceController;
 use App\Http\Controllers\Admin\LogController;
@@ -32,7 +33,7 @@ Route::post('/admin/impersonate/return', [UserController::class, 'returnToAdmin'
     ->name('admin.impersonate.return')
     ->middleware('auth');
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin', 'throttle:300,1'])->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -49,6 +50,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(fun
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
     Route::get('/subscriptions', [SubscriptionController::class, 'index'])->name('subscriptions.index');
+
+    Route::get('/free-access', [FreeAccessController::class, 'index'])->name('freeAccess.index');
+    Route::get('/free-access/search-users', [FreeAccessController::class, 'searchUsers'])->name('freeAccess.searchUsers');
+    Route::post('/free-access', [FreeAccessController::class, 'grant'])->name('freeAccess.grant');
+    Route::delete('/free-access/{subscription}', [FreeAccessController::class, 'revoke'])->name('freeAccess.revoke');
 
     Route::get('/payment-requests', [PlanPaymentRequestController::class, 'index'])->name('paymentRequests.index');
     Route::get('/payment-requests/{paymentRequest}/screenshot', [PlanPaymentRequestController::class, 'screenshot'])->name('paymentRequests.screenshot');

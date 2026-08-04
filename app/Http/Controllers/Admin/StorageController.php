@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
@@ -33,19 +34,22 @@ class StorageController extends Controller
         return back()->with('status', 'Application cache cleared.');
     }
 
+    /** Recursive filesystem walks get expensive fast (esp. the documents dir at scale) — cache for 5 minutes. */
     private function dirSizeKb(string $path): int
     {
-        if (!is_dir($path)) {
-            return 0;
-        }
-
-        $size = 0;
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)) as $file) {
-            if ($file->isFile()) {
-                $size += $file->getSize();
+        return Cache::remember('storage.dir_size_kb:' . $path, 300, function () use ($path) {
+            if (!is_dir($path)) {
+                return 0;
             }
-        }
 
-        return (int) round($size / 1024);
+            $size = 0;
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($path, \FilesystemIterator::SKIP_DOTS)) as $file) {
+                if ($file->isFile()) {
+                    $size += $file->getSize();
+                }
+            }
+
+            return (int) round($size / 1024);
+        });
     }
 }

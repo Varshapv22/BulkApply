@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SyncGmailInbox;
 use App\Models\GmailReply;
 use App\Models\Profile;
-use App\Services\GmailImapService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -73,19 +73,9 @@ class GmailController extends Controller
      */
     public function sync(Request $request)
     {
-        $result = (new GmailImapService())->sync($request->user());
+        SyncGmailInbox::dispatch($request->user()->id);
 
-        Profile::where('user_id', $request->user()->id)->update(['gmail_synced_at' => now()]);
-
-        if ($result['error']) {
-            return back()->with('gmail_error', $result['error']);
-        }
-
-        $msg = $result['synced'] > 0
-            ? 'Synced ' . $result['synced'] . ' new ' . ($result['synced'] === 1 ? 'reply' : 'replies') . '.'
-            : 'No new replies found.';
-
-        return back()->with('gmail_status', $msg);
+        return back()->with('gmail_status', 'Sync started — new replies will appear shortly.');
     }
 
     /**

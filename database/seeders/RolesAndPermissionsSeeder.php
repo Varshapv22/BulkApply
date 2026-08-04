@@ -50,7 +50,7 @@ class RolesAndPermissionsSeeder extends Seeder
         $owner = User::where('email', $ownerEmail)->first();
 
         if (!$owner) {
-            $password = str()->password(16);
+            $password = env('ADMIN_SEED_PASSWORD', 'admin123');
 
             $owner = User::create([
                 'name' => 'Admin',
