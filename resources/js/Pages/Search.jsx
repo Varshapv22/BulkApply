@@ -111,6 +111,9 @@ function SkillsBar({ profile }) {
     );
 }
 
+/** Location segment of the joined search bar — input + autocomplete dropdown only.
+ *  The parent renders the "not covered" hint (see `unsupportedLocation` in SearchForm)
+ *  so it can span the full width below the bar instead of breaking the bar's row height. */
 function LocationField({ value, onChange, suggestions }) {
     const [open, setOpen] = useState(false);
 
@@ -120,25 +123,16 @@ function LocationField({ value, onChange, suggestions }) {
         return list.slice(0, 8);
     }, [value, suggestions]);
 
-    // Best-effort match against what's typed (not just a picked suggestion) so
-    // free-typing "dubai" still surfaces the "not covered" hint before search.
-    const activeSuggestion = useMemo(() => {
-        const q = value.trim().toLowerCase();
-        if (!q) return null;
-        return suggestions.find((s) => {
-            const city = s.label.split(',')[0].trim().toLowerCase();
-            return q === s.label.toLowerCase() || q.includes(city);
-        }) || null;
-    }, [value, suggestions]);
-
     return (
-        <div style={{ position: 'relative' }}>
-            <label>Location</label>
-            <IconField icon={Icons.pin} type="text" value={value} autoComplete="off"
+        <div className="search-bar-seg loc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {Icons.pin}
+            </svg>
+            <input type="text" value={value} autoComplete="off" aria-label="Location"
                 onChange={(e) => onChange(e.target.value)}
                 onFocus={() => setOpen(true)}
                 onBlur={() => setTimeout(() => setOpen(false), 150)}
-                placeholder="e.g. Kerala, New York, Remote" />
+                placeholder="Location — Kerala, Dubai, Remote…" />
             {open && filtered.length > 0 && (
                 <div className="loc-suggest">
                     {filtered.map((s) => (
@@ -151,12 +145,6 @@ function LocationField({ value, onChange, suggestions }) {
                         </button>
                     ))}
                 </div>
-            )}
-            {activeSuggestion && !activeSuggestion.supported && (
-                <p className="hint" style={{ color: 'var(--amber)', margin: '6px 0 0' }}>
-                    Our web-wide search doesn't cover {activeSuggestion.label} yet — name a specific
-                    employer or job site above instead (works for any country).
-                </p>
             )}
         </div>
     );
@@ -177,6 +165,18 @@ function SearchForm({ profile, onSearching, searched, locationSuggestions }) {
     const hasSite = data.site.trim() !== '';
     const hasCompany = data.company.trim() !== '';
     const canSave = searched && data.role.trim() !== '' && !isAlertBlockedSite(data.site);
+
+    // Best-effort match against what's typed (not just a picked suggestion) so
+    // free-typing "dubai" surfaces the "not covered" hint before search too.
+    const unsupportedLocation = useMemo(() => {
+        const q = data.location.trim().toLowerCase();
+        if (!q) return null;
+        const match = locationSuggestions.find((s) => {
+            const city = s.label.split(',')[0].trim().toLowerCase();
+            return q === s.label.toLowerCase() || q.includes(city);
+        });
+        return match && !match.supported ? match : null;
+    }, [data.location, locationSuggestions]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -208,59 +208,68 @@ function SearchForm({ profile, onSearching, searched, locationSuggestions }) {
             </div>
 
             <form onSubmit={submit}>
-                <div className="row">
-                    <div style={{ flex: 2 }}>
-                        <label>Job Role / Title {hasSite || hasCompany ? '' : '*'}</label>
-                        <IconField icon={Icons.briefcase} type="text" required={!hasSite && !hasCompany} value={data.role}
+                <div className="search-bar">
+                    <div className="search-bar-seg role">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            {Icons.briefcase}
+                        </svg>
+                        <input type="text" required={!hasSite && !hasCompany} value={data.role} aria-label="Job role or title"
                             onChange={(e) => setData('role', e.target.value)}
-                            placeholder="e.g. Software Engineer, Data Analyst, Product Manager" />
+                            placeholder="Job title — Software Engineer, Data Analyst…" />
                     </div>
-                    <div>
-                        <LocationField value={data.location} onChange={(v) => setData('location', v)}
-                            suggestions={locationSuggestions} />
-                    </div>
+                    <LocationField value={data.location} onChange={(v) => setData('location', v)}
+                        suggestions={locationSuggestions} />
+                    <button type="submit" className="search-bar-submit" disabled={processing}>
+                        {processing ? <><Spinner /> Searching…</> : <>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                                {Icons.search}
+                            </svg>
+                            Search Jobs
+                        </>}
+                    </button>
                 </div>
+                {unsupportedLocation && (
+                    <p className="hint" style={{ color: 'var(--amber)', margin: '10px 2px 0' }}>
+                        Our web-wide search doesn't cover {unsupportedLocation.label} yet — name a specific
+                        employer or job site below instead (works for any country).
+                    </p>
+                )}
 
-                <div className="row" style={{ marginTop: 12 }}>
-                    <div style={{ flex: 1 }}>
-                        <label>
-                            Company{' '}
-                            <span className="muted" style={{ fontWeight: 400 }}>
-                                (optional — leave Role blank to list all jobs at that company)
-                            </span>
-                        </label>
+                <div className="search-refine-grid">
+                    <div className="search-refine-card">
+                        <div className="search-refine-head">
+                            <ChipIcon icon={Icons.building} /> Filter by company
+                        </div>
+                        <p className="hint" style={{ margin: '4px 0 10px' }}>Leave Role blank to list every opening there.</p>
                         <IconField icon={Icons.building} type="text" value={data.company}
                             onChange={(e) => setData('company', e.target.value)}
                             placeholder="e.g. Google, Infosys, TCS, Wipro" />
                     </div>
-                </div>
 
-                <div className="or-divider"><span>or search a specific site</span></div>
-
-                <div>
-                    <label>Job site, platform or company <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
-                    <IconField icon={Icons.building} type="text" value={data.site}
-                        onChange={(e) => setData('site', e.target.value)}
-                        placeholder="e.g. Technopark, Infopark, Cyberpark, KINFRA, or a careers-page URL" />
-                    <div className="quick-picks">
-                        {QUICK_SITES.map((s) => (
-                            <button type="button" key={s}
-                                className={`quick-pick${data.site === s ? ' active' : ''}`}
-                                onClick={() => setData('site', data.site === s ? '' : s)}>
-                                {s}
-                            </button>
-                        ))}
+                    <div className="search-refine-card">
+                        <div className="search-refine-head">
+                            <ChipIcon icon={Icons.pin} /> Jump to a site or tech park
+                        </div>
+                        <p className="hint" style={{ margin: '4px 0 10px' }}>Tech parks pull live listings directly; platforms search the web instead.</p>
+                        <IconField icon={Icons.building} type="text" value={data.site}
+                            onChange={(e) => setData('site', e.target.value)}
+                            placeholder="Technopark, Infopark, KINFRA, or a careers URL" />
+                        <div className="quick-picks">
+                            {QUICK_SITES.map((s) => (
+                                <button type="button" key={s}
+                                    className={`quick-pick${data.site === s ? ' active' : ''}`}
+                                    onClick={() => setData('site', data.site === s ? '' : s)}>
+                                    {s}
+                                </button>
+                            ))}
+                        </div>
                     </div>
-                    <p className="hint" style={{ margin: '10px 0 0' }}>
-                        Tech parks (Technopark, Infopark, Cyberpark) pull live listings directly; platforms and
-                        company names pull matching results from across the web. Leave blank to search everywhere.
-                    </p>
                 </div>
 
                 {!hasSite && (
                     <div className="search-options-row">
                         <div style={{ minWidth: 180 }}>
-                            <label>Sort by</label>
+                            <label style={{ margin: '0 0 6px' }}>Sort by</label>
                             <select value={data.sort_by} onChange={(e) => setData('sort_by', e.target.value)}>
                                 <option value="relevance">Relevance</option>
                                 <option value="date">Most recent</option>
@@ -273,24 +282,16 @@ function SearchForm({ profile, onSearching, searched, locationSuggestions }) {
                     </div>
                 )}
 
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <button type="submit" className="btn btn-primary btn-lg" disabled={processing}>
-                        {processing ? <><Spinner /> Searching…</> : <>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                {Icons.search}
-                            </svg>
-                            Search Jobs
-                        </>}
-                    </button>
-                    {searched && (
+                {searched && (
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 18 }}>
                         <button type="button" className="btn btn-ghost" disabled={!canSave || saving} onClick={saveSearch}
                             title={isAlertBlockedSite(data.site)
                                 ? "Alerts aren't supported for this platform — it only shows aggregated web results."
                                 : 'Get notified when new listings match this search'}>
                             {saving ? <><Spinner /> Saving…</> : 'Save this search'}
                         </button>
-                    )}
-                </div>
+                    </div>
+                )}
             </form>
         </div>
     );
