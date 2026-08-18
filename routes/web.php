@@ -118,6 +118,7 @@ Route::middleware(['auth', 'trial.active'])->group(function () {
 
     // Jobs
     Route::get('/jobs', [JobApplicationController::class, 'index'])->name('jobs.index');
+    Route::get('/pipeline', [JobApplicationController::class, 'pipeline'])->name('jobs.pipeline');
     Route::post('/jobs', [JobApplicationController::class, 'store'])->name('jobs.store');
     Route::post('/jobs/import', [JobApplicationController::class, 'import'])->name('jobs.import');
     Route::get('/jobs/template', [JobApplicationController::class, 'template'])->name('jobs.template');

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from '@inertiajs/react';
 import { PageHead, Badge, Icons } from '../components';
 
 const PIPELINE_COLORS = {
@@ -150,7 +151,10 @@ export default function Dashboard({
 
                 {/* Lower Row */}
                 <div className="card bento-col-6 animate-delay-3">
-                    <h2>Pipeline Status</h2>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                        <h2>Pipeline Status</h2>
+                        <Link href="/pipeline" className="btn-link" style={{ fontSize: 12.5 }}>Open board →</Link>
+                    </div>
                     <p className="hint">Application stages breakdown</p>
                     <div className="list-fill">
                         {Object.entries(pipelineLabels).map(([key, label]) => (

@@ -1,108 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
 import { Link, useForm, router } from '@inertiajs/react';
-import {
-    DndContext, DragOverlay, PointerSensor, KeyboardSensor,
-    useSensor, useSensors, useDraggable, useDroppable, rectIntersection,
-} from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
 import { PageHead, Stat, Badge, Icons, EmptyState, IconField, ChipIcon, Spinner, useConfirm, CompanyInsightButton } from '../components';
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
     return match ? decodeURIComponent(match[2]) : '';
-}
-
-const PIPELINE_ICONS = {
-    applied: Icons.send, replied: Icons.chat, interview: Icons.calendar,
-    offer: Icons.trophy, rejected: Icons.xCircle,
-};
-
-/**
- * Lives inside a board column with its own scroll (`.board-col-body`,
- * overflow-y: auto) — an absolutely positioned menu inside a scrolling
- * ancestor gets clipped to it instead of floating above the board.
- * Rendering the menu into a portal at document.body, positioned from the
- * trigger's live bounding rect, sidesteps that clipping entirely and keeps
- * the menu on-screen (clamped to the viewport) at any scroll position or
- * window size. `size="sm"` renders the compact in-card variant.
- */
-function PipelineDropdown({ value, labels, onChange, size }) {
-    const [open, setOpen] = useState(false);
-    const [pos, setPos] = useState(null);
-    const triggerRef = useRef(null);
-    const menuRef = useRef(null);
-    const current = value || 'applied';
-
-    const place = () => {
-        const trigger = triggerRef.current;
-        if (!trigger) return;
-        const r = trigger.getBoundingClientRect();
-        const menuWidth = 190;
-        const margin = 12;
-        const left = Math.min(r.left, window.innerWidth - menuWidth - margin);
-        setPos({ top: r.bottom + 6, left: Math.max(margin, left) });
-    };
-
-    useEffect(() => {
-        if (!open) return;
-        place();
-
-        const onDoc = (e) => {
-            if (triggerRef.current?.contains(e.target)) return;
-            if (menuRef.current?.contains(e.target)) return;
-            setOpen(false);
-        };
-        // Any scroll (including the table's own horizontal scroll) or resize
-        // can move the trigger out from under a stale menu position — close
-        // it rather than let it drift.
-        const close = () => setOpen(false);
-
-        document.addEventListener('mousedown', onDoc);
-        window.addEventListener('scroll', close, true);
-        window.addEventListener('resize', close);
-        return () => {
-            document.removeEventListener('mousedown', onDoc);
-            window.removeEventListener('scroll', close, true);
-            window.removeEventListener('resize', close);
-        };
-    }, [open]);
-
-    const pick = (key) => { onChange(key); setOpen(false); };
-
-    return (
-        <div className={`pipe-dd${size === 'sm' ? ' pipe-dd-sm' : ''}`}>
-            <button type="button" ref={triggerRef} className={`pipe-trigger pipe-${current}`} onClick={() => setOpen((o) => !o)}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    {PIPELINE_ICONS[current] || Icons.send}
-                </svg>
-                {labels[current] || current}
-                <svg className="pipe-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    {Icons.chevronDown}
-                </svg>
-            </button>
-            {open && pos && createPortal(
-                <div className="pipe-menu" ref={menuRef} style={{ position: 'fixed', top: pos.top, left: pos.left }}>
-                    {Object.entries(labels).map(([key, label]) => (
-                        <button type="button" key={key} className={`pipe-opt${key === current ? ' active' : ''}`} onClick={() => pick(key)}>
-                            <span className={`pipe-opt-ico pipe-${key}`}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                    {PIPELINE_ICONS[key] || Icons.send}
-                                </svg>
-                            </span>
-                            {label}
-                            {key === current && (
-                                <svg className="pipe-opt-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                    {Icons.check}
-                                </svg>
-                            )}
-                        </button>
-                    ))}
-                </div>,
-                document.body
-            )}
-        </div>
-    );
 }
 
 function ImportAndAdd() {
@@ -194,11 +96,6 @@ function ImportAndAdd() {
 }
 
 function Filters({ filters }) {
-    // Status/stage no longer need their own selects — the board's columns
-    // already are those two dimensions. Filtering by one server-side would
-    // empty most columns, which defeats a board's point of showing the
-    // whole funnel at once. Search still narrows cards within each column;
-    // sort still controls each column's internal ordering.
     const [f, setF] = useState({
         search: filters.search || '', sort: filters.sort || 'created_at',
     });
@@ -218,7 +115,6 @@ function Filters({ filters }) {
                 <select value={f.sort} onChange={(e) => setF({ ...f, sort: e.target.value })} style={{ width: 'auto' }}>
                     <option value="created_at">Newest first</option>
                     <option value="company">Company</option>
-                    <option value="sent_at">Sent date</option>
                 </select>
                 <button type="submit" className="btn btn-ghost">Filter</button>
                 {hasActive && <button type="button" className="btn-link" style={{ color: 'var(--red)' }} onClick={clear}>Clear</button>}
@@ -285,24 +181,9 @@ function BatchProgress({ batch, onCancel, cancelling }) {
     );
 }
 
-function BoardEmpty({ isQueue }) {
+function JobCard({ job, busy, onSend, onPreview, onDelete }) {
     return (
-        <div className="board-empty-col">
-            {isQueue ? "Nothing to send — add jobs above or check Find Jobs." : 'No applications here yet.'}
-        </div>
-    );
-}
-
-function JobCard({ job, variant, pipelineLabels, busy, onSend, onPreview, onDelete, onPipelineChange }) {
-    const draggable = useDraggable({ id: job.id, disabled: variant !== 'pipeline' });
-    const { attributes, listeners, setNodeRef, transform, isDragging } = draggable;
-
-    const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
-    const isFailed = variant === 'queue' && job.status === 'failed';
-
-    return (
-        <div ref={setNodeRef} style={style} {...attributes} {...(variant === 'pipeline' ? listeners : {})}
-            className={`board-card${variant === 'pipeline' ? ' is-draggable' : ''}${isDragging ? ' is-dragging' : ''}${isFailed ? ' is-failed' : ''}${variant === 'overlay' ? ' drag-overlay' : ''}`}>
+        <div className={`board-card${job.status === 'failed' ? ' is-failed' : ''}`}>
             <div className="co-cell">
                 <span className="co-avatar">{(job.company || '?')[0].toUpperCase()}</span>
                 <div className="co-info" style={{ minWidth: 0 }}>
@@ -320,40 +201,24 @@ function JobCard({ job, variant, pipelineLabels, busy, onSend, onPreview, onDele
                 </div>
             )}
 
-            {variant === 'queue' && (
-                <div>
-                    <Badge status={job.status} />
-                    {job.status === 'failed' && job.error && (
-                        <span className="muted" style={{ fontSize: 11, marginLeft: 6 }} title={job.error}>{job.error_short}</span>
-                    )}
-                </div>
-            )}
-
-            {variant === 'pipeline' && (
-                <div className="muted" style={{ fontSize: 11, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    {job.opened_at && <span style={{ color: 'var(--green)' }}>Opened</span>}
-                    {job.clicked_at && <span style={{ color: 'var(--blue)' }}>Clicked</span>}
-                    {job.followup_count > 0 && <span>{job.followup_count}x follow-up</span>}
-                    {job.sent_at && <span>Sent {job.sent_at}</span>}
-                </div>
-            )}
-
-            {variant === 'pipeline' && (
-                <PipelineDropdown value={job.pipeline_status} labels={pipelineLabels} size="sm"
-                    onChange={(v) => onPipelineChange(job.id, v)} />
-            )}
+            <div>
+                <Badge status={job.status} />
+                {job.status === 'failed' && job.error && (
+                    <span className="muted" style={{ fontSize: 11, marginLeft: 6 }} title={job.error}>{job.error_short}</span>
+                )}
+            </div>
 
             <div className="board-card-actions">
                 {/* Once a send is dispatched the job sits in "queued" until a background
                     worker actually delivers it — the button must stay disabled through
                     that whole window (not just the click's own request), or a second
                     click before the worker runs would dispatch a duplicate send. */}
-                {variant === 'queue' && job.status === 'queued' && (
+                {job.status === 'queued' && (
                     <button className="btn btn-ghost btn-sm" disabled>
                         <Spinner dark size={12} /> Queued
                     </button>
                 )}
-                {variant === 'queue' && job.status !== 'sent' && job.status !== 'queued' && job.apply_type !== 'easy_apply' && (
+                {job.status !== 'queued' && job.apply_type !== 'easy_apply' && (
                     <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => onSend(job.id)}>
                         {busy ? <Spinner dark size={12} /> : 'Send'}
                     </button>
@@ -367,93 +232,24 @@ function JobCard({ job, variant, pipelineLabels, busy, onSend, onPreview, onDele
     );
 }
 
-function Column({ id, label, colorKey, jobsInColumn, isQueue, pipelineLabels, busyIds, onSend, onPreview, onDelete, onPipelineChange }) {
-    const droppable = useDroppable({ id, disabled: isQueue });
-    const { setNodeRef, isOver } = droppable;
-
+function QueueList({ jobs, busyIds, onSend, onPreview, onDelete }) {
     return (
-        <div ref={isQueue ? undefined : setNodeRef} className={`board-col${isOver ? ' is-drag-over' : ''}`}>
+        <div className="board-col" style={{ flex: '1 1 auto', maxWidth: 'none' }}>
             <div className="board-col-head">
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className={`board-col-dot${colorKey ? ` pipe-${colorKey}` : ''}`} />
-                    {label}
-                </span>
-                <Badge status="neutral">{jobsInColumn.length}</Badge>
+                <span>Queue</span>
+                <Badge status="neutral">{jobs.length}</Badge>
             </div>
             <div className="board-col-body">
-                {jobsInColumn.length === 0 ? (
-                    <BoardEmpty isQueue={isQueue} />
-                ) : (
-                    jobsInColumn.map((job) => (
-                        <JobCard key={job.id} job={job} variant={isQueue ? 'queue' : 'pipeline'}
-                            pipelineLabels={pipelineLabels} busy={busyIds.has(job.id)}
-                            onSend={onSend} onPreview={onPreview} onDelete={onDelete} onPipelineChange={onPipelineChange} />
-                    ))
-                )}
+                {jobs.map((job) => (
+                    <JobCard key={job.id} job={job} busy={busyIds.has(job.id)}
+                        onSend={onSend} onPreview={onPreview} onDelete={onDelete} />
+                ))}
             </div>
         </div>
     );
 }
 
-function Board({ jobs, pipelineLabels, busyIds, onSend, onPreview, onDelete, onPipelineChange }) {
-    const [activeId, setActiveId] = useState(null);
-    // Optimistic column moves: applied the instant a drop lands so the card
-    // doesn't wait for the round trip; cleared once the request settles
-    // (the next Inertia prop set already reflects the real value by then).
-    const [pendingMoves, setPendingMoves] = useState({});
-
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
-        useSensor(KeyboardSensor),
-    );
-
-    const displayJobs = jobs.map((j) => (pendingMoves[j.id] ? { ...j, pipeline_status: pendingMoves[j.id] } : j));
-    const activeJob = activeId ? displayJobs.find((j) => j.id === activeId) : null;
-
-    const queueJobs = displayJobs.filter((j) => j.status !== 'sent');
-    const columns = Object.entries(pipelineLabels).map(([key, label]) => ({
-        key, label,
-        jobs: displayJobs.filter((j) => j.status === 'sent' && (j.pipeline_status || 'applied') === key),
-    }));
-
-    const handleDragEnd = ({ active, over }) => {
-        setActiveId(null);
-        if (!over) return; // dropped on Queue (not droppable) or nowhere — snaps back, no request
-        const job = jobs.find((j) => j.id === active.id);
-        if (!job || (job.pipeline_status || 'applied') === over.id) return; // same column — no-op
-
-        setPendingMoves((m) => ({ ...m, [active.id]: over.id }));
-        router.patch(`/jobs/${active.id}/pipeline`, { pipeline_status: over.id }, {
-            preserveScroll: true, preserveState: true,
-            onFinish: () => setPendingMoves((m) => { const n = { ...m }; delete n[active.id]; return n; }),
-        });
-    };
-
-    return (
-        <DndContext sensors={sensors} collisionDetection={rectIntersection}
-            onDragStart={({ active }) => setActiveId(active.id)}
-            onDragEnd={handleDragEnd} onDragCancel={() => setActiveId(null)}>
-            <div className="board">
-                <Column id="queue" label="Queue" isQueue jobsInColumn={queueJobs}
-                    pipelineLabels={pipelineLabels} busyIds={busyIds}
-                    onSend={onSend} onPreview={onPreview} onDelete={onDelete} onPipelineChange={onPipelineChange} />
-                {columns.map((c) => (
-                    <Column key={c.key} id={c.key} label={c.label} colorKey={c.key} jobsInColumn={c.jobs}
-                        pipelineLabels={pipelineLabels} busyIds={busyIds}
-                        onSend={onSend} onPreview={onPreview} onDelete={onDelete} onPipelineChange={onPipelineChange} />
-                ))}
-            </div>
-            <DragOverlay>
-                {activeJob && (
-                    <JobCard job={activeJob} variant="overlay" pipelineLabels={pipelineLabels} busy={false}
-                        onSend={() => {}} onPreview={() => {}} onDelete={() => {}} onPipelineChange={() => {}} />
-                )}
-            </DragOverlay>
-        </DndContext>
-    );
-}
-
-export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, counts, filters, activeBatch }) {
+export default function Jobs({ jobs, hasDocuments, templates, counts, filters, activeBatch }) {
     const [previewId, setPreviewId] = useState(null);
     const [templateId, setTemplateId] = useState('');
     const [sendingAll, setSendingAll] = useState(false);
@@ -531,13 +327,10 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
         setBusy(id, true);
         router.delete(`/jobs/${id}`, { onFinish: () => setBusy(id, false) });
     };
-    const updatePipeline = (id, value) =>
-        router.patch(`/jobs/${id}/pipeline`, { pipeline_status: value }, { preserveScroll: true });
-
     return (
         <>
             <PageHead title="Applications"
-                subtitle={<>Track all your job applications. <Link href="/search">Find Jobs</Link> to auto-search and apply, or import a CSV / add manually below.</>} />
+                subtitle={<>Send and manage your applications here. <Link href="/search">Find Jobs</Link> to auto-search and apply, import a CSV / add manually below, or track outcomes on the <Link href="/pipeline">Pipeline</Link> board.</>} />
 
             {!hasDocuments && (
                 <div className="alert alert-warn">
@@ -582,13 +375,18 @@ export default function Jobs({ jobs, hasDocuments, templates, pipelineLabels, co
 
             {jobs.length === 0 ? (
                 <div className="card">
-                    <EmptyState icon="briefcase" title="No applications yet">
-                        <Link href="/search">Find Jobs</Link> to search and auto-apply, or import a CSV above.
+                    <EmptyState icon="briefcase" title={counts.total === 0 ? 'No applications yet' : 'Nothing left to send'}>
+                        {counts.total === 0 ? (
+                            <><Link href="/search">Find Jobs</Link> to search and auto-apply, or import a CSV above.</>
+                        ) : (
+                            <>Every application has been sent. Track replies and outcomes on the <Link href="/pipeline">Pipeline</Link> board.</>
+                        )}
                     </EmptyState>
                 </div>
             ) : (
-                <Board jobs={jobs} pipelineLabels={pipelineLabels} busyIds={busyIds}
-                    onSend={sendOne} onPreview={setPreviewId} onDelete={destroy} onPipelineChange={updatePipeline} />
+                <div className="board">
+                    <QueueList jobs={jobs} busyIds={busyIds} onSend={sendOne} onPreview={setPreviewId} onDelete={destroy} />
+                </div>
             )}
 
             {previewId && <PreviewModal jobId={previewId} onClose={() => setPreviewId(null)} />}

@@ -20,44 +20,24 @@ class JobApplicationController extends Controller
     {
         $query = JobApplication::query()
             ->where('user_id', Auth::id())
+            ->where('status', '!=', JobApplication::STATUS_SENT)
             ->search($request->input('search'))
-            ->filterStatus($request->input('status'))
-            ->filterPipeline($request->input('pipeline'));
+            ->filterStatus($request->input('status'));
 
         $sortField = $request->input('sort', 'created_at');
         $sortDir   = $request->input('dir', 'desc');
-        $allowed   = ['company', 'job_title', 'status', 'pipeline_status', 'created_at', 'sent_at'];
+        $allowed   = ['company', 'job_title', 'status', 'created_at'];
         if (!in_array($sortField, $allowed)) $sortField = 'created_at';
         if (!in_array($sortDir, ['asc', 'desc'])) $sortDir = 'desc';
 
-        // Always show active jobs (pending/queued/failed) first, then sent.
-        // The board shows the whole working set at once (drag-and-drop
-        // between pipeline columns), so this isn't paginated — but it's
-        // capped so an account with years of history can't load an
+        // Failed jobs float to the top so they're the first thing a user
+        // needs to act on; capped so years of history can't load an
         // unbounded result set into memory on every visit.
-        $query->orderByRaw("CASE WHEN status IN ('pending','queued','failed') THEN 0 ELSE 1 END ASC")
+        $query->orderByRaw("CASE WHEN status = 'failed' THEN 0 ELSE 1 END ASC")
               ->orderBy($sortField, $sortDir)
               ->limit(1000);
 
-        $jobs = $query->get()->map(fn ($job) => [
-            'id'              => $job->id,
-            'company'         => $job->company,
-            'job_title'       => $job->job_title,
-            'job_url'         => $job->job_url,
-            'apply_type'      => $job->apply_type,
-            'apply_url'       => $job->apply_url,
-            'source'          => $job->source,
-            'recruiter_name'  => $job->recruiter_name,
-            'recruiter_email' => $job->recruiter_email,
-            'status'          => $job->status,
-            'error'           => $job->error,
-            'error_short'     => $job->error ? Str::limit($job->error, 40) : null,
-            'pipeline_status' => $job->pipeline_status,
-            'opened_at'       => $job->opened_at?->toDateTimeString(),
-            'clicked_at'      => $job->clicked_at?->toDateTimeString(),
-            'followup_count'  => $job->followup_count,
-            'sent_at'         => $job->sent_at ? $job->sent_at->diffForHumans() : null,
-        ]);
+        $jobs = $this->mapJobs($query->get());
 
         $profile = Profile::current();
         $activeBatch = null;
@@ -85,15 +65,44 @@ class JobApplicationController extends Controller
             'jobs'            => $jobs,
             'hasDocuments'    => $profile->hasDocuments(),
             'templates'      => EmailTemplate::where('user_id', Auth::id())->get(['id', 'name', 'is_default']),
-            'pipelineLabels'  => JobApplication::PIPELINE_STATUSES,
             'activeBatch'     => $activeBatch,
             'counts'    => $this->statusCounts(Auth::id()),
             'filters' => [
-                'search'   => $request->input('search'),
-                'status'   => $request->input('status'),
-                'pipeline' => $request->input('pipeline'),
-                'sort'     => $sortField,
-                'dir'      => $sortDir,
+                'search' => $request->input('search'),
+                'status' => $request->input('status'),
+                'sort'   => $sortField,
+                'dir'    => $sortDir,
+            ],
+        ]);
+    }
+
+    /**
+     * Kanban view of sent applications, grouped by pipeline stage
+     * (Applied/Replied/Interview/Rejected/Offer) with drag-and-drop.
+     */
+    public function pipeline(Request $request)
+    {
+        $query = JobApplication::query()
+            ->where('user_id', Auth::id())
+            ->where('status', JobApplication::STATUS_SENT)
+            ->search($request->input('search'))
+            ->filterPipeline($request->input('pipeline'));
+
+        $sortField = $request->input('sort', 'sent_at');
+        $sortDir   = $request->input('dir', 'desc');
+        $allowed   = ['company', 'job_title', 'pipeline_status', 'sent_at'];
+        if (!in_array($sortField, $allowed)) $sortField = 'sent_at';
+        if (!in_array($sortDir, ['asc', 'desc'])) $sortDir = 'desc';
+
+        $query->orderBy($sortField, $sortDir)->limit(1000);
+
+        return Inertia::render('Pipeline', [
+            'jobs'           => $this->mapJobs($query->get()),
+            'pipelineLabels' => JobApplication::PIPELINE_STATUSES,
+            'filters'        => [
+                'search' => $request->input('search'),
+                'sort'   => $sortField,
+                'dir'    => $sortDir,
             ],
         ]);
     }
@@ -431,6 +440,30 @@ class JobApplicationController extends Controller
             fputcsv($out, $sample);
             fclose($out);
         }, 'jobs-template.csv', ['Content-Type' => 'text/csv']);
+    }
+
+    /** Shape a JobApplication collection into the array the Jobs/Pipeline pages render. */
+    private function mapJobs($collection): array
+    {
+        return $collection->map(fn ($job) => [
+            'id'              => $job->id,
+            'company'         => $job->company,
+            'job_title'       => $job->job_title,
+            'job_url'         => $job->job_url,
+            'apply_type'      => $job->apply_type,
+            'apply_url'       => $job->apply_url,
+            'source'          => $job->source,
+            'recruiter_name'  => $job->recruiter_name,
+            'recruiter_email' => $job->recruiter_email,
+            'status'          => $job->status,
+            'error'           => $job->error,
+            'error_short'     => $job->error ? Str::limit($job->error, 40) : null,
+            'pipeline_status' => $job->pipeline_status,
+            'opened_at'       => $job->opened_at?->toDateTimeString(),
+            'clicked_at'      => $job->clicked_at?->toDateTimeString(),
+            'followup_count'  => $job->followup_count,
+            'sent_at'         => $job->sent_at ? $job->sent_at->diffForHumans() : null,
+        ])->all();
     }
 
     /** Status counts for the dashboard stat cards, in a single aggregate query. */
