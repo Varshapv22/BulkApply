@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
  */
 class CompanyContactFinder
 {
-    private const MAX_JOBS = 12;   // distinct companies looked up per search
+    private const MAX_JOBS = 6;    // distinct companies looked up per search
     private const TLDS = ['com', 'in', 'co.in', 'io'];
     private const PATHS = ['', '/contact', '/contact-us', '/careers'];
     private const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';

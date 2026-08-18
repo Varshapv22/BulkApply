@@ -15,8 +15,8 @@ class TechnoparkJobService
 {
     private const API  = 'https://technopark.in/api/paginated-jobs';
     private const BASE = 'https://technopark.in';
-    private const MAX_PAGES = 6;   // API returns 20/page
-    private const MAX_ENRICH = 24; // detail pages fetched per search (concurrent)
+    private const MAX_PAGES = 3;   // API returns 20/page — 60 jobs is plenty
+    private const MAX_ENRICH = 8; // detail pages fetched per search (concurrent)
     private const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
 
     /**
@@ -38,7 +38,7 @@ class TechnoparkJobService
             if ($lastPage > 1) {
                 $pages = range(2, $lastPage);
                 $responses = Http::pool(fn ($pool) => array_map(
-                    fn ($p) => $pool->as((string) $p)->timeout(15)->withHeaders($this->headers())
+                    fn ($p) => $pool->as((string) $p)->timeout(8)->connectTimeout(4)->withHeaders($this->headers())
                         ->get(self::API, ['search' => $search, 'page' => $p]),
                     $pages
                 ));
@@ -87,7 +87,7 @@ class TechnoparkJobService
 
         try {
             $responses = Http::pool(fn ($pool) => array_map(
-                fn ($i) => $pool->as((string) $i)->timeout(15)->withHeaders($this->headers())
+                fn ($i) => $pool->as((string) $i)->timeout(8)->connectTimeout(4)->withHeaders($this->headers())
                     ->get(self::BASE . '/job-details/' . $jobs[$i]['_id']),
                 $targets
             ));
@@ -136,7 +136,7 @@ class TechnoparkJobService
 
     private function fetchPage(string $search, int $page): ?array
     {
-        $resp = Http::timeout(15)->withHeaders($this->headers())
+        $resp = Http::timeout(8)->connectTimeout(4)->withHeaders($this->headers())
             ->get(self::API, ['search' => $search, 'page' => $page]);
 
         return $resp->ok() ? $resp->json() : null;

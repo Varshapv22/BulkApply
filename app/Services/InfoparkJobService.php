@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Log;
 class InfoparkJobService
 {
     private const BASE = 'https://infopark.in/companies-job';
-    private const MAX_PAGES = 15;  // ~300 most-recent jobs scanned
-    private const MAX_ENRICH = 24; // detail pages fetched per search (concurrent)
+    private const MAX_PAGES = 5;  // ~100 most-recent jobs scanned
+    private const MAX_ENRICH = 8; // detail pages fetched per search (concurrent)
     private const UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
 
     /**
@@ -30,7 +30,7 @@ class InfoparkJobService
 
             $responses = Http::pool(fn ($pool) => array_map(
                 fn ($p) => $pool->as((string) $p)
-                    ->timeout(15)
+                    ->timeout(8)->connectTimeout(4)
                     ->withHeaders(['User-Agent' => self::UA])
                     ->get(self::BASE, ['page' => $p]),
                 $pages
@@ -84,7 +84,7 @@ class InfoparkJobService
 
         try {
             $responses = Http::pool(fn ($pool) => array_map(
-                fn ($i) => $pool->as((string) $i)->timeout(15)
+                fn ($i) => $pool->as((string) $i)->timeout(8)->connectTimeout(4)
                     ->withHeaders(['User-Agent' => self::UA])->get($jobs[$i]['job_url']),
                 $targets
             ));

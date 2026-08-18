@@ -26,7 +26,7 @@ class CyberparkJobService
         $keyword = trim($keyword);
 
         try {
-            $response = Http::timeout(15)
+            $response = Http::timeout(8)->connectTimeout(4)
                 ->withHeaders(['User-Agent' => self::UA, 'Accept' => 'application/rss+xml, application/xml'])
                 ->get(self::FEED);
 
@@ -73,7 +73,7 @@ class CyberparkJobService
 
         try {
             $responses = Http::pool(fn ($pool) => array_map(
-                fn ($i) => $pool->as((string) $i)->timeout(15)
+                fn ($i) => $pool->as((string) $i)->timeout(8)->connectTimeout(4)
                     ->withHeaders(['User-Agent' => self::UA])->get($jobs[$i]['job_url']),
                 $targets
             ));

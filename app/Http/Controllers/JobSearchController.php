@@ -42,14 +42,16 @@ class JobSearchController extends Controller
         $data = $request->validate([
             'role'      => ['required_without:site', 'nullable', 'string', 'max:255'],
             'location'  => ['nullable', 'string', 'max:255'],
+            'company'   => ['nullable', 'string', 'max:255'],
             'site'      => ['nullable', 'string', 'max:2048'],
             'sort_by'       => ['nullable', 'in:relevance,date,salary'],
             'full_time'     => ['nullable', 'boolean'],
             'find_contacts' => ['nullable', 'boolean'],
         ]);
 
-        $role = trim($data['role'] ?? '');
-        $site = trim($data['site'] ?? '');
+        $role    = trim($data['role'] ?? '');
+        $company = trim($data['company'] ?? '');
+        $site    = trim($data['site'] ?? '');
 
         $profile = Profile::current();
 
@@ -66,9 +68,20 @@ class JobSearchController extends Controller
             'sort_by'       => $data['sort_by'] ?? 'relevance',
             'full_time'     => $request->boolean('full_time'),
             'find_contacts' => $request->boolean('find_contacts'),
-        ], 30);
+        ], 30, $company);
 
-        $jobs = $this->attachSkills($result['jobs'], $profile->skills ?? '');
+        $resultJobs = $result['jobs'];
+
+        // When a site is set (park / URL search), still apply the company name
+        // as a post-filter so the user can narrow park results to one employer.
+        if ($company !== '' && $site !== '') {
+            $needle = mb_strtolower($company);
+            $resultJobs = array_values(array_filter($resultJobs, function ($job) use ($needle) {
+                return str_contains(mb_strtolower($job['company'] ?? ''), $needle);
+            }));
+        }
+
+        $jobs = $this->attachSkills($resultJobs, $profile->skills ?? '');
 
         return Inertia::render('Search', [
             'profile'      => $this->profileProps($profile),

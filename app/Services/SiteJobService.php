@@ -88,6 +88,18 @@ class SiteJobService
             $r = (new CyberparkJobService())->search($role, '', $limit);
             return $this->result(jobs: $r['jobs'], error: $r['error'], handled: true);
         }
+        if ((Str::contains($lower, 'kinfra') || $host === 'kinfra.org') && FeatureFlag::enabled('source.kinfra')) {
+            $r = (new KinfraJobService())->search($role, '', $limit);
+            return $this->result(jobs: $r['jobs'], error: $r['error'], handled: true);
+        }
+        if ((Str::contains($lower, 'smart city kozhikode') || Str::contains($lower, 'smartcitykozhikode') || $host === 'smartcitykozhikode.com') && FeatureFlag::enabled('source.smartcity_kozhikode')) {
+            $r = (new SmartCityKozhikodeJobService())->search($role, '', $limit);
+            return $this->result(jobs: $r['jobs'], error: $r['error'], handled: true);
+        }
+        if ((Str::contains($lower, 'malabar business') || Str::contains($lower, 'malabarbc') || $host === 'malabarbc.com') && FeatureFlag::enabled('source.malabar_business_center')) {
+            $r = (new MalabarBusinessCenterJobService())->search($role, '', $limit);
+            return $this->result(jobs: $r['jobs'], error: $r['error'], handled: true);
+        }
 
         // 2. A big job platform we can't scrape → aggregated fallback (no keyword).
         foreach (self::PLATFORMS as $needle => $label) {
@@ -130,7 +142,7 @@ class SiteJobService
         }
 
         try {
-            $response = Http::timeout(15)
+            $response = Http::timeout(8)->connectTimeout(4)
                 ->withHeaders(['User-Agent' => self::UA, 'Accept' => 'text/html'])
                 ->get($url);
 
@@ -355,13 +367,13 @@ class SiteJobService
             return ['jobs' => [], 'error' => null, 'handled' => false];
         }
 
-        $tlds = ['com', 'in', 'co.in'];
+        $tlds = ['com', 'in', 'co.in', 'io', 'net', 'org', 'co'];
         $liveDomain = $this->resolveCompanyDomain($base, $tlds);
         if (!$liveDomain) {
             return ['jobs' => [], 'error' => null, 'handled' => false];
         }
 
-        $careerPaths = ['/careers', '/jobs', '/career', '/careers/openings', '/careers/jobs', '/work-with-us', '/openings'];
+        $careerPaths = ['/careers', '/jobs', '/career', '/openings', '/vacancies', '/join-us', '/recruitment'];
         $requests = [];
         foreach ($careerPaths as $path) {
             $url = "https://{$liveDomain}{$path}";
@@ -374,7 +386,7 @@ class SiteJobService
             $pages = Http::pool(function ($pool) use ($requests) {
                 $out = [];
                 foreach ($requests as $key => $url) {
-                    $out[] = $pool->as($key)->timeout(10)->connectTimeout(6)
+                    $out[] = $pool->as($key)->timeout(7)->connectTimeout(3)
                         ->withHeaders(['User-Agent' => self::UA, 'Accept' => 'text/html'])
                         ->withOptions(['allow_redirects' => ['max' => 3]])
                         ->get($url);

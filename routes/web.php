@@ -41,6 +41,11 @@ Route::post('/contact', [ContactController::class, 'store'])->name('contact.stor
 // --- CMS pages (public, published only) ---
 Route::get('/p/{slug}', [PageController::class, 'show'])->name('page.show');
 
+// --- User Manual (public) ---
+Route::get('/manual', function () {
+    return \Inertia\Inertia::render('Manual');
+})->name('manual');
+
 // --- Public marketing landing page (guests see it; logged-in users go straight to their dashboard) ---
 Route::get('/', function () {
     return auth()->check()

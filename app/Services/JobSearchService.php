@@ -35,7 +35,9 @@ class JobSearchService
         }
 
         try {
-            // A keyword (company/board/extra term) narrows the query further.
+            // A keyword (board/extra term) narrows the query further.
+            // Note: company names are passed via options['company'] — NOT
+            // merged into what_and — so the role relevance stays tight.
             $what = trim($role . ' ' . ($options['keyword'] ?? ''));
 
             $params = [
@@ -54,6 +56,11 @@ class JobSearchService
             if ($location) {
                 $params['where'] = $location;
             }
+            // Company name filter — Adzuna's dedicated param keeps the role
+            // query clean (avoids "laravel wipro" in what_and returning zero).
+            if (!empty($options['company'])) {
+                $params['company'] = $options['company'];
+            }
             if (!empty($options['sort_by']) && in_array($options['sort_by'], ['relevance', 'date', 'salary'], true)) {
                 $params['sort_by'] = $options['sort_by'];
             }
@@ -62,7 +69,7 @@ class JobSearchService
             }
 
             // Adzuna is country-scoped: /v1/api/jobs/{country}/search/{page}
-            $response = Http::timeout(15)
+            $response = Http::timeout(8)->connectTimeout(4)
                 ->get("https://api.adzuna.com/v1/api/jobs/{$country}/search/1", $params);
 
             if (!$response->successful()) {

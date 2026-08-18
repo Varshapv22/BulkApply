@@ -53,7 +53,7 @@ function SearchingCard({ findContacts }) {
     );
 }
 
-const QUICK_SITES = ['Technopark', 'Infopark', 'Cyberpark', 'Indeed', 'Naukri', 'LinkedIn'];
+const QUICK_SITES = ['Technopark', 'Infopark', 'Cyberpark', 'KINFRA', 'Smart City Kozhikode', 'Malabar Business Center'];
 
 // Big aggregator platforms the backend won't scrape directly (mirrors
 // SiteJobService::PLATFORMS) — alerts aren't offered for these since their
@@ -115,14 +115,16 @@ function SearchForm({ profile, onSearching, searched }) {
     const { data, setData, post, processing } = useForm({
         role: profile.preferred_role || '',
         location: profile.location || '',
+        company: '',
         site: '',
         sort_by: 'relevance',
         full_time: false,
-        find_contacts: true,
+        find_contacts: false,
     });
     const [saving, setSaving] = useState(false);
 
     const hasSite = data.site.trim() !== '';
+    const hasCompany = data.company.trim() !== '';
     const canSave = searched && data.role.trim() !== '' && !isAlertBlockedSite(data.site);
 
     const submit = (e) => {
@@ -157,8 +159,8 @@ function SearchForm({ profile, onSearching, searched }) {
             <form onSubmit={submit}>
                 <div className="row">
                     <div style={{ flex: 2 }}>
-                        <label>Job Role / Title {hasSite ? '' : '*'}</label>
-                        <IconField icon={Icons.briefcase} type="text" required={!hasSite} value={data.role}
+                        <label>Job Role / Title {hasSite || hasCompany ? '' : '*'}</label>
+                        <IconField icon={Icons.briefcase} type="text" required={!hasSite && !hasCompany} value={data.role}
                             onChange={(e) => setData('role', e.target.value)}
                             placeholder="e.g. Software Engineer, Data Analyst, Product Manager" />
                     </div>
@@ -170,13 +172,27 @@ function SearchForm({ profile, onSearching, searched }) {
                     </div>
                 </div>
 
+                <div className="row" style={{ marginTop: 12 }}>
+                    <div style={{ flex: 1 }}>
+                        <label>
+                            Company{' '}
+                            <span className="muted" style={{ fontWeight: 400 }}>
+                                (optional — leave Role blank to list all jobs at that company)
+                            </span>
+                        </label>
+                        <IconField icon={Icons.building} type="text" value={data.company}
+                            onChange={(e) => setData('company', e.target.value)}
+                            placeholder="e.g. Google, Infosys, TCS, Wipro" />
+                    </div>
+                </div>
+
                 <div className="or-divider"><span>or search a specific site</span></div>
 
                 <div>
                     <label>Job site, platform or company <span className="muted" style={{ fontWeight: 400 }}>(optional)</span></label>
                     <IconField icon={Icons.building} type="text" value={data.site}
                         onChange={(e) => setData('site', e.target.value)}
-                        placeholder="e.g. Technopark, Infopark, Cyberpark, Indeed, Naukri, or a careers-page URL" />
+                        placeholder="e.g. Technopark, Infopark, Cyberpark, KINFRA, or a careers-page URL" />
                     <div className="quick-picks">
                         {QUICK_SITES.map((s) => (
                             <button type="button" key={s}

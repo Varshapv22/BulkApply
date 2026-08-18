@@ -8,6 +8,7 @@ const NAV_LINKS = [
     { href: '/#features', label: 'Features', anchor: true },
     { href: '/#how-it-works', label: 'How it works', anchor: true },
     { href: '/p/pricing', label: 'Pricing' },
+    { href: '/manual', label: 'Manual' },
     { href: '/p/faq', label: 'FAQ' },
 ];
 

@@ -351,6 +351,7 @@ export default function Welcome() {
                             <a href="#features">Features</a>
                             <a href="#how-it-works">How it works</a>
                             <Link href="/p/pricing">Pricing</Link>
+                            <Link href="/manual">Manual</Link>
                             <Link href="/p/faq">FAQ</Link>
                             <Link href="/p/privacy">Privacy</Link>
                             <Link href="/p/terms">Terms</Link>

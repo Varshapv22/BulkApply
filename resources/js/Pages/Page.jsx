@@ -136,6 +136,7 @@ export default function Page({ slug, title, content, plans }) {
                             <Link href="/#features">Features</Link>
                             <Link href="/#how-it-works">How it works</Link>
                             <Link href="/p/pricing">Pricing</Link>
+                            <Link href="/manual">Manual</Link>
                             <Link href="/p/faq">FAQ</Link>
                             <Link href="/p/privacy">Privacy</Link>
                             <Link href="/p/terms">Terms</Link>
