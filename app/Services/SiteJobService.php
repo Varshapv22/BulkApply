@@ -35,6 +35,9 @@ class SiteJobService
         'shine' => 'Shine', 'timesjobs' => 'TimesJobs', 'instahyre' => 'Instahyre',
         'wellfound' => 'Wellfound', 'angellist' => 'Wellfound', 'ziprecruiter' => 'ZipRecruiter',
         'dice' => 'Dice', 'simplyhired' => 'SimplyHired',
+        // Gulf/UAE boards — also bot-blocked (403s on a plain fetch), so treated
+        // the same as Indeed/LinkedIn rather than attempted as a generic scrape.
+        'bayt' => 'Bayt', 'naukrigulf' => 'NaukriGulf', 'gulftalent' => 'GulfTalent',
     ];
 
     /**

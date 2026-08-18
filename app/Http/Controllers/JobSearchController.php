@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\SendJobApplication;
+use App\Models\ApiConfig;
 use App\Models\FeatureFlag;
 use App\Models\JobApplication;
 use App\Models\Profile;
 use App\Services\JobQueryService;
+use App\Services\LocationDirectory;
 use App\Services\SkillExtractor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -25,6 +27,7 @@ class JobSearchController extends Controller
         return Inertia::render('Search', [
             'profile'      => $this->profileProps($profile),
             'jobSites'     => Profile::JOB_SITES,
+            'locationSuggestions' => LocationDirectory::suggestions($this->internationalSearchAvailable()),
             'results'      => [],
             'searched'     => false,
             'searchError'  => null,
@@ -86,6 +89,7 @@ class JobSearchController extends Controller
         return Inertia::render('Search', [
             'profile'      => $this->profileProps($profile),
             'jobSites'     => Profile::JOB_SITES,
+            'locationSuggestions' => LocationDirectory::suggestions($this->internationalSearchAvailable()),
             'results'      => $jobs,
             'searched'     => true,
             'searchError'  => $result['error'],
@@ -115,6 +119,13 @@ class JobSearchController extends Controller
         }
 
         return $jobs;
+    }
+
+    /** Whether JSearch (the UAE/rest-of-Asia fallback) is enabled and configured. */
+    private function internationalSearchAvailable(): bool
+    {
+        return FeatureFlag::enabled('source.jsearch')
+            && filled(ApiConfig::get('jsearch_api_key', config('services.jsearch.api_key')));
     }
 
     /**

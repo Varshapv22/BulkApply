@@ -12,6 +12,7 @@ class ApiConfigSeeder extends Seeder
         ['key' => 'adzuna_app_id', 'label' => 'Adzuna App ID', 'description' => 'Overrides ADZUNA_APP_ID from .env if set. Leave blank to use the .env value.'],
         ['key' => 'adzuna_app_key', 'label' => 'Adzuna App Key', 'description' => 'Overrides ADZUNA_APP_KEY from .env if set. Leave blank to use the .env value.'],
         ['key' => 'adzuna_country', 'label' => 'Adzuna Country Code', 'description' => 'Overrides ADZUNA_COUNTRY from .env if set (e.g. in, us, gb).'],
+        ['key' => 'jsearch_api_key', 'label' => 'JSearch (RapidAPI) Key', 'description' => 'Overrides RAPIDAPI_KEY from .env if set. Used for locations Adzuna doesn\'t cover (UAE, the rest of the Gulf, and most of Asia beyond India/Singapore).'],
         ['key' => 'google_oauth_client_id', 'label' => 'Google OAuth Client ID', 'description' => 'Not yet used by any feature — reserved for a future Google sign-in integration.'],
         ['key' => 'google_oauth_client_secret', 'label' => 'Google OAuth Client Secret', 'description' => 'Not yet used by any feature — reserved for a future Google sign-in integration.'],
         ['key' => 'openai_api_key', 'label' => 'OpenAI API Key', 'description' => 'Not yet used by any feature — reserved for future AI-assisted features.'],

@@ -35,6 +35,9 @@ return [
         ],
     ],
 
+    // JSearch (RapidAPI, aggregates Google for Jobs) — used by JSearchJobService
+    // for locations Adzuna doesn't index (UAE, the rest of the Gulf, and most
+    // of Asia beyond India/Singapore). See LocationDirectory for the routing.
     'jsearch' => [
         'api_key' => env('RAPIDAPI_KEY'),
     ],

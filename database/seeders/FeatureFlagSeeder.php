@@ -10,6 +10,7 @@ class FeatureFlagSeeder extends Seeder
 {
     private const SOURCES = [
         'source.adzuna' => 'Adzuna (aggregated web search)',
+        'source.jsearch' => 'JSearch (UAE, Gulf & rest-of-Asia web search)',
         'source.infopark' => 'Infopark',
         'source.technopark' => 'Technopark',
         'source.cyberpark' => 'Cyberpark',

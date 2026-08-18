@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
-import { PageHead, Stat, Badge, Icons, EmptyState, IconField, ChipIcon, Spinner, useConfirm, CompanyInsightButton } from '../components';
+import { PageHead, Stat, Badge, Icons, EmptyState, IconField, ChipIcon, Spinner, useConfirm, CompanyInsightButton, avatarAccent } from '../components';
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -183,9 +183,9 @@ function BatchProgress({ batch, onCancel, cancelling }) {
 
 function JobCard({ job, busy, onSend, onPreview, onDelete }) {
     return (
-        <div className={`board-card${job.status === 'failed' ? ' is-failed' : ''}`}>
+        <div className={`queue-row${job.status === 'failed' ? ' is-failed' : ''}`}>
             <div className="co-cell">
-                <span className="co-avatar">{(job.company || '?')[0].toUpperCase()}</span>
+                <span className={`co-avatar accent-${avatarAccent(job.company)}`}>{(job.company || '?')[0].toUpperCase()}</span>
                 <div className="co-info" style={{ minWidth: 0 }}>
                     <strong style={{ display: 'block' }}>{job.company}</strong>
                     <span className="muted">{job.job_title || '—'}</span>
@@ -193,22 +193,22 @@ function JobCard({ job, busy, onSend, onPreview, onDelete }) {
                 </div>
             </div>
 
-            {job.source ? (
-                <Badge status="queued">{job.source}</Badge>
-            ) : (
-                <div className="muted" style={{ fontSize: 11.5 }}>
-                    {job.recruiter_name || job.recruiter_email || '—'}
-                </div>
-            )}
+            <div className="queue-row-meta">
+                {job.source ? (
+                    <Badge status="queued">{job.source}</Badge>
+                ) : (
+                    job.recruiter_name || job.recruiter_email || '—'
+                )}
+            </div>
 
-            <div>
+            <div className="queue-row-meta">
                 <Badge status={job.status} />
                 {job.status === 'failed' && job.error && (
                     <span className="muted" style={{ fontSize: 11, marginLeft: 6 }} title={job.error}>{job.error_short}</span>
                 )}
             </div>
 
-            <div className="board-card-actions">
+            <div className="queue-row-actions">
                 {/* Once a send is dispatched the job sits in "queued" until a background
                     worker actually delivers it — the button must stay disabled through
                     that whole window (not just the click's own request), or a second
@@ -234,12 +234,12 @@ function JobCard({ job, busy, onSend, onPreview, onDelete }) {
 
 function QueueList({ jobs, busyIds, onSend, onPreview, onDelete }) {
     return (
-        <div className="board-col" style={{ flex: '1 1 auto', maxWidth: 'none' }}>
-            <div className="board-col-head">
-                <span>Queue</span>
+        <div className="card">
+            <div className="toolbar" style={{ marginBottom: 14 }}>
+                <h2 style={{ margin: 0, fontSize: 15 }}>Queue</h2>
                 <Badge status="neutral">{jobs.length}</Badge>
             </div>
-            <div className="board-col-body">
+            <div className="queue-list">
                 {jobs.map((job) => (
                     <JobCard key={job.id} job={job} busy={busyIds.has(job.id)}
                         onSend={onSend} onPreview={onPreview} onDelete={onDelete} />
@@ -384,9 +384,7 @@ export default function Jobs({ jobs, hasDocuments, templates, counts, filters, a
                     </EmptyState>
                 </div>
             ) : (
-                <div className="board">
-                    <QueueList jobs={jobs} busyIds={busyIds} onSend={sendOne} onPreview={setPreviewId} onDelete={destroy} />
-                </div>
+                <QueueList jobs={jobs} busyIds={busyIds} onSend={sendOne} onPreview={setPreviewId} onDelete={destroy} />
             )}
 
             {previewId && <PreviewModal jobId={previewId} onClose={() => setPreviewId(null)} />}

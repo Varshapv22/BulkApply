@@ -29,6 +29,16 @@ function blendTowardBlack(hex, ratio) {
     return `#${channel(16)}${channel(8)}${channel(0)}`;
 }
 
+const AVATAR_ACCENTS = ['primary', 'blue', 'green', 'amber', 'red', 'violet', 'sky'];
+
+/** Deterministic accent (one of AVATAR_ACCENTS) for a company/name string, so the
+ *  same company always gets the same avatar colour instead of every card looking identical. */
+export function avatarAccent(name) {
+    let hash = 0;
+    for (let i = 0; i < (name || '').length; i++) hash = (hash * 31 + name.charCodeAt(i)) | 0;
+    return AVATAR_ACCENTS[Math.abs(hash) % AVATAR_ACCENTS.length];
+}
+
 export function PageHead({ title, subtitle }) {
     return (
         <div className="page-head">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useForm, router } from '@inertiajs/react';
 import { PageHead, Badge, Icons, Spinner, EmptyState, ChipIcon, IconField, CompanyInsightButton, timeAgo } from '../components';
 
@@ -63,7 +63,7 @@ const QUICK_SITES = ['Technopark', 'Infopark', 'Cyberpark', 'KINFRA', 'Smart Cit
 const ALERT_BLOCKED_PLATFORMS = [
     'indeed', 'naukri', 'linkedin', 'monster', 'foundit', 'glassdoor',
     'shine', 'timesjobs', 'instahyre', 'wellfound', 'angellist', 'ziprecruiter',
-    'dice', 'simplyhired',
+    'dice', 'simplyhired', 'bayt', 'naukrigulf', 'gulftalent',
 ];
 function isAlertBlockedSite(site) {
     const lower = (site || '').trim().toLowerCase();
@@ -111,7 +111,58 @@ function SkillsBar({ profile }) {
     );
 }
 
-function SearchForm({ profile, onSearching, searched }) {
+function LocationField({ value, onChange, suggestions }) {
+    const [open, setOpen] = useState(false);
+
+    const filtered = useMemo(() => {
+        const q = value.trim().toLowerCase();
+        const list = q === '' ? suggestions : suggestions.filter((s) => s.label.toLowerCase().includes(q));
+        return list.slice(0, 8);
+    }, [value, suggestions]);
+
+    // Best-effort match against what's typed (not just a picked suggestion) so
+    // free-typing "dubai" still surfaces the "not covered" hint before search.
+    const activeSuggestion = useMemo(() => {
+        const q = value.trim().toLowerCase();
+        if (!q) return null;
+        return suggestions.find((s) => {
+            const city = s.label.split(',')[0].trim().toLowerCase();
+            return q === s.label.toLowerCase() || q.includes(city);
+        }) || null;
+    }, [value, suggestions]);
+
+    return (
+        <div style={{ position: 'relative' }}>
+            <label>Location</label>
+            <IconField icon={Icons.pin} type="text" value={value} autoComplete="off"
+                onChange={(e) => onChange(e.target.value)}
+                onFocus={() => setOpen(true)}
+                onBlur={() => setTimeout(() => setOpen(false), 150)}
+                placeholder="e.g. Kerala, New York, Remote" />
+            {open && filtered.length > 0 && (
+                <div className="loc-suggest">
+                    {filtered.map((s) => (
+                        <button type="button" key={s.label}
+                            className={`loc-suggest-opt${s.supported ? '' : ' unsupported'}`}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => { onChange(s.label); setOpen(false); }}>
+                            <span>{s.label}</span>
+                            {!s.supported && <span className="loc-suggest-flag">Not covered</span>}
+                        </button>
+                    ))}
+                </div>
+            )}
+            {activeSuggestion && !activeSuggestion.supported && (
+                <p className="hint" style={{ color: 'var(--amber)', margin: '6px 0 0' }}>
+                    Our web-wide search doesn't cover {activeSuggestion.label} yet — name a specific
+                    employer or job site above instead (works for any country).
+                </p>
+            )}
+        </div>
+    );
+}
+
+function SearchForm({ profile, onSearching, searched, locationSuggestions }) {
     const { data, setData, post, processing } = useForm({
         role: profile.preferred_role || '',
         location: profile.location || '',
@@ -165,10 +216,8 @@ function SearchForm({ profile, onSearching, searched }) {
                             placeholder="e.g. Software Engineer, Data Analyst, Product Manager" />
                     </div>
                     <div>
-                        <label>Location</label>
-                        <IconField icon={Icons.pin} type="text" value={data.location}
-                            onChange={(e) => setData('location', e.target.value)}
-                            placeholder="e.g. Kerala, New York, Remote" />
+                        <LocationField value={data.location} onChange={(v) => setData('location', v)}
+                            suggestions={locationSuggestions} />
                     </div>
                 </div>
 
@@ -297,7 +346,7 @@ function SavedSearchesPanel({ searches }) {
     );
 }
 
-export default function Search({ profile, jobSites, results, searched, searchError, hasDocuments, resumes = [], savedSearches = [] }) {
+export default function Search({ profile, jobSites, locationSuggestions = [], results, searched, searchError, hasDocuments, resumes = [], savedSearches = [] }) {
     const [selected, setSelected] = useState(() => new Set());
     const [searching, setSearching] = useState({ active: false, findContacts: false });
     const [selectedResumeId, setSelectedResumeId] = useState('');
@@ -340,7 +389,7 @@ export default function Search({ profile, jobSites, results, searched, searchErr
                 </div>
             )}
 
-            <SearchForm profile={profile} onSearching={setSearching} searched={searched} />
+            <SearchForm profile={profile} onSearching={setSearching} searched={searched} locationSuggestions={locationSuggestions} />
 
             <SavedSearchesPanel searches={savedSearches} />
 

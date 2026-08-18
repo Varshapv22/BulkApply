@@ -4,12 +4,18 @@ namespace App\Services;
 
 use App\Models\ApiConfig;
 use App\Models\FeatureFlag;
+use App\Services\Concerns\FiltersJobResults;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class JobSearchService
 {
+    use FiltersJobResults;
+
+    public function __construct(private JSearchJobService $international)
+    {
+    }
+
     /**
      * Search for jobs using the Adzuna API (https://developer.adzuna.com).
      * Free tier: real jobs with location search across many countries.
@@ -25,7 +31,6 @@ class JobSearchService
 
         $appId   = ApiConfig::get('adzuna_app_id', config('services.adzuna.app_id'));
         $appKey  = ApiConfig::get('adzuna_app_key', config('services.adzuna.app_key'));
-        $country = ApiConfig::get('adzuna_country', config('services.adzuna.country', 'in'));
 
         if (!$appId || !$appKey) {
             return [
@@ -33,6 +38,20 @@ class JobSearchService
                 'error' => 'Job search API not configured. Add ADZUNA_APP_ID and ADZUNA_APP_KEY to your .env file. Get free credentials at https://developer.adzuna.com.',
             ];
         }
+
+        // Adzuna is country-scoped — "where" only filters *within* one country's
+        // index, so a location in a country Adzuna doesn't cover (e.g. Dubai)
+        // previously still queried the configured default (India) and returned
+        // unrelated results. Resolve the typed location to its real country
+        // first; a country Adzuna doesn't index (UAE, other Gulf/Asian markets)
+        // goes to JSearch instead, which isn't country-scoped by URL. Only
+        // fall back to the configured default when the location is
+        // blank/unrecognised (so "Remote" or an unusual place still works).
+        $resolvedCountry = LocationDirectory::resolveCountry($location);
+        if ($resolvedCountry !== null && !LocationDirectory::isAdzunaSupported($resolvedCountry)) {
+            return $this->international->search($role, $location, $resolvedCountry, $options, $limit);
+        }
+        $country = $resolvedCountry ?? ApiConfig::get('adzuna_country', config('services.adzuna.country', 'in'));
 
         try {
             // A keyword (board/extra term) narrows the query further.
@@ -120,84 +139,6 @@ class JobSearchService
     }
 
     /**
-     * Keep only jobs whose title OR description contains at least one
-     * significant word from the searched role. A title match is the
-     * strongest signal, but most direct-employer ads use a generic title
-     * (e.g. "PHP Developer") and name the actual stack ("Laravel") only in
-     * the body — restricting to the title alone was discarding those (real,
-     * Adzuna-verified-relevant) ads and left only the handful that happened
-     * to spell the role out in the title. Falls back to the unfiltered list
-     * if nothing would survive (e.g. an unusual role phrase), so a search
-     * never returns zero results because of this heuristic alone.
-     */
-    private function filterByTitleRelevance(array $jobs, string $role): array
-    {
-        $tokens = array_values(array_unique(array_filter(
-            preg_split('/[\s\/,]+/', mb_strtolower(trim($role))),
-            fn ($t) => mb_strlen($t) >= 3
-        )));
-        if (empty($tokens)) {
-            return $jobs;
-        }
-
-        $filtered = array_values(array_filter($jobs, function ($job) use ($tokens) {
-            $haystack = mb_strtolower(($job['job_title'] ?? '') . ' ' . ($job['description'] ?? ''));
-            foreach ($tokens as $t) {
-                if (str_contains($haystack, $t)) return true;
-            }
-            return false;
-        }));
-
-        return $filtered ?: $jobs;
-    }
-
-    /**
-     * Drop ads posted by staffing/recruitment/consultancy agencies so only
-     * direct employer vacancies remain. Unlike filterByTitleRelevance, this
-     * has no "fall back to unfiltered" safety net — showing an agency ad
-     * because the alternative is fewer results defeats the point of the filter.
-     */
-    private function filterOutAgencies(array $jobs): array
-    {
-        // Company-name signals: the agency's own name usually gives it away.
-        $companyKeywords = [
-            'staffing', 'consultanc', 'recruit', 'placement', 'manpower',
-            'outsourc', 'talent acquisition', 'talent solutions', 'hr solutions',
-            'hr services', 'workforce solutions', 'people solutions', 'headhunt',
-            'hiring partner', 'jobs portal', 'career solutions',
-        ];
-
-        // Description-phrase signals: how an agency ad reads even when the
-        // company name itself looks neutral (e.g. "Confidential").
-        $descriptionKeywords = [
-            'on behalf of our client', 'on behalf of one of our client',
-            'one of our clients', 'one of our esteemed clients', 'multiple clients',
-            'leading recruitment', 'staffing solutions', 'placement consultancy',
-            'placement services', 'our client is looking', 'our client is hiring',
-            'panel of clients', 'reputed client', 'client company', 'mnc client',
-            'recruitment agency', 'recruitment firm', 'staffing agency',
-        ];
-
-        return array_values(array_filter($jobs, function ($job) use ($companyKeywords, $descriptionKeywords) {
-            $company = mb_strtolower($job['company'] ?? '');
-            foreach ($companyKeywords as $kw) {
-                if (str_contains($company, $kw)) {
-                    return false;
-                }
-            }
-
-            $description = mb_strtolower($job['description'] ?? '');
-            foreach ($descriptionKeywords as $kw) {
-                if (str_contains($description, $kw)) {
-                    return false;
-                }
-            }
-
-            return true;
-        }));
-    }
-
-    /**
      * Normalize an Adzuna API result to our standard job format.
      */
     private function normalizeJob(array $item): array
@@ -270,15 +211,6 @@ class JobSearchService
         }
 
         return $url;
-    }
-
-    /** Shorten descriptions to display length. Run only after all filtering is done. */
-    private function truncateDescriptions(array $jobs): array
-    {
-        return array_map(function ($job) {
-            $job['description'] = Str::limit($job['description'] ?? '', 200);
-            return $job;
-        }, $jobs);
     }
 
     /** Derive a company website from an email domain (skips free-mail providers). */

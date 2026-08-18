@@ -500,40 +500,71 @@ tbody tr:hover { background: var(--hover); }
 tbody tr:last-child td { border-bottom: none; }
 
 /* ---------- Applications board (Kanban) ---------- */
+.board-wrap { position: relative; }
 .board { display: flex; gap: 16px; align-items: flex-start; overflow-x: auto; padding-bottom: 10px;
     scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+/* Static edge hint that a wider board scrolls further right — cheap and always-correct
+   since it just fades into the page background rather than trying to detect overflow. */
+.board-wrap::after { content: ''; position: absolute; top: 0; right: 0; bottom: 10px; width: 36px;
+    background: linear-gradient(to right, transparent, var(--bg) 88%); pointer-events: none; }
 .board-col { flex: 0 0 280px; min-width: 260px; max-width: 320px; display: flex; flex-direction: column;
-    background: var(--card-2); border: 1px solid var(--border); border-radius: 14px;
+    background: var(--card-2); border: 1px solid var(--border); border-top: 3px solid var(--border); border-radius: 14px;
     max-height: calc(100vh - 260px); scroll-snap-align: start; transition: border-color .12s, box-shadow .12s, background .12s; }
 .board-col.is-drag-over { border-color: var(--primary); box-shadow: 0 0 0 3px var(--ring);
     background: color-mix(in srgb, var(--primary) 5%, var(--card-2)); }
 .board-col-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; justify-content: space-between;
     gap: 8px; padding: 12px 14px; background: var(--card-2); border-bottom: 1px solid var(--border);
-    border-radius: 14px 14px 0 0; font-size: 13px; font-weight: 700; color: var(--heading); }
+    border-radius: 12px 12px 0 0; font-size: 13px; font-weight: 700; color: var(--heading); }
 .board-col-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
 .board-col-dot.pipe-applied   { background: var(--primary); }
 .board-col-dot.pipe-replied   { background: var(--blue); }
 .board-col-dot.pipe-interview { background: var(--amber); }
 .board-col-dot.pipe-rejected  { background: var(--red); }
 .board-col-dot.pipe-offer     { background: var(--green); }
+.board-col.stage-applied   { border-top-color: var(--primary); }
+.board-col.stage-replied   { border-top-color: var(--blue); }
+.board-col.stage-interview { border-top-color: var(--amber); }
+.board-col.stage-rejected  { border-top-color: var(--red); }
+.board-col.stage-offer     { border-top-color: var(--green); }
 .board-col-body { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 
 .board-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow-sm); transition: box-shadow .15s, opacity .15s; }
+    display: flex; flex-direction: column; gap: 8px; box-shadow: var(--shadow-sm); transition: box-shadow .15s, opacity .15s, transform .15s; }
 .board-card.is-draggable { cursor: grab; touch-action: none; }
 .board-card.is-draggable:active { cursor: grabbing; }
 .board-card.is-dragging { opacity: .35; }
 .board-card.is-failed { border-left: 3px solid var(--red); }
+.board-card.stage-applied   { border-left: 3px solid var(--primary); }
+.board-card.stage-replied   { border-left: 3px solid var(--blue); }
+.board-card.stage-interview { border-left: 3px solid var(--amber); }
+.board-card.stage-rejected  { border-left: 3px solid var(--red); }
+.board-card.stage-offer     { border-left: 3px solid var(--green); }
+.board-card:not(.is-dragging):not(.drag-overlay):hover { box-shadow: var(--shadow); transform: translateY(-2px); }
 .board-card.drag-overlay { box-shadow: var(--shadow-lg); transform: rotate(1.5deg) scale(1.03); cursor: grabbing;
     pointer-events: none; width: 256px; }
 .board-card .co-cell { align-items: flex-start; }
 .board-card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 2px; }
 
-.board-empty-col { text-align: center; padding: 36px 14px; color: var(--muted); font-size: 12.5px; }
+.board-empty-col { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center;
+    padding: 36px 14px; color: var(--muted); font-size: 12.5px; }
+.board-empty-col svg { width: 26px; height: 26px; opacity: .35; }
+
+/* ---------- Applications queue (list) ---------- */
+.queue-list { display: flex; flex-direction: column; gap: 10px; }
+.queue-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 14px 16px;
+    border-radius: 14px; border: 1px solid var(--border); background: var(--card-2);
+    transition: border-color .13s, box-shadow .13s, transform .13s; }
+.queue-row:hover { border-color: var(--border-strong); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.queue-row.is-failed { border-left: 3px solid var(--red); }
+.queue-row .co-cell { flex: 1 1 240px; min-width: 200px; }
+.queue-row-meta { flex: 0 1 auto; font-size: 12px; color: var(--muted); min-width: 0; }
+.queue-row-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-left: auto; }
 
 @media (max-width: 640px) {
     .board-col { flex-basis: 82vw; }
     .board { gap: 12px; }
+    .queue-row { padding: 12px; }
+    .queue-row-actions { margin-left: 0; width: 100%; justify-content: flex-end; }
 }
 
 /* ---------- Badges ---------- */
@@ -789,6 +820,18 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
 .pipe-dd-sm .pipe-trigger svg:first-child { width: 11px; height: 11px; }
 .pipe-dd-sm .pipe-chevron { width: 9px; height: 9px; }
 
+/* ---------- Location autocomplete (Find Jobs) ---------- */
+.loc-suggest { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 30; max-height: 260px;
+    overflow-y: auto; padding: 6px; background: var(--card); border: 1px solid var(--border); border-radius: 13px;
+    box-shadow: var(--shadow-lg); animation: fadeUp .14s ease both; }
+.loc-suggest-opt { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 8px 10px; border-radius: 9px; border: none; background: transparent; font-family: inherit;
+    font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; text-align: left; transition: background .12s; }
+.loc-suggest-opt:hover { background: var(--hover); }
+.loc-suggest-opt.unsupported { color: var(--muted); }
+.loc-suggest-flag { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    color: var(--amber); background: var(--amber-bg); padding: 2px 7px; border-radius: 99px; flex-shrink: 0; }
+
 /* Positioned inline (fixed, from the trigger's live bounding rect) since it's
    rendered through a portal — see PipelineDropdown's comment in Jobs.jsx. */
 .pipe-menu { z-index: 60; min-width: 178px; padding: 6px;
@@ -808,7 +851,16 @@ code { background: var(--hover-strong); color: var(--primary-dark); padding: 2px
 .co-cell { display: flex; align-items: center; gap: 11px; min-width: 0; }
 .co-avatar { width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0; display: inline-flex; align-items: center;
     justify-content: center; font-size: 13px; font-weight: 800; color: var(--primary);
-    background: var(--primary-soft); border: 1px solid color-mix(in srgb, var(--primary) 22%, transparent); }
+    background: var(--primary-soft); border: 1px solid color-mix(in srgb, currentColor 22%, transparent); }
+/* Compound selectors so these outrank the bare .co-avatar color/background regardless of
+   sheet order — used to give each company/name a stable, distinct avatar colour. */
+.co-avatar.accent-primary { color: var(--primary); background: var(--primary-soft); }
+.co-avatar.accent-blue    { color: var(--blue);    background: var(--blue-bg); }
+.co-avatar.accent-green   { color: var(--green);   background: var(--green-bg); }
+.co-avatar.accent-amber   { color: var(--amber);   background: var(--amber-bg); }
+.co-avatar.accent-red     { color: var(--red);     background: var(--red-bg); }
+.co-avatar.accent-violet  { color: var(--violet);  background: var(--violet-bg); }
+.co-avatar.accent-sky     { color: var(--sky);     background: var(--sky-bg); }
 .cell-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 8px; font-size: 12px;
     font-weight: 600; background: var(--hover); color: var(--text); max-width: 150px; overflow: hidden;
     text-overflow: ellipsis; white-space: nowrap; text-decoration: none; border: 1px solid var(--border); transition: all .13s; }

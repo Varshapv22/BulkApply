@@ -6,7 +6,7 @@ import {
     useSensor, useSensors, useDraggable, useDroppable, rectIntersection,
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
-import { PageHead, Badge, Icons, EmptyState, Spinner, useConfirm, CompanyInsightButton } from '../components';
+import { PageHead, Stat, Badge, Icons, EmptyState, Spinner, useConfirm, CompanyInsightButton, avatarAccent } from '../components';
 
 function getCookie(name) {
     const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
@@ -164,7 +164,14 @@ function PreviewModal({ jobId, onClose }) {
 }
 
 function BoardEmpty() {
-    return <div className="board-empty-col">No applications here yet.</div>;
+    return (
+        <div className="board-empty-col">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                {Icons.briefcase}
+            </svg>
+            No applications here yet.
+        </div>
+    );
 }
 
 function JobCard({ job, pipelineLabels, busy, onPreview, onDelete, onPipelineChange, overlay }) {
@@ -172,12 +179,13 @@ function JobCard({ job, pipelineLabels, busy, onPreview, onDelete, onPipelineCha
     const { attributes, listeners, setNodeRef, transform, isDragging } = draggable;
 
     const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
+    const stage = job.pipeline_status || 'applied';
 
     return (
         <div ref={overlay ? undefined : setNodeRef} style={style} {...(overlay ? {} : attributes)} {...(overlay ? {} : listeners)}
-            className={`board-card is-draggable${isDragging ? ' is-dragging' : ''}${overlay ? ' drag-overlay' : ''}`}>
+            className={`board-card is-draggable stage-${stage}${isDragging ? ' is-dragging' : ''}${overlay ? ' drag-overlay' : ''}`}>
             <div className="co-cell">
-                <span className="co-avatar">{(job.company || '?')[0].toUpperCase()}</span>
+                <span className={`co-avatar accent-${avatarAccent(job.company)}`}>{(job.company || '?')[0].toUpperCase()}</span>
                 <div className="co-info" style={{ minWidth: 0 }}>
                     <strong style={{ display: 'block' }}>{job.company}</strong>
                     <span className="muted">{job.job_title || '—'}</span>
@@ -218,7 +226,7 @@ function Column({ id, label, colorKey, jobsInColumn, pipelineLabels, busyIds, on
     const { setNodeRef, isOver } = droppable;
 
     return (
-        <div ref={setNodeRef} className={`board-col${isOver ? ' is-drag-over' : ''}`}>
+        <div ref={setNodeRef} className={`board-col stage-${colorKey}${isOver ? ' is-drag-over' : ''}`}>
             <div className="board-col-head">
                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span className={`board-col-dot pipe-${colorKey}`} />
@@ -277,12 +285,14 @@ function Board({ jobs, pipelineLabels, busyIds, onPreview, onDelete, onPipelineC
         <DndContext sensors={sensors} collisionDetection={rectIntersection}
             onDragStart={({ active }) => setActiveId(active.id)}
             onDragEnd={handleDragEnd} onDragCancel={() => setActiveId(null)}>
-            <div className="board">
-                {columns.map((c) => (
-                    <Column key={c.key} id={c.key} label={c.label} colorKey={c.key} jobsInColumn={c.jobs}
-                        pipelineLabels={pipelineLabels} busyIds={busyIds}
-                        onPreview={onPreview} onDelete={onDelete} onPipelineChange={onPipelineChange} />
-                ))}
+            <div className="board-wrap">
+                <div className="board">
+                    {columns.map((c) => (
+                        <Column key={c.key} id={c.key} label={c.label} colorKey={c.key} jobsInColumn={c.jobs}
+                            pipelineLabels={pipelineLabels} busyIds={busyIds}
+                            onPreview={onPreview} onDelete={onDelete} onPipelineChange={onPipelineChange} />
+                    ))}
+                </div>
             </div>
             <DragOverlay>
                 {activeJob && (
@@ -320,10 +330,27 @@ export default function Pipeline({ jobs, pipelineLabels, filters }) {
         router.delete(`/jobs/${id}`, { onFinish: () => setBusy(id, false) });
     };
 
+    // Quick funnel read at a glance — the columns already show raw counts,
+    // so these are rates instead of duplicating them.
+    const total = jobs.length;
+    const responded = jobs.filter((j) => (j.pipeline_status || 'applied') !== 'applied').length;
+    const interviewing = jobs.filter((j) => j.pipeline_status === 'interview' || j.pipeline_status === 'offer').length;
+    const offers = jobs.filter((j) => j.pipeline_status === 'offer').length;
+    const rate = (n) => (total ? Math.round((n / total) * 100) : 0);
+
     return (
         <>
             <PageHead title="Pipeline"
                 subtitle={<>Drag a card between stages to track where each sent application stands. Manage sending on <Link href="/jobs">Applications</Link>.</>} />
+
+            {total > 0 && (
+                <div className="stats">
+                    <Stat label="Sent" value={total} accent="primary" icon={Icons.send} />
+                    <Stat label="Response rate" value={`${rate(responded)}%`} accent="blue" icon={Icons.chat} />
+                    <Stat label="Interview rate" value={`${rate(interviewing)}%`} accent="amber" icon={Icons.calendar} />
+                    <Stat label="Offers" value={offers} accent="green" icon={Icons.trophy} />
+                </div>
+            )}
 
             <Filters filters={filters} />
 
